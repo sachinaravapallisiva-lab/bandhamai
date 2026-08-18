@@ -12,7 +12,7 @@ export default function Home() {
       <div className="w-full max-w-xl">
         {/* Logo / Title */}
         <h1 className="text-2xl font-serif text-center mb-10 tracking-tight">
-          bandhamai
+          bandham ai
         </h1>
 
         {/* Main headline */}
