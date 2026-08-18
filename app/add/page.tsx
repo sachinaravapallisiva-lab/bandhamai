@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function AddProfile() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [listeningField, setListeningField] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -20,6 +21,43 @@ export default function AddProfile() {
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const startListening = (field: "about" | "wants") => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Try Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    setListeningField(field);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setForm((prev) => ({
+        ...prev,
+        [field]: prev[field] ? prev[field] + " " + transcript : transcript,
+      }));
+      setListeningField(null);
+    };
+
+    recognition.onerror = () => {
+      setListeningField(null);
+    };
+
+    recognition.onend = () => {
+      setListeningField(null);
+    };
+
+    recognition.start();
   };
 
   const handleSubmit = async (e: any) => {
@@ -150,45 +188,51 @@ export default function AddProfile() {
             />
           </div>
 
+          {/* About with Speak */}
           <div>
             <label className="block text-sm mb-1">About</label>
-            <textarea
-              name="about"
-              value={form.about}
-              onChange={handleChange}
-              rows={3}
-              className="w-full p-3 border border-gray-200 rounded-xl"
-              placeholder="A short paragraph about the person"
-            />
+            <div className="relative">
+              <textarea
+                name="about"
+                value={form.about}
+                onChange={handleChange}
+                rows={3}
+                className="w-full p-3 border border-gray-200 rounded-xl"
+                placeholder="A short paragraph about the person"
+              />
+              <button
+                type="button"
+                onClick={() => startListening("about")}
+                className="absolute bottom-3 right-3 text-sm text-gray-500"
+              >
+                {listeningField === "about" ? "Listening..." : "Speak"}
+              </button>
+            </div>
           </div>
 
+          {/* Wants with Speak */}
           <div>
             <label className="block text-sm mb-1">What they are looking for</label>
-            <textarea
-              name="wants"
-              value={form.wants}
-              onChange={handleChange}
-              rows={3}
-              className="w-full p-3 border border-gray-200 rounded-xl"
-              placeholder="What kind of partner they want"
-            />
+            <div className="relative">
+              <textarea
+                name="wants"
+                value={form.wants}
+                onChange={handleChange}
+                rows={3}
+                className="w-full p-3 border border-gray-200 rounded-xl"
+                placeholder="What kind of partner they want"
+              />
+              <button
+                type="button"
+                onClick={() => startListening("wants")}
+                className="absolute bottom-3 right-3 text-sm text-gray-500"
+              >
+                {listeningField === "wants" ? "Listening..." : "Speak"}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-3.5 rounded-full font-medium"
-          >
-            {loading ? "Saving..." : "Save Profile"}
-          </button>
-
-          {message && (
-            <p className="text-center text-sm mt-4">
-              {message}
-            </p>
-          )}
-        </form>
-      </div>
-    </div>
-  );
-}
+            className="w-full bg-black text-white
