@@ -29,7 +29,7 @@ export default function AddProfile() {
       (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Try Chrome.");
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
       return;
     }
 
@@ -188,7 +188,6 @@ export default function AddProfile() {
             />
           </div>
 
-          {/* About with Speak */}
           <div>
             <label className="block text-sm mb-1">About</label>
             <div className="relative">
@@ -210,7 +209,6 @@ export default function AddProfile() {
             </div>
           </div>
 
-          {/* Wants with Speak */}
           <div>
             <label className="block text-sm mb-1">What they are looking for</label>
             <div className="relative">
@@ -235,4 +233,16 @@ export default function AddProfile() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white
+            className="w-full bg-black text-white py-3.5 rounded-full font-medium"
+          >
+            {loading ? "Saving..." : "Save Profile"}
+          </button>
+
+          {message && (
+            <p className="text-center text-sm mt-4">{message}</p>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
