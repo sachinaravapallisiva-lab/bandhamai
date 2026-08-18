@@ -8,40 +8,40 @@ export default function Home() {
   const [visaStatus, setVisaStatus] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-xl">
-        {/* Logo / Title */}
-        <h1 className="text-2xl font-serif text-center mb-10 tracking-tight">
+    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center px-5 py-10 sm:py-16">
+      <div className="w-full max-w-lg">
+        {/* Logo */}
+        <h1 className="text-xl font-medium text-center mb-12 tracking-wide text-gray-800">
           bandham ai
         </h1>
 
-        {/* Main headline */}
-        <h2 className="text-3xl md:text-4xl font-serif text-center leading-tight mb-3">
+        {/* Headline */}
+        <h2 className="text-[28px] sm:text-4xl font-serif text-center leading-snug mb-3 text-gray-900">
           Say who you&apos;re hoping to find.
         </h2>
 
-        <p className="text-center text-gray-500 mb-8">
+        <p className="text-center text-gray-500 text-[15px] mb-8">
           One honest paragraph does more than thirty filters.
         </p>
 
-        {/* For myself / For my child */}
-        <div className="flex gap-3 justify-center mb-6">
+        {/* Toggle */}
+        <div className="flex gap-2 justify-center mb-7">
           <button
             onClick={() => setForWhom("myself")}
-            className={`px-5 py-2 rounded-full border text-sm transition ${
+            className={`px-5 py-2.5 rounded-full text-sm transition ${
               forWhom === "myself"
-                ? "bg-black text-white border-black"
-                : "bg-white text-gray-700 border-gray-300"
+                ? "bg-black text-white"
+                : "bg-white text-gray-600 border border-gray-200"
             }`}
           >
             For myself
           </button>
           <button
             onClick={() => setForWhom("child")}
-            className={`px-5 py-2 rounded-full border text-sm transition ${
+            className={`px-5 py-2.5 rounded-full text-sm transition ${
               forWhom === "child"
-                ? "bg-black text-white border-black"
-                : "bg-white text-gray-700 border-gray-300"
+                ? "bg-black text-white"
+                : "bg-white text-gray-600 border border-gray-200"
             }`}
           >
             For my child
@@ -49,21 +49,21 @@ export default function Home() {
         </div>
 
         {/* Text area */}
-        <div className="relative mb-6">
+        <div className="relative mb-7">
           <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Someone who cooks on Sundays, argues about films, and won't ask me to move back to India..."
-            className="w-full h-36 p-4 border border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-black text-gray-800"
+            className="w-full h-40 p-4 bg-white border border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-black text-[15px] text-gray-800 leading-relaxed"
           />
-          <button className="absolute bottom-3 right-3 text-sm text-gray-400 hover:text-black">
+          <button className="absolute bottom-3 right-4 text-sm text-gray-400">
             Speak
           </button>
         </div>
 
-        {/* Visa status chips */}
-        <div className="mb-8">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
+        {/* Status */}
+        <div className="mb-9">
+          <p className="text-[11px] text-gray-400 uppercase tracking-widest mb-3">
             Status in US
           </p>
           <div className="flex flex-wrap gap-2">
@@ -71,10 +71,10 @@ export default function Home() {
               <button
                 key={status}
                 onClick={() => setVisaStatus(status)}
-                className={`px-4 py-1.5 rounded-full border text-sm transition ${
+                className={`px-4 py-2 rounded-full text-sm transition ${
                   visaStatus === status
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-700 border-gray-300"
+                    ? "bg-black text-white"
+                    : "bg-white text-gray-600 border border-gray-200"
                 }`}
               >
                 {status}
@@ -83,8 +83,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Find matches button */}
-        <button className="w-full bg-black text-white py-4 rounded-full text-lg font-medium hover:bg-gray-900 transition">
+        {/* Button */}
+        <button className="w-full bg-black text-white py-4 rounded-full text-[16px] font-medium active:scale-[0.98] transition">
           Find matches
         </button>
       </div>
