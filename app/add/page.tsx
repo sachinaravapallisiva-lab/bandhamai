@@ -180,11 +180,11 @@ export default function AddProfile() {
             {loading ? "Saving..." : "Save Profile"}
           </button>
 
-          {message && (
-            <p className={text-center text-sm ${message.includes("success") ? "text-green-600" : "text-red-600"}}>
-              {message}
-            </p>
-          )}
+{message && (
+  <p className={text-center text-sm ${message.includes("success") ? "text-green-600" : "text-red-600"}}>
+    {message}
+  </p>
+)}
         </form>
       </div>
     </div>
