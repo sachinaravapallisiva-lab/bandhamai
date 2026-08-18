@@ -63,7 +63,9 @@ export default function AddProfile() {
     <div className="min-h-screen bg-[#fafafa] py-10 px-5">
       <div className="max-w-xl mx-auto">
         <h1 className="text-2xl font-serif mb-2">Add Profile</h1>
-        <p className="text-gray-500 mb-8 text-sm">Add your profile or a friend’s profile</p>
+        <p className="text-gray-500 mb-8 text-sm">
+          Add your profile or a friend’s profile
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -180,11 +182,11 @@ export default function AddProfile() {
             {loading ? "Saving..." : "Save Profile"}
           </button>
 
-{message && (
-  <p className={text-center text-sm ${message.includes("success") ? "text-green-600" : "text-red-600"}}>
-    {message}
-  </p>
-)}
+          {message && (
+            <p className="text-center text-sm mt-4">
+              {message}
+            </p>
+          )}
         </form>
       </div>
     </div>
