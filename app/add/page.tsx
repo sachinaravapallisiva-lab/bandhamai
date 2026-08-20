@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import AssistantPanel from "@/app/components/AssistantPanel";
 export default function AddProfile() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -242,6 +242,7 @@ export default function AddProfile() {
             <p className="text-center text-sm mt-4">{message}</p>
           )}
         </form>
+        <AssistantPanel onUse={(text) => setForm({...form, about: text})} />
       </div>
     </div>
   );
