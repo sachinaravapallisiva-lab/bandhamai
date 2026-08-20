@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         Authorization:`Bearer ${process.env.XAI_API_KEY}` ,
       },
       body: JSON.stringify({
-        model: "grok-4.6",
+        model: "grok-4.1-fast",
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
         max_tokens: 500,
       }),
