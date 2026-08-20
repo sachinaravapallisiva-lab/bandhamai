@@ -2,91 +2,74 @@
 
 import { useState } from "react";
 
-export default function Home() {
-  const [forWhom, setForWhom] = useState<"myself" | "child">("myself");
-  const [query, setQuery] = useState("");
-  const [visaStatus, setVisaStatus] = useState<string | null>(null);
+export default function Dashboard() {
+  const [tab, setTab] = useState("profile");
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center px-5 py-10 sm:py-16">
-      <div className="w-full max-w-lg">
-        {/* Logo */}
-        <h1 className="text-xl font-medium text-center mb-12 tracking-wide text-gray-800">
-          bandham ai
-        </h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-blue-600 text-white p-4">
+        <h1 className="text-2xl font-bold">Bandhamai</h1>
+      </div>
 
-        {/* Headline */}
-        <h2 className="text-[28px] sm:text-4xl font-serif text-center leading-snug mb-3 text-gray-900">
-          Say who you&apos;re hoping to find.
-        </h2>
+      <div className="flex gap-4 border-b p-4 bg-white">
+        <button onClick={() => setTab("profile")} className="px-4 py-2 font-bold text-gray-600 hover:text-purple-600">Profile</button>
+        <button onClick={() => setTab("discover")} className="px-4 py-2 font-bold text-gray-600 hover:text-purple-600">Discover</button>
+        <button onClick={() => setTab("inbox")} className="px-4 py-2 font-bold text-gray-600 hover:text-purple-600">Inbox</button>
+      </div>
 
-        <p className="text-center text-gray-500 text-[15px] mb-8">
-          One honest paragraph does more than thirty filters.
-        </p>
-
-        {/* Toggle */}
-        <div className="flex gap-2 justify-center mb-7">
-          <button
-            onClick={() => setForWhom("myself")}
-            className={`px-5 py-2.5 rounded-full text-sm transition ${
-              forWhom === "myself"
-                ? "bg-black text-white"
-                : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            For myself
-          </button>
-          <button
-            onClick={() => setForWhom("child")}
-            className={`px-5 py-2.5 rounded-full text-sm transition ${
-              forWhom === "child"
-                ? "bg-black text-white"
-                : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            For my child
-          </button>
-        </div>
-
-        {/* Text area */}
-        <div className="relative mb-7">
-          <textarea
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Someone who cooks on Sundays, argues about films, and won't ask me to move back to India..."
-            className="w-full h-40 p-4 bg-white border border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-black text-[15px] text-gray-800 leading-relaxed"
-          />
-          <button className="absolute bottom-3 right-4 text-sm text-gray-400">
-            Speak
-          </button>
-        </div>
-
-        {/* Status */}
-        <div className="mb-9">
-          <p className="text-[11px] text-gray-400 uppercase tracking-widest mb-3">
-            Status in US
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {["Citizen", "Green card", "H1B", "In India"].map((status) => (
-              <button
-                key={status}
-                onClick={() => setVisaStatus(status)}
-                className={`px-4 py-2 rounded-full text-sm transition ${
-                  visaStatus === status
-                    ? "bg-black text-white"
-                    : "bg-white text-gray-600 border border-gray-200"
-                }`}
-              >
-                {status}
-              </button>
-            ))}
+      <div className="p-8">
+        {tab === "profile" && (
+          <div className="bg-white rounded-lg shadow p-8 max-w-2xl">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📸</div>
+              <h2 className="text-3xl font-bold mb-2">Your Name, 28</h2>
+              <p className="text-gray-600">Bangalore</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Button */}
-        <button className="w-full bg-black text-white py-4 rounded-full text-[16px] font-medium active:scale-[0.98] transition">
-          Find matches
-        </button>
+        {tab === "discover" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Discover Profiles</h2>
+            <div className="grid grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="text-5xl text-center mb-4">Female</div>
+                <h3 className="font-bold">Priya, 28</h3>
+                <p className="text-gray-600 text-sm">Bangalore</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="text-5xl text-center mb-4">Female</div>
+                <h3 className="font-bold">Isha, 26</h3>
+                <p className="text-gray-600 text-sm">Hyderabad</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="text-5xl text-center mb-4">Female</div>
+                <h3 className="font-bold">Neha, 29</h3>
+                <p className="text-gray-600 text-sm">Mumbai</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "inbox" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Inbox</h2>
+            <div className="space-y-3">
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-bold">Priya, 28</h3>
+                <p className="text-gray-600 text-sm">Hi there!</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-bold">Isha, 26</h3>
+                <p className="text-gray-600 text-sm">How are you?</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-bold">Neha, 29</h3>
+                <p className="text-gray-600 text-sm">Nice to meet you!</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
