@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const TAB_ACTIVE = 'flex-1 py-3 px-4 font-semibold text-center transition border-b-2 text-purple-600 border-purple-600';
 const TAB_IDLE = 'flex-1 py-3 px-4 font-semibold text-center transition border-b-2 text-gray-600 border-transparent hover:text-gray-900';
 
 const MIC_ON = 'flex-1 py-3 rounded-lg font-semibold transition bg-red-600 text-white hover:bg-red-700';
 const MIC_OFF = 'flex-1 py-3 rounded-lg font-semibold transition bg-purple-600 text-white hover:bg-purple-700';
+const MIC_DEAD = 'flex-1 py-3 rounded-lg font-semibold bg-gray-300 text-gray-500';
 
 const BUBBLE_MINE = 'max-w-xs px-4 py-2 rounded-lg bg-purple-600 text-white';
 const BUBBLE_THEIRS = 'max-w-xs px-4 py-2 rounded-lg bg-gray-200 text-gray-900';
@@ -18,7 +19,116 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('browse');
   const [searchInput, setSearchInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [noiseLevel, setNoiseLevel] = useState('');
+  const [liveText, setLiveText] = useState('');
+  const [micStatus, setMicStatus] = useState('');
+  const [micSupported, setMicSupported] = useState(true);
+
+  const recognitionRef = useRef(null);
+
+  useEffect(function () {
+    const Engine = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!Engine) {
+      setMicSupported(false);
+      return;
+    }
+
+    const recognition = new Engine();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = function () {
+      setIsRecording(true);
+      setMicStatus('Listening... speak now');
+    };
+
+    recognition.onresult = function (event) {
+      let finalText = '';
+      let interimText = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText = finalText + chunk;
+        } else {
+          interimText = interimText + chunk;
+        }
+      }
+
+      if (finalText) {
+        setSearchInput(function (previous) {
+          return (previous + ' ' + finalText).trim();
+        });
+        setLiveText('');
+      } else {
+        setLiveText(interimText);
+      }
+    };
+
+    recognition.onerror = function (event) {
+      setIsRecording(false);
+      setLiveText('');
+
+      if (event.error === 'not-allowed') {
+        setMicStatus('Microphone blocked. Click the lock icon in the address bar and allow it.');
+      } else if (event.error === 'no-speech') {
+        setMicStatus('Did not hear anything. Try again.');
+      } else {
+        setMicStatus('Mic error: ' + event.error);
+      }
+    };
+
+    recognition.onend = function () {
+      setIsRecording(false);
+      setLiveText('');
+    };
+
+    recognitionRef.current = recognition;
+
+    return function () {
+      recognition.stop();
+    };
+  }, []);
+
+  function toggleRecording() {
+    if (!recognitionRef.current) {
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setMicStatus('Stopped');
+      return;
+    }
+
+    setMicStatus('Starting...');
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      setMicStatus('Already running, tap again in a second');
+    }
+  }
+
+  function micLabel() {
+    if (!micSupported) {
+      return 'Voice not supported in this browser';
+    }
+    if (isRecording) {
+      return 'Listening... tap to stop';
+    }
+    return 'Tap to Speak';
+  }
+
+  function micClass() {
+    if (!micSupported) {
+      return MIC_DEAD;
+    }
+    if (isRecording) {
+      return MIC_ON;
+    }
+    return MIC_OFF;
+  }
 
   const mockProfiles = [
     { id: 1, name: 'Priya', age: 26, location: 'Bangalore', bio: 'Love travel and adventure! Looking for someone who appreciates good conversations.' },
@@ -37,58 +147,25 @@ export default function Home() {
     { id: 3, sender: 'Priya', text: 'All good! Wanna grab coffee sometime?', time: '10:40 AM' },
   ];
 
-  function startRecording() {
-    setIsRecording(true);
-    setNoiseLevel('Detecting...');
-    setTimeout(function () {
-      setNoiseLevel('Quiet - good for voice');
-    }, 1000);
-  }
-
-  function stopRecording() {
-    setIsRecording(false);
-    setNoiseLevel('');
-  }
-
-  function toggleRecording() {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
 
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Bandhamai</h1>
-            <p className="text-xs text-gray-600">Find your vibe match</p>
-          </div>
-          <button className="text-gray-600 hover:text-gray-900 text-2xl">...</button>
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Bandhamai</h1>
+          <p className="text-xs text-gray-600">Find your vibe match</p>
         </div>
       </div>
 
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-2xl mx-auto flex">
-          <button
-            onClick={function () { setActiveTab('browse'); }}
-            className={activeTab === 'browse' ? TAB_ACTIVE : TAB_IDLE}
-          >
+          <button onClick={function () { setActiveTab('browse'); }} className={activeTab === 'browse' ? TAB_ACTIVE : TAB_IDLE}>
             Browse
           </button>
-          <button
-            onClick={function () { setActiveTab('matches'); }}
-            className={activeTab === 'matches' ? TAB_ACTIVE : TAB_IDLE}
-          >
+          <button onClick={function () { setActiveTab('matches'); }} className={activeTab === 'matches' ? TAB_ACTIVE : TAB_IDLE}>
             Matches
           </button>
-          <button
-            onClick={function () { setActiveTab('chat'); }}
-            className={activeTab === 'chat' ? TAB_ACTIVE : TAB_IDLE}
-          >
+          <button onClick={function () { setActiveTab('chat'); }} className={activeTab === 'chat' ? TAB_ACTIVE : TAB_IDLE}>
             Chat
           </button>
         </div>
@@ -108,20 +185,33 @@ export default function Home() {
                 value={searchInput}
                 onChange={function (e) { setSearchInput(e.target.value); }}
                 placeholder="Find engineers in Bangalore..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
 
+              {liveText ? (
+                <p className="text-sm text-purple-600 italic mb-2">{liveText}</p>
+              ) : null}
+
               <div className="flex gap-2">
-                <button onClick={toggleRecording} className={isRecording ? MIC_ON : MIC_OFF}>
-                  {isRecording ? 'Recording... tap to stop' : 'Tap to Speak'}
+                <button onClick={toggleRecording} disabled={!micSupported} className={micClass()}>
+                  {micLabel()}
                 </button>
                 <button className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
                   Search
                 </button>
               </div>
 
-              {isRecording ? (
-                <p className="mt-3 text-sm text-gray-600">Noise level: {noiseLevel}</p>
+              {micStatus ? (
+                <p className="mt-3 text-sm text-gray-600">{micStatus}</p>
+              ) : null}
+
+              {searchInput ? (
+                <button
+                  onClick={function () { setSearchInput(''); setMicStatus(''); }}
+                  className="mt-3 text-sm text-gray-500 underline"
+                >
+                  Clear
+                </button>
               ) : null}
             </div>
 
