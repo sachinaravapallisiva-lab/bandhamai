@@ -23,17 +23,18 @@ export default function Home() {
   const [micStatus, setMicStatus] = useState('');
   const [micSupported, setMicSupported] = useState(true);
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(function () {
-    const Engine = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const anyWindow = window as any;
+    const Engine = anyWindow.SpeechRecognition || anyWindow.webkitSpeechRecognition;
 
     if (!Engine) {
       setMicSupported(false);
       return;
     }
 
-    const recognition = new Engine();
+    const recognition: any = new Engine();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-IN';
@@ -43,7 +44,7 @@ export default function Home() {
       setMicStatus('Listening... speak now');
     };
 
-    recognition.onresult = function (event) {
+    recognition.onresult = function (event: any) {
       let finalText = '';
       let interimText = '';
 
@@ -57,7 +58,7 @@ export default function Home() {
       }
 
       if (finalText) {
-        setSearchInput(function (previous) {
+        setSearchInput(function (previous: string) {
           return (previous + ' ' + finalText).trim();
         });
         setLiveText('');
@@ -66,7 +67,7 @@ export default function Home() {
       }
     };
 
-    recognition.onerror = function (event) {
+    recognition.onerror = function (event: any) {
       setIsRecording(false);
       setLiveText('');
 
@@ -183,7 +184,7 @@ export default function Home() {
               <input
                 type="text"
                 value={searchInput}
-                onChange={function (e) { setSearchInput(e.target.value); }}
+                onChange={function (e: any) { setSearchInput(e.target.value); }}
                 placeholder="Find engineers in Bangalore..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
