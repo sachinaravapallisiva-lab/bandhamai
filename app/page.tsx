@@ -27,68 +27,83 @@ export default function Home() {
 
   useEffect(function () {
     const anyWindow = window as any;
-    const Engine = anyWindow.SpeechRecognition || anyWindow.webkitSpeechRecognition;
+    const anyNav = navigator as any;
 
-    if (!Engine) {
+    if (!anyNav.mediaDevices || !anyWindow.MediaRecorder) {
       setMicSupported(false);
       return;
     }
 
-    const recognition: any = new Engine();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-IN';
+    let recorder: any = null;
+    let stream: any = null;
 
-    recognition.onstart = function () {
-      setIsRecording(true);
-      setMicStatus('Listening... speak now');
-    };
+    const controller = {
+      start: function () {
+        setLiveText('');
+        anyNav.mediaDevices.getUserMedia({ audio: true }).then(function (s: any) {
+          stream = s;
+          const chunks: any[] = [];
+          recorder = new anyWindow.MediaRecorder(s);
 
-    recognition.onresult = function (event: any) {
-      let finalText = '';
-      let interimText = '';
+          recorder.ondataavailable = function (e: any) {
+            if (e.data.size > 0) {
+              chunks.push(e.data);
+            }
+          };
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const chunk = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalText = finalText + chunk;
-        } else {
-          interimText = interimText + chunk;
+          recorder.onstop = function () {
+            if (stream) {
+              stream.getTracks().forEach(function (t: any) { t.stop(); });
+              stream = null;
+            }
+
+            setMicStatus('Processing...');
+
+            const form = new FormData();
+            form.append('file', new Blob(chunks, { type: 'audio/webm' }), 'audio.webm');
+
+            fetch('/api/transcribe', { method: 'POST', body: form })
+              .then(function (r) { return r.json(); })
+              .then(function (data: any) {
+                if (data && data.text) {
+                  setSearchInput(function (previous: string) {
+                    return (previous + ' ' + data.text).trim();
+                  });
+                  setMicStatus('');
+                } else {
+                  setMicStatus('Could not transcribe. Try again.');
+                }
+              })
+              .catch(function () {
+                setMicStatus('Network error. Try again.');
+              });
+          };
+
+          recorder.start();
+          setIsRecording(true);
+          setMicStatus('Listening... speak now');
+        }).catch(function () {
+          setIsRecording(false);
+          setMicStatus('Microphone blocked. Click the lock icon in the address bar and allow it.');
+        });
+      },
+      stop: function () {
+        setIsRecording(false);
+        if (recorder && recorder.state !== 'inactive') {
+          recorder.stop();
         }
       }
-
-      if (finalText) {
-        setSearchInput(function (previous: string) {
-          return (previous + ' ' + finalText).trim();
-        });
-        setLiveText('');
-      } else {
-        setLiveText(interimText);
-      }
     };
 
-    recognition.onerror = function (event: any) {
-      setIsRecording(false);
-      setLiveText('');
-
-      if (event.error === 'not-allowed') {
-        setMicStatus('Microphone blocked. Click the lock icon in the address bar and allow it.');
-      } else if (event.error === 'no-speech') {
-        setMicStatus('Did not hear anything. Try again.');
-      } else {
-        setMicStatus('Mic error: ' + event.error);
-      }
-    };
-
-    recognition.onend = function () {
-      setIsRecording(false);
-      setLiveText('');
-    };
-
-    recognitionRef.current = recognition;
+    recognitionRef.current = controller;
 
     return function () {
-      recognition.stop();
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      if (stream) {
+        stream.getTracks().forEach(function (t: any) { t.stop(); });
+      }
     };
   }, []);
 
