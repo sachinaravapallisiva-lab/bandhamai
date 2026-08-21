@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     const form = new FormData();
-    form.append("language", "en");
+    form.append("language", "en-IN");
     form.append("format", "true");
     form.append("file", file);
 
