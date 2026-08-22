@@ -3,6 +3,7 @@ import {
   getAnonSupabase,
   getRequestUser,
   getServiceSupabase,
+  hasBearerToken,
   missingConfigResponse,
   tableHasColumn,
   unauthorizedResponse,
@@ -12,6 +13,7 @@ import {
   REQUIRED_PROFILE_FIELDS,
   type ProfileWriteField,
 } from "../../../lib/profile-fields";
+import { isOwnStoredPhotoUrl } from "../../../lib/profile-photos";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -24,11 +26,6 @@ function readWriteFields(body: Record<string, unknown>) {
     row[key] = value || null;
   }
   return row;
-}
-
-function hasBearerToken(request: Request) {
-  const header = request.headers.get("authorization") || "";
-  return header.toLowerCase().startsWith("bearer ") && header.slice(7).trim().length > 0;
 }
 
 function dataClient() {
@@ -146,6 +143,19 @@ export async function POST(request: Request) {
       status: "pending",
     };
     if (linked) insertRow.user_id = user.id;
+
+    const photoUrl = asString(body.photo_url);
+    const blurredUrl = asString(body.photo_blurred_url);
+    if (photoUrl && isOwnStoredPhotoUrl(photoUrl, user.id) && (await tableHasColumn(supabase, "profiles", "photo_url"))) {
+      insertRow.photo_url = photoUrl;
+    }
+    if (
+      blurredUrl &&
+      isOwnStoredPhotoUrl(blurredUrl, user.id) &&
+      (await tableHasColumn(supabase, "profiles", "photo_blurred_url"))
+    ) {
+      insertRow.photo_blurred_url = blurredUrl;
+    }
 
     const { data, error } = await supabase.from("profiles").insert([insertRow]).select();
 

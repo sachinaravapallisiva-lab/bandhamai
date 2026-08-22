@@ -54,6 +54,11 @@ export function unauthorizedResponse(message = "Sign in to continue.") {
   return NextResponse.json({ error: message }, { status: 401 });
 }
 
+export function hasBearerToken(request: Request) {
+  const header = request.headers.get("authorization") || "";
+  return header.toLowerCase().startsWith("bearer ") && header.slice(7).trim().length > 0;
+}
+
 /** PostgREST returns 42703 when a column is not on the table. */
 export async function tableHasColumn(
   supabase: SupabaseClient,

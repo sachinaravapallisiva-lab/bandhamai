@@ -10,11 +10,21 @@ import {
   REQUIRED_PROFILE_FIELDS,
   type ProfileWritePayload,
 } from "../../../lib/profile-fields";
+import { emptyPhotoUrls, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
+import PhotoUpload from "../../components/PhotoUpload";
 
 type Mine = {
-  profile: { id?: string; status?: string } | null;
+  profile: {
+    id?: string;
+    status?: string;
+    full_name?: string | null;
+    city?: string | null;
+    profession?: string | null;
+    photo_url?: string | null;
+    photo_blurred_url?: string | null;
+  } | null;
   linked: boolean;
 } | null;
 
@@ -26,6 +36,8 @@ export default function NewProfilePage() {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [mine, setMine] = useState<Mine>(null);
+  const [photos, setPhotos] = useState<ProfilePhotoUrls>(() => emptyPhotoUrls());
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   useEffect(function () {
     let cancelled = false;
@@ -65,7 +77,13 @@ export default function NewProfilePage() {
               window.clearTimeout(timeout);
               if (data && !data.error) {
                 setMine({ profile: data.profile || null, linked: !!data.linked });
-                if (data.profile) setDone(true);
+                if (data.profile) {
+                  setDone(true);
+                  setPhotos({
+                    photo_url: data.profile.photo_url || "",
+                    photo_blurred_url: data.profile.photo_blurred_url || "",
+                  });
+                }
               }
               setReady(true);
             })
@@ -115,7 +133,11 @@ export default function NewProfilePage() {
         return fetch("/api/profiles", {
           method: "POST",
           headers,
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            ...form,
+            photo_url: photos.photo_url || undefined,
+            photo_blurred_url: photos.photo_blurred_url || undefined,
+          }),
         });
       })
       .then(function (res) {
@@ -128,7 +150,17 @@ export default function NewProfilePage() {
             return;
           }
           setDone(true);
-          setMine({ profile: data.data?.[0] || { status: "pending" }, linked: !!data.linked });
+          setMine({
+            profile: data.data?.[0] || {
+              status: "pending",
+              photo_url: photos.photo_url || null,
+              photo_blurred_url: photos.photo_blurred_url || null,
+              full_name: form.full_name,
+              city: form.city,
+              profession: form.profession,
+            },
+            linked: !!data.linked,
+          });
         });
       })
       .catch(function () {
@@ -192,6 +224,15 @@ export default function NewProfilePage() {
                 ? "A reviewer will approve it before it appears on Browse. It is not live yet."
                 : "A reviewer will approve it before it appears on Browse. It is not live yet."}
           </p>
+          <div style={{ textAlign: "left", margin: "0 0 22px" }}>
+            <PhotoUpload
+              value={photos}
+              onChange={setPhotos}
+              name={mine?.profile?.full_name || form.full_name}
+              city={mine?.profile?.city || form.city}
+              profession={mine?.profile?.profession || form.profession}
+            />
+          </div>
           <Link
             href="/"
             className="bm-sans bm-talk bm-focus"
@@ -230,6 +271,15 @@ export default function NewProfilePage() {
             style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px" }}
           >
             <div style={{ display: "grid", gap: 16 }}>
+              <PhotoUpload
+                value={photos}
+                onChange={setPhotos}
+                onBusyChange={setPhotoBusy}
+                name={form.full_name}
+                city={form.city}
+                profession={form.profession}
+                disabled={saving}
+              />
               {PROFILE_FORM_FIELDS.map(function (field) {
                 const value = form[field.key];
                 const label = (
@@ -323,7 +373,7 @@ export default function NewProfilePage() {
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || photoBusy}
               className="bm-sans bm-talk bm-focus"
               style={{
                 width: "100%",

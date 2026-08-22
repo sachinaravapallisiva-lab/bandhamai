@@ -19,3 +19,12 @@ export async function authJsonHeaders() {
     "Content-Type": "application/json",
   };
 }
+
+/** Bearer only — do not set Content-Type so the browser can send multipart. */
+export async function authFormHeaders() {
+  const token = await getAccessToken();
+  if (!token) return null;
+  return {
+    Authorization: "Bearer " + token,
+  };
+}
