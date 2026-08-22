@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bandham AI",
+  title: {
+    default: "Bandham AI",
+    template: "%s - Bandham AI",
+  },
   description: "Ask, don't swipe",
   applicationName: "Bandham AI",
   manifest: "/manifest.webmanifest",

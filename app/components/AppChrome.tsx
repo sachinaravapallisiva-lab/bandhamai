@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BM_CSS, INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
+import SiteFooter from "./SiteFooter";
 
 export default function AppChrome({
   children,
@@ -29,9 +30,10 @@ export default function AppChrome({
           </div>
         </div>
       </header>
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 80px" }}>
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 28px" }}>
         {children}
       </main>
+      <SiteFooter />
     </div>
   );
 }
