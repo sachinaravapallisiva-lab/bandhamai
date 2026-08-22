@@ -17,9 +17,11 @@ export async function POST(req: Request) {
     form.append("keyterm", KEYTERMS.join(","));
     form.append("file", file);
 
+    const auth = "Bearer " + process.env.XAI_API_KEY;
+
     const res = await fetch("https://api.x.ai/v1/stt", {
       method: "POST",
-      headers: { Authorization: Bearer ${process.env.XAI_API_KEY} },
+      headers: { Authorization: auth },
       body: form,
     });
 
