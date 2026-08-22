@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import { safeNextPath } from "../../lib/client-auth";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
@@ -189,6 +190,18 @@ export default function LoginPage() {
           </p>
         ) : null}
       </form>
+
+      <p className="bm-sans" style={{ margin: "16px 0 0", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+        Bandham AI is for people 18 and over. By signing in or signing up, you confirm you meet that age. See{" "}
+        <Link href="/safety" className="bm-focus" style={{ color: VIOLET }}>
+          Safety
+        </Link>
+        {" and "}
+        <Link href="/terms" className="bm-focus" style={{ color: VIOLET }}>
+          Terms
+        </Link>
+        .
+      </p>
     </AppChrome>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import VoiceAssistant from "./components/VoiceAssistant";
 import VerifyBadge from "./components/VerifyBadge";
+import SiteFooter from "./components/SiteFooter";
 import { supabase } from "../lib/supabase";
 import { authJsonHeaders } from "../lib/client-auth";
 
@@ -595,6 +596,7 @@ export default function Home() {
         )}
       </main>
 
+      <SiteFooter extraBottom={88} />
       <VoiceAssistant />
     </div>
   );
