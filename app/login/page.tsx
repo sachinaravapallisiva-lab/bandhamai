@@ -43,6 +43,9 @@ export default function LoginPage() {
         return;
       }
       setStatus("Account created. Check your email if confirmation is required, then sign in.");
+    }).catch(function () {
+      setBusy(false);
+      setStatus("Could not reach sign-up. Try again.");
     });
   }
 
@@ -61,6 +64,9 @@ export default function LoginPage() {
       }
       setStatus("Signed in as " + (result.data.user?.email || email));
       goNext();
+    }).catch(function () {
+      setBusy(false);
+      setStatus("Could not reach sign-in. Try again.");
     });
   }
 

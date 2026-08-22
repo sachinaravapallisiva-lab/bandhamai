@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  getAnonSupabase,
   getRequestUser,
   getServiceSupabase,
   missingConfigResponse,
@@ -25,9 +26,22 @@ function readWriteFields(body: Record<string, unknown>) {
   return row;
 }
 
+function hasBearerToken(request: Request) {
+  const header = request.headers.get("authorization") || "";
+  return header.toLowerCase().startsWith("bearer ") && header.slice(7).trim().length > 0;
+}
+
+function dataClient() {
+  return getServiceSupabase() || getAnonSupabase();
+}
+
 export async function GET(request: Request) {
   try {
-    const supabase = getServiceSupabase();
+    if (!hasBearerToken(request)) {
+      return unauthorizedResponse("Sign in to continue.");
+    }
+
+    const supabase = dataClient();
     if (!supabase) return missingConfigResponse();
 
     const { user, error: authError } = await getRequestUser(request, supabase);
@@ -63,12 +77,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = getServiceSupabase();
-    if (!supabase) return missingConfigResponse();
-
-    const { user, error: authError } = await getRequestUser(request, supabase);
-    if (!user) {
-      return unauthorizedResponse(authError || "Sign in to create a profile.");
+    if (!hasBearerToken(request)) {
+      return unauthorizedResponse("Sign in to create a profile.");
     }
 
     let body: Record<string, unknown>;
@@ -86,6 +96,22 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+    }
+
+    const verifier = dataClient();
+    if (!verifier) return missingConfigResponse();
+
+    const { user, error: authError } = await getRequestUser(request, verifier);
+    if (!user) {
+      return unauthorizedResponse(authError || "Sign in to create a profile.");
+    }
+
+    const supabase = getServiceSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Server is missing SUPABASE_SERVICE_KEY, which is required to save a profile." },
+        { status: 500 }
+      );
     }
 
     const linked = await tableHasColumn(supabase, "profiles", "user_id");

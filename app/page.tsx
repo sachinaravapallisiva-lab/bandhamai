@@ -73,6 +73,8 @@ export default function Home() {
 
     supabase.auth.getSession().then(function (result) {
       applySession(result.data.session);
+    }).catch(function () {
+      applySession(null);
     });
     const { data } = supabase.auth.onAuthStateChange(function (_event, session) {
       applySession(session);

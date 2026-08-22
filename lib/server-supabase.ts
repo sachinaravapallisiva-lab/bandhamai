@@ -1,16 +1,27 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+function supabaseUrl() {
+  return process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+}
+
 export function getServiceSupabase(): SupabaseClient | null {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = supabaseUrl();
   const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+export function getAnonSupabase(): SupabaseClient | null {
+  const url = supabaseUrl();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
 }
 
 export async function getRequestUser(
   request: Request,
-  supabase: SupabaseClient
+  supabase?: SupabaseClient | null
 ): Promise<{ user: User | null; error: string | null }> {
   const header = request.headers.get("authorization") || "";
   const token = header.toLowerCase().startsWith("bearer ")
@@ -20,7 +31,12 @@ export async function getRequestUser(
     return { user: null, error: "Sign in to continue." };
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const client = supabase || getServiceSupabase() || getAnonSupabase();
+  if (!client) {
+    return { user: null, error: "Server is missing Supabase configuration." };
+  }
+
+  const { data, error } = await client.auth.getUser(token);
   if (error || !data.user) {
     return { user: null, error: "Sign in to continue." };
   }

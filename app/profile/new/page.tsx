@@ -19,7 +19,7 @@ type Mine = {
 } | null;
 
 export default function NewProfilePage() {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [form, setForm] = useState<ProfileWritePayload>(() => emptyProfileForm());
   const [saving, setSaving] = useState(false);
@@ -28,35 +28,63 @@ export default function NewProfilePage() {
   const [mine, setMine] = useState<Mine>(null);
 
   useEffect(function () {
-    supabase.auth.getSession().then(function (result) {
-      const session = result.data.session;
-      if (!session) {
-        setSignedIn(false);
-        setReady(true);
-        return;
-      }
-      setSignedIn(true);
-      authJsonHeaders().then(function (headers) {
-        if (!headers) {
-          setReady(true);
+    let cancelled = false;
+
+    function finishAnon() {
+      if (cancelled) return;
+      setSignedIn(false);
+      setReady(true);
+    }
+
+    const timeout = window.setTimeout(finishAnon, 4000);
+
+    supabase.auth
+      .getSession()
+      .then(function (result) {
+        if (cancelled) return;
+        const session = result.data.session;
+        if (!session) {
+          window.clearTimeout(timeout);
+          finishAnon();
           return;
         }
-        fetch("/api/profiles", { headers })
-          .then(function (r) {
-            return r.json();
-          })
-          .then(function (data) {
-            if (data && !data.error) {
-              setMine({ profile: data.profile || null, linked: !!data.linked });
-              if (data.profile) setDone(true);
-            }
+        setSignedIn(true);
+        authJsonHeaders().then(function (headers) {
+          if (cancelled) return;
+          if (!headers) {
+            window.clearTimeout(timeout);
             setReady(true);
-          })
-          .catch(function () {
-            setReady(true);
-          });
+            return;
+          }
+          fetch("/api/profiles", { headers })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              if (cancelled) return;
+              window.clearTimeout(timeout);
+              if (data && !data.error) {
+                setMine({ profile: data.profile || null, linked: !!data.linked });
+                if (data.profile) setDone(true);
+              }
+              setReady(true);
+            })
+            .catch(function () {
+              if (cancelled) return;
+              window.clearTimeout(timeout);
+              setReady(true);
+            });
+        });
+      })
+      .catch(function () {
+        window.clearTimeout(timeout);
+        finishAnon();
       });
-    });
+
+    return function () {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   function setField(key: keyof ProfileWritePayload, value: string) {
