@@ -16,6 +16,23 @@ const VIOLET = "#6D28D9";
 
 type Line = { who: "you" | "bm"; text: string };
 
+const FALLBACK_ERROR = "Couldn't reach Bandham right now. Try again?";
+
+function shortServerError(error: unknown): string {
+  if (typeof error !== "string") return FALLBACK_ERROR;
+  const trimmed = error.trim();
+  if (!trimmed || trimmed.length > 140 || trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return FALLBACK_ERROR;
+  }
+  return trimmed;
+}
+
+function toChatMessages(history: Line[]) {
+  return history.map(function (l) {
+    return { role: l.who === "you" ? "user" : "assistant", content: l.text };
+  });
+}
+
 export default function VoiceAssistant() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<Line[]>([
@@ -28,6 +45,8 @@ export default function VoiceAssistant() {
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
+  const linesRef = useRef<Line[]>(lines);
+  linesRef.current = lines;
 
   /* keep the transcript pinned to the bottom */
   useEffect(() => {
@@ -79,12 +98,10 @@ export default function VoiceAssistant() {
           fetch("/api/transcribe", { method: "POST", body: form })
             .then(function (r) { return r.json(); })
             .then(function (data: any) {
-              setState("idle");
               if (data && data.text) {
-                setLines(function (p) {
-                  return p.concat({ who: "you", text: data.text });
-                });
+                addUserAndAsk(data.text);
               } else {
+                setState("idle");
                 setLines(function (p) {
                   return p.concat({ who: "bm", text: "I didn't catch that. Try again?" });
                 });
@@ -118,11 +135,55 @@ export default function VoiceAssistant() {
     else if (state === "idle") startListening();
   }
 
+  function addUserAndAsk(text: string) {
+    const next = linesRef.current.concat({ who: "you", text: text });
+    linesRef.current = next;
+    setLines(next);
+    askBandham(next);
+  }
+
+  function askBandham(history: Line[]) {
+    setState("thinking");
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: toChatMessages(history) }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data: any) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result: any) {
+        const reply = result.data && result.data.reply;
+        if (result.ok && typeof reply === "string" && reply.trim()) {
+          setLines(function (p) {
+            return p.concat({ who: "bm", text: reply.trim() });
+          });
+          return;
+        }
+        setLines(function (p) {
+          return p.concat({
+            who: "bm",
+            text: shortServerError(result.data && result.data.error),
+          });
+        });
+      })
+      .catch(function () {
+        setLines(function (p) {
+          return p.concat({ who: "bm", text: FALLBACK_ERROR });
+        });
+      })
+      .then(function () {
+        setState("idle");
+      });
+  }
+
   function sendTyped() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || state !== "idle") return;
     setDraft("");
-    setLines(function (p) { return p.concat({ who: "you", text: text }); });
+    addUserAndAsk(text);
   }
 
   function onKey(e: any) {
@@ -326,7 +387,7 @@ export default function VoiceAssistant() {
             <button
               onClick={sendTyped}
               aria-label="Send"
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || busy || live}
               className="ba-send ba-focus ba-sans"
               style={{
                 background: draft.trim() ? VIOLET : "#FAF9FE",

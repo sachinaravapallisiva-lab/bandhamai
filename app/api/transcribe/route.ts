@@ -11,6 +11,13 @@ export async function POST(req: Request) {
       return Response.json({ error: "No audio file" }, { status: 400 });
     }
 
+    if (!process.env.XAI_API_KEY) {
+      return Response.json(
+        { error: "XAI_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
+
     const form = new FormData();
     form.append("language", "en-IN");
     form.append("format", "true");
