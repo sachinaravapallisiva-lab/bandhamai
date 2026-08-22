@@ -183,7 +183,7 @@ export default function Home() {
                 Bandhamai
               </h1>
               <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
-                Ask, don&apos;t swipe
+                Find your vibe match?
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>

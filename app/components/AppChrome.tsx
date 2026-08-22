@@ -23,7 +23,7 @@ export default function AppChrome({
                 </h1>
               </Link>
               <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
-                Ask, don&apos;t swipe
+                Find your vibe match?
               </p>
             </div>
             {right}

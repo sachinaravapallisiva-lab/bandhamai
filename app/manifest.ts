@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Bandham AI",
     short_name: "Bandhamai",
-    description: "Ask, don't swipe",
+    description: "Find your vibe match?",
     start_url: "/",
     display: "standalone",
     background_color: "#FFFFFF",
