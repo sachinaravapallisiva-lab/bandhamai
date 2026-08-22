@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Bandham AI</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #ffffff;
+        color: #1e1b36;
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 360px;
+        margin: 0 auto;
+        padding: calc(48px + env(safe-area-inset-top, 0px)) 24px
+          calc(24px + env(safe-area-inset-bottom, 0px));
+      }
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 28px;
+        font-weight: 400;
+      }
+      p {
+        margin: 10px 0 0;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #7b77a8;
+      }
+      button {
+        margin-top: 22px;
+        background: #6d28d9;
+        color: #ffffff;
+        border: none;
+        border-radius: 999px;
+        padding: 13px 22px;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bandhamai</h1>
+      <p>Ask, don't swipe</p>
+      <p>
+        This app needs a connection to load the live Bandham AI site. Check your
+        network and try again.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

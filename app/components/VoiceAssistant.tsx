@@ -143,8 +143,8 @@ export default function VoiceAssistant() {
           className="ba-orb ba-focus"
           style={{
             position: "fixed",
-            right: 22,
-            bottom: 22,
+            right: "calc(22px + env(safe-area-inset-right, 0px))",
+            bottom: "calc(22px + env(safe-area-inset-bottom, 0px))",
             zIndex: 50,
             width: 58,
             height: 58,
@@ -181,8 +181,8 @@ export default function VoiceAssistant() {
         className="ba-panel"
         style={{
           position: "fixed",
-          right: 22,
-          bottom: 22,
+          right: "calc(22px + env(safe-area-inset-right, 0px))",
+          bottom: "calc(22px + env(safe-area-inset-bottom, 0px))",
           zIndex: 50,
           width: "min(340px, calc(100vw - 32px))",
           height: "min(470px, calc(100vh - 48px))",
