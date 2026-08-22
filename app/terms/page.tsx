@@ -35,7 +35,7 @@ export default function TermsPage() {
 
         <LegalSection title="Profiles and review">
           <p style={{ margin: 0 }}>
-            Profiles go to manual review. A profile is not public on Browse until a reviewer sets it live. Facts you list (city, work, visa status, family notes, and the rest) must be true to the best of your knowledge. We can refuse, hide, or take down a profile that looks fake, incomplete, or harmful. Approval is a publishing step, not a police check, credit check, or visa check.
+            Profiles go to manual review and stay pending until a reviewer sets them live. Photos uploaded with a profile follow that same review path. A profile is not public on Browse until it is live. Facts you list (city, work, visa status, family notes, and the rest) must be true to the best of your knowledge. We can refuse, hide, or take down a profile that looks fake, incomplete, or harmful. Approval is a publishing step, not a police check, credit check, or visa check.
           </p>
         </LegalSection>
 
@@ -47,13 +47,13 @@ export default function TermsPage() {
 
         <LegalSection title="Photos">
           <p style={{ margin: "0 0 8px" }}>
-            You can upload a photo when you create a profile. It must be of the person on the profile, recent, and not taken from someone else. Do not post other people&apos;s pictures.
+            Signed-in users can upload a photo when they create a profile. It must be of the person on the profile, recent, and not taken from someone else. Do not post other people&apos;s pictures.
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            If you use enhance, we only change resolution and clarity (rotate, resize, and a mild sharpen). We do not apply beauty, face, or skin filters, and we do not rewrite how you look.
+            Enhance is optional. If you use it, we only change resolution and clarity (rotate, resize, and a mild sharpen). We do not apply beauty filters, reshape a face, or smooth skin, and we do not rewrite how you look.
           </p>
           <p style={{ margin: 0 }}>
-            We may also store a blurred copy for product use. That is not a promise that a photo stays hidden until you match. Once a reviewer sets a profile live, treat the photo we display as visible to other members.
+            A photo follows the same path as the rest of the profile. It stays pending until a reviewer sets the profile live. We may store a blurred copy for product use. That is not a live hide-until-matched feature. Once the profile is live, treat the photo we display as visible to other members.
           </p>
         </LegalSection>
 

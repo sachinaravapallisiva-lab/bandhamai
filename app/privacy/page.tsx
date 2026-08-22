@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             items={[
               "Account email and sign-in data from our login provider",
               "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, and what you want in a match)",
-              "A profile photo you choose to upload. We may create a clearer or resized copy (resolution and sharpness only) and a blurred copy for product use.",
+              "A profile photo a signed-in user chooses to upload on profile create. We may create a clearer or resized copy (optional resolution and clarity enhance only) and a blurred copy for product use.",
               "Messages you send in chat, when that feature is used",
               "Voice you choose to send for speech-to-text search or the assistant. Audio goes to a transcription service so we can return text.",
               "Basic device and usage logs the host needs to run and secure the site",
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="Who can see a profile">
           <p style={{ margin: 0 }}>
-            After a reviewer sets a profile live, other members can see the fields we display on Browse and Matches, including the profile photo we show. Reviewers can see a submitted profile and its photo before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
+            Submitted profiles and their photos stay pending until a reviewer sets them live. After that, other members can see the fields we display on Browse and Matches, including the profile photo we show. Reviewers can see a submitted profile and its photo before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
           </p>
         </LegalSection>
 
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="Photos and enhance">
           <p style={{ margin: 0 }}>
-            Photo enhance, when you use it, is a resolution and clarity pass only (rotate, resize, mild sharpen). It is not a beauty filter and it does not change your face or skin. We may store a blurred derivative. Hide-until-matched is not a live guarantee on the site today. Do not upload Aadhaar, passport, or other ID photos as a profile picture.
+            Signed-in users can upload a photo on profile create. Enhance is optional and is a resolution and clarity pass only (rotate, resize, mild sharpen). It is not a beauty filter, a face reshape, or skin smoothing. We may store a blurred derivative for product use. That is not a live hide-until-matched feature. Photos stay pending with the profile until manual approval. Do not upload Aadhaar, passport, or other ID photos as a profile picture.
           </p>
         </LegalSection>
 

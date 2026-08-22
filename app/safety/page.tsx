@@ -78,7 +78,7 @@ export default function SafetyPage() {
 
         <LegalSection title="Profiles">
           <p style={{ margin: 0 }}>
-            New profiles wait for manual approval. Approval is not a background check. Fake profiles are not allowed and will be taken down when we find them. A profile photo must be of the person on the profile, recent, and not someone else&apos;s picture. Enhance, if used, only changes resolution and clarity. It does not change a face or skin, and it is not a reason to trust a photo on its own.
+            New profiles stay pending until manual approval. A photo uploaded on profile create follows that same review path. Approval is not a background check. Fake profiles are not allowed and will be taken down when we find them. A profile photo must be of the person on the profile, recent, and not someone else&apos;s picture. Optional enhance only changes resolution and clarity. It does not reshape a face or smooth skin, and it is not a reason to trust a photo on its own.
           </p>
         </LegalSection>
 
