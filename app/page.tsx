@@ -5,8 +5,10 @@ import Link from "next/link";
 import VoiceAssistant from "./components/VoiceAssistant";
 import VerifyBadge from "./components/VerifyBadge";
 import SiteFooter from "./components/SiteFooter";
+import { ProfilePhoto } from "./components/ProfilePhoto";
 import { supabase } from "../lib/supabase";
 import { authJsonHeaders } from "../lib/client-auth";
+import type { BrowseProfile } from "../lib/profile-search";
 
 /* ------------------------------------------------------------------ *
    Bandhamai — main app
@@ -21,12 +23,6 @@ const MUTED = "#7B77A8";
 const LINE = "#E6E3F5";
 const WASH = "#FAF9FE";
 
-const PROFILES = [
-  { id: 1, name: "Ananya R.", age: 27, city: "Hyderabad", work: "Paediatrician, Rainbow Hospitals", diet: "Vegetarian", langs: "Telugu, English, Hindi", note: "Asked her own questions back.", fit: 94, verified: true },
-  { id: 2, name: "Divya K.", age: 28, city: "Secunderabad", work: "Dentist, own practice", diet: "Vegetarian", langs: "Telugu, English", note: "Wants to stay near family.", fit: 91, verified: false },
-  { id: 3, name: "Sruthi M.", age: 26, city: "Hyderabad", work: "Radiologist, AIG", diet: "Vegetarian", langs: "Telugu, Tamil, English", note: "Runs half marathons.", fit: 88, verified: false },
-];
-
 const THREAD = [
   { who: "them", text: "Hey! How are you doing?", at: "10:30 AM" },
   { who: "me", text: "I am doing great! How about you?", at: "10:35 AM" },
@@ -38,16 +34,60 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [micState, setMicState] = useState("idle"); // idle | listening | thinking
   const [note, setNote] = useState("");
-  const [liked, setLiked] = useState<number[]>([]);
+  const [liked, setLiked] = useState<BrowseProfile[]>([]);
+  const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
+  const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
+  const [searching, setSearching] = useState(false);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [myStatus, setMyStatus] = useState<string | null>(null);
   const [profileLinked, setProfileLinked] = useState(false);
+  const [loadedOnce, setLoadedOnce] = useState(false);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
+  const searchRef = useRef<((text?: string) => void) | null>(null);
+
+  function runSearch(text?: string) {
+    const q = typeof text === "string" ? text : query;
+    setSearching(true);
+    setNote("");
+
+    const url = "/api/profiles/search" + (q.trim() ? "?q=" + encodeURIComponent(q.trim()) : "");
+    authJsonHeaders()
+      .then(function (headers) {
+        return fetch(url, headers ? { headers } : undefined);
+      })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data };
+        });
+      })
+      .then(function (result) {
+        setSearching(false);
+        setLoadedOnce(true);
+        if (!result.ok || result.data.error) {
+          setProfiles([]);
+          setEmptyKind("inventory");
+          setNote(result.data.error || "Couldn't load profiles. Try again?");
+          return;
+        }
+        setProfiles(Array.isArray(result.data.profiles) ? result.data.profiles : []);
+        setEmptyKind(result.data.empty === "matches" || result.data.empty === "inventory" ? result.data.empty : null);
+        setNote("");
+      })
+      .catch(function () {
+        setSearching(false);
+        setLoadedOnce(true);
+        setProfiles([]);
+        setEmptyKind("inventory");
+        setNote("Couldn't load profiles. Try again?");
+      });
+  }
+
+  searchRef.current = runSearch;
 
   useEffect(() => {
     function applySession(session: { user?: { email?: string }; access_token?: string } | null) {
@@ -83,6 +123,10 @@ export default function Home() {
     return function () {
       data.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    if (searchRef.current) searchRef.current("");
   }, []);
 
   /* waveform */
@@ -131,7 +175,11 @@ export default function Home() {
           .then(function (data: any) {
             setMicState("idle");
             if (data && data.text) {
-              setQuery(function (prev) { return (prev + " " + data.text).trim(); });
+              setQuery(function (prev) {
+                const next = (prev + " " + data.text).trim();
+                queueMicrotask(function () { runSearch(next); });
+                return next;
+              });
               setNote("");
             } else {
               setNote("Didn't catch that. Try again?");
@@ -160,15 +208,37 @@ export default function Home() {
     else if (micState === "idle") startListening();
   }
 
-  function toggleLike(id: number) {
+  function toggleLike(profile: BrowseProfile) {
     setLiked(function (prev) {
-      return prev.indexOf(id) > -1 ? prev.filter(function (x) { return x !== id; }) : prev.concat(id);
+      return prev.some(function (p) { return p.id === profile.id; })
+        ? prev.filter(function (p) { return p.id !== profile.id; })
+        : prev.concat(profile);
+    });
+  }
+
+  function passProfile(id: string) {
+    setProfiles(function (prev) {
+      return prev.filter(function (p) { return p.id !== id; });
+    });
+  }
+
+  function profileRows(p: BrowseProfile) {
+    return [
+      ["CITY", p.city],
+      ["WORK", p.work],
+      ["EDU", p.education],
+      ["DIET", p.diet],
+      ["SPEAKS", p.langs],
+      ["VISA", p.visa],
+      ["GENDER", p.gender],
+    ].filter(function (row) {
+      return !!row[1];
     });
   }
 
   const live = micState === "listening";
-  const busy = micState === "thinking";
-  const matches = PROFILES.filter(function (p) { return liked.indexOf(p.id) > -1; });
+  const busy = micState === "thinking" || searching;
+  const matches = liked;
 
   return (
     <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
@@ -348,6 +418,12 @@ export default function Home() {
               <input
                 value={query}
                 onChange={function (e) { setQuery(e.target.value); }}
+                onKeyDown={function (e) {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    runSearch();
+                  }
+                }}
                 placeholder="A doctor in Hyderabad, vegetarian, under thirty..."
                 className="bm-sans bm-input bm-focus"
                 style={{
@@ -403,6 +479,8 @@ export default function Home() {
                   {live ? "Tap to stop" : busy ? "One moment" : "Tap to speak"}
                 </button>
                 <button
+                  onClick={function () { runSearch(); }}
+                  disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     background: "transparent",
@@ -412,7 +490,8 @@ export default function Home() {
                     padding: "13px 22px",
                     fontSize: 14,
                     fontWeight: 600,
-                    cursor: "pointer",
+                    cursor: searching ? "default" : "pointer",
+                    opacity: searching ? 0.55 : 1,
                   }}
                 >
                   Search
@@ -421,11 +500,11 @@ export default function Home() {
 
               <div className="bm-sans" style={{ minHeight: 18, marginTop: 11, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 12, color: busy ? VIOLET : MUTED }}>
-                  {live ? "Listening..." : busy ? "Thinking..." : note}
+                  {live ? "Listening..." : micState === "thinking" ? "Thinking..." : searching ? "Looking..." : note}
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); }}
+                    onClick={function () { setQuery(""); setNote(""); runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -436,50 +515,80 @@ export default function Home() {
             </section>
 
             <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
-              {PROFILES.length} PEOPLE — A SHORTLIST, NOT A STACK
+              {searching && !loadedOnce
+                ? "LOOKING…"
+                : profiles.length
+                  ? profiles.length + " PEOPLE — A SHORTLIST, NOT A STACK"
+                  : "A SHORTLIST, NOT A STACK"}
             </p>
 
+            {!searching && profiles.length === 0 ? (
+              <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
+                <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>
+                  {emptyKind === "matches" ? "No matches for that yet." : "No live profiles yet."}
+                </p>
+                <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
+                  {emptyKind === "matches"
+                    ? "Try another city, profession, or a shorter ask."
+                    : "New profiles stay under review until someone sets them live. Nothing here is made up."}
+                </p>
+              </div>
+            ) : (
             <div style={{ display: "grid", gap: 14 }}>
-              {PROFILES.map(function (p) {
-                const isLiked = liked.indexOf(p.id) > -1;
+              {profiles.map(function (p) {
+                const isLiked = liked.some(function (x) { return x.id === p.id; });
+                const rows = profileRows(p);
                 return (
                   <article
                     key={p.id}
                     className="bm-card"
                     style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "20px 18px" }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 13 }}>
-                      <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
-                        {p.name}
-                        <VerifyBadge verified={p.verified} />
-                      </h2>
-                      <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
+                    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 13 }}>
+                      {p.photoUrl ? (
+                        <ProfilePhoto src={p.photoUrl} alt={p.name + " profile photo"} size={72} />
+                      ) : null}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                          <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
+                            {p.name}
+                            <VerifyBadge verified={p.verified} />
+                          </h2>
+                        </div>
+                      </div>
                     </div>
 
-                    <div style={{ display: "grid", gap: 6, marginBottom: 13 }}>
-                      {[["AGE", String(p.age)], ["CITY", p.city], ["WORK", p.work], ["DIET", p.diet], ["SPEAKS", p.langs]].map(function (row) {
-                        return (
-                          <div key={row[0]} style={{ display: "flex", gap: 11, alignItems: "baseline" }}>
-                            <span className="bm-sans" style={{ fontSize: 9.5, letterSpacing: ".14em", color: MUTED, width: 54, flexShrink: 0 }}>{row[0]}</span>
-                            <span className="bm-sans" style={{ fontSize: 13.5, lineHeight: 1.45 }}>{row[1]}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {rows.length ? (
+                      <div style={{ display: "grid", gap: 6, marginBottom: 13 }}>
+                        {rows.map(function (row) {
+                          return (
+                            <div key={row[0]} style={{ display: "flex", gap: 11, alignItems: "baseline" }}>
+                              <span className="bm-sans" style={{ fontSize: 9.5, letterSpacing: ".14em", color: MUTED, width: 54, flexShrink: 0 }}>{row[0]}</span>
+                              <span className="bm-sans" style={{ fontSize: 13.5, lineHeight: 1.45 }}>{row[1]}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
 
-                    <p className="bm-serif" style={{ margin: "0 0 15px", paddingTop: 12, borderTop: "1px solid " + LINE, fontSize: 14, fontStyle: "italic", color: MUTED }}>
-                      {p.note}
-                    </p>
+                    {p.note ? (
+                      <p className="bm-serif" style={{ margin: "0 0 15px", paddingTop: 12, borderTop: "1px solid " + LINE, fontSize: 14, fontStyle: "italic", color: MUTED }}>
+                        {p.note}
+                      </p>
+                    ) : (
+                      <div style={{ height: 15 }} />
+                    )}
 
                     <div style={{ display: "flex", gap: 9 }}>
                       <button
+                        onClick={function () { passProfile(p.id); }}
                         className="bm-sans bm-ghost bm-focus"
                         style={{ flex: 1, background: "transparent", color: MUTED, border: "1px solid " + LINE, borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
                       >
                         Pass
                       </button>
                       <button
-                        onClick={function () { toggleLike(p.id); }}
+                        onClick={function () { toggleLike(p); }}
                         className="bm-sans bm-talk bm-focus"
                         style={{
                           flex: 1,
@@ -500,6 +609,7 @@ export default function Home() {
                 );
               })}
             </div>
+            )}
           </>
         )}
 
@@ -523,9 +633,10 @@ export default function Home() {
                           {p.name}
                           <VerifyBadge verified={p.verified} />
                         </h2>
-                        <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
                       </div>
-                      <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>{p.work} — {p.city}</p>
+                      <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
+                        {[p.work, p.city].filter(Boolean).join(" — ") || "Liked from Browse"}
+                      </p>
                       <button
                         onClick={function () { setTab("chat"); }}
                         className="bm-sans bm-talk bm-focus"
