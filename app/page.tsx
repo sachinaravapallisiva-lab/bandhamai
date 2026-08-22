@@ -1,318 +1,453 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from "react";
+import VoiceAssistant from "./components/VoiceAssistant";
 
-const TAB_ACTIVE = 'flex-1 py-3 px-4 font-semibold text-center transition border-b-2 text-purple-600 border-purple-600';
-const TAB_IDLE = 'flex-1 py-3 px-4 font-semibold text-center transition border-b-2 text-gray-600 border-transparent hover:text-gray-900';
+/* ------------------------------------------------------------------ *
+   Bandhamai — main app
+   Browse (voice search) / Matches / Chat
+   Voice runs through /api/transcribe (Grok STT).
+ * ------------------------------------------------------------------ */
 
-const MIC_ON = 'flex-1 py-3 rounded-lg font-semibold transition bg-red-600 text-white hover:bg-red-700';
-const MIC_OFF = 'flex-1 py-3 rounded-lg font-semibold transition bg-purple-600 text-white hover:bg-purple-700';
-const MIC_DEAD = 'flex-1 py-3 rounded-lg font-semibold bg-gray-300 text-gray-500';
+const VIOLET = "#6D28D9";
+const VIOLET_DEEP = "#4C1D95";
+const INK = "#1E1B36";
+const MUTED = "#7B77A8";
+const LINE = "#E6E3F5";
+const WASH = "#FAF9FE";
 
-const BUBBLE_MINE = 'max-w-xs px-4 py-2 rounded-lg bg-purple-600 text-white';
-const BUBBLE_THEIRS = 'max-w-xs px-4 py-2 rounded-lg bg-gray-200 text-gray-900';
+const PROFILES = [
+  { id: 1, name: "Ananya R.", age: 27, city: "Hyderabad", work: "Paediatrician, Rainbow Hospitals", diet: "Vegetarian", langs: "Telugu, English, Hindi", note: "Asked her own questions back.", fit: 94 },
+  { id: 2, name: "Divya K.", age: 28, city: "Secunderabad", work: "Dentist, own practice", diet: "Vegetarian", langs: "Telugu, English", note: "Wants to stay near family.", fit: 91 },
+  { id: 3, name: "Sruthi M.", age: 26, city: "Hyderabad", work: "Radiologist, AIG", diet: "Vegetarian", langs: "Telugu, Tamil, English", note: "Runs half marathons.", fit: 88 },
+];
 
-const ROW_MINE = 'flex justify-end';
-const ROW_THEIRS = 'flex justify-start';
+const THREAD = [
+  { who: "them", text: "Hey! How are you doing?", at: "10:30 AM" },
+  { who: "me", text: "I am doing great! How about you?", at: "10:35 AM" },
+  { who: "them", text: "All good! Wanna grab coffee sometime?", at: "10:40 AM" },
+];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('browse');
-  const [searchInput, setSearchInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [liveText, setLiveText] = useState('');
-  const [micStatus, setMicStatus] = useState('');
-  const [micSupported, setMicSupported] = useState(true);
+  const [tab, setTab] = useState("browse");
+  const [query, setQuery] = useState("");
+  const [micState, setMicState] = useState("idle"); // idle | listening | thinking
+  const [note, setNote] = useState("");
+  const [liked, setLiked] = useState<number[]>([]);
+  const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
+  const [draft, setDraft] = useState("");
 
-  const recognitionRef = useRef<any>(null);
+  const recorderRef = useRef<any>(null);
+  const streamRef = useRef<any>(null);
 
-  useEffect(function () {
-    const anyWindow = window as any;
-    const anyNav = navigator as any;
-
-    if (!anyNav.mediaDevices || !anyWindow.MediaRecorder) {
-      setMicSupported(false);
+  /* waveform */
+  useEffect(() => {
+    if (micState !== "listening") {
+      setAmps(Array(16).fill(0.16));
       return;
     }
+    const id = setInterval(() => {
+      setAmps(Array.from({ length: 16 }, () => 0.25 + Math.random() * 0.75));
+    }, 110);
+    return () => clearInterval(id);
+  }, [micState]);
 
-    let recorder: any = null;
-    let stream: any = null;
+  function startListening() {
+    const nav: any = navigator;
+    const win: any = window;
+    if (!nav.mediaDevices || !win.MediaRecorder) {
+      setNote("This browser can't record audio. Type instead.");
+      return;
+    }
+    setNote("");
 
-    const controller = {
-      start: function () {
-        setLiveText('');
-        anyNav.mediaDevices.getUserMedia({ audio: true }).then(function (s: any) {
-          stream = s;
-          const chunks: any[] = [];
-          recorder = new anyWindow.MediaRecorder(s);
+    nav.mediaDevices.getUserMedia({ audio: true }).then(function (stream: any) {
+      streamRef.current = stream;
+      const chunks: any[] = [];
+      const rec = new win.MediaRecorder(stream);
+      recorderRef.current = rec;
 
-          recorder.ondataavailable = function (e: any) {
-            if (e.data.size > 0) {
-              chunks.push(e.data);
-            }
-          };
+      rec.ondataavailable = function (e: any) {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
 
-          recorder.onstop = function () {
-            if (stream) {
-              stream.getTracks().forEach(function (t: any) { t.stop(); });
-              stream = null;
-            }
-
-            setMicStatus('Processing...');
-
-            const form = new FormData();
-            form.append('file', new Blob(chunks, { type: 'audio/webm' }), 'audio.webm');
-
-            fetch('/api/transcribe', { method: 'POST', body: form })
-              .then(function (r) { return r.json(); })
-              .then(function (data: any) {
-                if (data && data.text) {
-                  setSearchInput(function (previous: string) {
-                    return (previous + ' ' + data.text).trim();
-                  });
-                  setMicStatus('');
-                } else {
-                  setMicStatus('Could not transcribe. Try again.');
-                }
-              })
-              .catch(function () {
-                setMicStatus('Network error. Try again.');
-              });
-          };
-
-          recorder.start();
-          setIsRecording(true);
-          setMicStatus('Listening... speak now');
-        }).catch(function () {
-          setIsRecording(false);
-          setMicStatus('Microphone blocked. Click the lock icon in the address bar and allow it.');
-        });
-      },
-      stop: function () {
-        setIsRecording(false);
-        if (recorder && recorder.state !== 'inactive') {
-          recorder.stop();
+      rec.onstop = function () {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(function (t: any) { t.stop(); });
+          streamRef.current = null;
         }
-      }
-    };
+        setMicState("thinking");
 
-    recognitionRef.current = controller;
+        const form = new FormData();
+        form.append("file", new Blob(chunks, { type: "audio/webm" }), "audio.webm");
 
-    return function () {
-      if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
-      }
-      if (stream) {
-        stream.getTracks().forEach(function (t: any) { t.stop(); });
-      }
-    };
-  }, []);
+        fetch("/api/transcribe", { method: "POST", body: form })
+          .then(function (r) { return r.json(); })
+          .then(function (data: any) {
+            setMicState("idle");
+            if (data && data.text) {
+              setQuery(function (prev) { return (prev + " " + data.text).trim(); });
+              setNote("");
+            } else {
+              setNote("Didn't catch that. Try again?");
+            }
+          })
+          .catch(function () {
+            setMicState("idle");
+            setNote("Network trouble. Try again?");
+          });
+      };
 
-  function toggleRecording() {
-    if (!recognitionRef.current) {
-      return;
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setMicStatus('Stopped');
-      return;
-    }
-
-    setMicStatus('Starting...');
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
-      setMicStatus('Already running, tap again in a second');
-    }
+      rec.start();
+      setMicState("listening");
+    }).catch(function () {
+      setNote("Microphone is blocked. Allow it in the address bar.");
+    });
   }
 
-  function micLabel() {
-    if (!micSupported) {
-      return 'Voice not supported in this browser';
-    }
-    if (isRecording) {
-      return 'Listening... tap to stop';
-    }
-    return 'Tap to Speak';
+  function stopListening() {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
   }
 
-  function micClass() {
-    if (!micSupported) {
-      return MIC_DEAD;
-    }
-    if (isRecording) {
-      return MIC_ON;
-    }
-    return MIC_OFF;
+  function toggleMic() {
+    if (micState === "listening") stopListening();
+    else if (micState === "idle") startListening();
   }
 
-  const mockProfiles = [
-    { id: 1, name: 'Priya', age: 26, location: 'Bangalore', bio: 'Love travel and adventure! Looking for someone who appreciates good conversations.' },
-    { id: 2, name: 'Anjali', age: 24, location: 'Mumbai', bio: 'Engineer by day, artist by night. Coffee enthusiast.' },
-    { id: 3, name: 'Neha', age: 27, location: 'Delhi', bio: 'Always up for weekend trips and trying new cuisines!' },
-  ];
+  function toggleLike(id: number) {
+    setLiked(function (prev) {
+      return prev.indexOf(id) > -1 ? prev.filter(function (x) { return x !== id; }) : prev.concat(id);
+    });
+  }
 
-  const mockMatches = [
-    { id: 1, name: 'Priya', lastMessage: 'Hey! How are you?' },
-    { id: 2, name: 'Anjali', lastMessage: 'Let me know when you are free!' },
-  ];
-
-  const mockMessages = [
-    { id: 1, sender: 'Priya', text: 'Hey! How are you doing?', time: '10:30 AM' },
-    { id: 2, sender: 'You', text: 'I am doing great! How about you?', time: '10:35 AM' },
-    { id: 3, sender: 'Priya', text: 'All good! Wanna grab coffee sometime?', time: '10:40 AM' },
-  ];
+  const live = micState === "listening";
+  const busy = micState === "thinking";
+  const matches = PROFILES.filter(function (p) { return liked.indexOf(p.id) > -1; });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+    <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
+      <style>{css}</style>
 
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Bandhamai</h1>
-          <p className="text-xs text-gray-600">Find your vibe match</p>
+      {/* masthead */}
+      <header style={{ background: "#FFFFFF", borderBottom: "1px solid " + LINE }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 0" }}>
+          <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+            Bandhamai
+          </h1>
+          <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
+            Ask, don't swipe
+          </p>
+
+          <nav className="bm-sans" style={{ display: "flex", gap: 4, marginTop: 18 }}>
+            {[["browse", "Browse"], ["matches", "Matches"], ["chat", "Chat"]].map(function (t) {
+              const on = tab === t[0];
+              return (
+                <button
+                  key={t[0]}
+                  onClick={function () { setTab(t[0]); }}
+                  className="bm-tab bm-focus"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    borderBottom: on ? "2px solid " + VIOLET : "2px solid transparent",
+                    color: on ? VIOLET : MUTED,
+                    padding: "9px 15px",
+                    fontSize: 14,
+                    fontWeight: on ? 600 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t[1]}
+                  {t[0] === "matches" && matches.length > 0 ? " (" + matches.length + ")" : ""}
+                </button>
+              );
+            })}
+          </nav>
         </div>
-      </div>
+      </header>
 
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-2xl mx-auto flex">
-          <button onClick={function () { setActiveTab('browse'); }} className={activeTab === 'browse' ? TAB_ACTIVE : TAB_IDLE}>
-            Browse
-          </button>
-          <button onClick={function () { setActiveTab('matches'); }} className={activeTab === 'matches' ? TAB_ACTIVE : TAB_IDLE}>
-            Matches
-          </button>
-          <button onClick={function () { setActiveTab('chat'); }} className={activeTab === 'chat' ? TAB_ACTIVE : TAB_IDLE}>
-            Chat
-          </button>
-        </div>
-      </div>
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 110px" }}>
 
-      <div className="max-w-2xl mx-auto p-4 pb-20">
-
-        {activeTab === 'browse' ? (
-          <div>
-            <div className="bg-white rounded-lg shadow-md p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-3">
-                Voice is better. In noisy places, text works too.
+        {/* ---------------- BROWSE ---------------- */}
+        {tab === "browse" && (
+          <>
+            <section
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid " + LINE,
+                borderRadius: 14,
+                padding: "20px 18px",
+                marginBottom: 26,
+              }}
+            >
+              <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
+                Say it the way you'd say it out loud. In noisy places, type instead.
               </p>
 
               <input
-                type="text"
-                value={searchInput}
-                onChange={function (e: any) { setSearchInput(e.target.value); }}
-                placeholder="Find engineers in Bangalore..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                value={query}
+                onChange={function (e) { setQuery(e.target.value); }}
+                placeholder="A doctor in Hyderabad, vegetarian, under thirty..."
+                className="bm-sans bm-input bm-focus"
+                style={{
+                  width: "100%",
+                  padding: "13px 15px",
+                  border: "1px solid " + LINE,
+                  borderRadius: 10,
+                  fontSize: 14.5,
+                  color: INK,
+                  background: WASH,
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
               />
 
-              {liveText ? (
-                <p className="text-sm text-purple-600 italic mb-2">{liveText}</p>
-              ) : null}
+              {/* waveform */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, height: 20, margin: "15px 0 13px" }}>
+                {amps.map(function (a, i) {
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        width: 2,
+                        height: 18,
+                        background: live ? VIOLET : LINE,
+                        transformOrigin: "center",
+                        transform: "scaleY(" + (live ? a : 0.16) + ")",
+                        transition: "transform .12s ease",
+                      }}
+                    />
+                  );
+                })}
+              </div>
 
-              <div className="flex gap-2">
-                <button onClick={toggleRecording} disabled={!micSupported} className={micClass()}>
-                  {micLabel()}
+              <div style={{ display: "flex", gap: 9 }}>
+                <button
+                  onClick={toggleMic}
+                  disabled={busy}
+                  className="bm-sans bm-talk bm-focus"
+                  style={{
+                    flex: 1,
+                    background: live ? VIOLET_DEEP : VIOLET,
+                    color: "#FFFFFF",
+                    border: "none",
+                    borderRadius: 999,
+                    padding: "13px",
+                    fontSize: 14.5,
+                    fontWeight: 600,
+                    cursor: busy ? "default" : "pointer",
+                    opacity: busy ? 0.55 : 1,
+                  }}
+                >
+                  {live ? "Tap to stop" : busy ? "One moment" : "Tap to speak"}
                 </button>
-                <button className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                <button
+                  className="bm-sans bm-ghost bm-focus"
+                  style={{
+                    background: "transparent",
+                    color: VIOLET,
+                    border: "1px solid " + LINE,
+                    borderRadius: 999,
+                    padding: "13px 22px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
                   Search
                 </button>
               </div>
 
-              {micStatus ? (
-                <p className="mt-3 text-sm text-gray-600">{micStatus}</p>
-              ) : null}
+              <div className="bm-sans" style={{ minHeight: 18, marginTop: 11, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 12, color: busy ? VIOLET : MUTED }}>
+                  {live ? "Listening..." : busy ? "Thinking..." : note}
+                </span>
+                {query ? (
+                  <button
+                    onClick={function () { setQuery(""); setNote(""); }}
+                    className="bm-focus"
+                    style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            </section>
 
-              {searchInput ? (
-                <button
-                  onClick={function () { setSearchInput(''); setMicStatus(''); }}
-                  className="mt-3 text-sm text-gray-500 underline"
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
+            <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
+              {PROFILES.length} PEOPLE — A SHORTLIST, NOT A STACK
+            </p>
 
-            {mockProfiles.map(function (profile) {
-              return (
-                <div key={profile.id} className="bg-white rounded-lg shadow-lg overflow-hidden mb-4">
-                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-40" />
-                  <div className="p-4">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {profile.name}, {profile.age}
-                    </h2>
-                    <p className="text-gray-600 text-sm mb-3">{profile.location}</p>
-                    <p className="text-gray-700 mb-4">{profile.bio}</p>
-                    <div className="flex gap-3">
-                      <button className="flex-1 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition">
+            <div style={{ display: "grid", gap: 14 }}>
+              {PROFILES.map(function (p) {
+                const isLiked = liked.indexOf(p.id) > -1;
+                return (
+                  <article
+                    key={p.id}
+                    className="bm-card"
+                    style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "20px 18px" }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 13 }}>
+                      <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>{p.name}</h2>
+                      <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
+                    </div>
+
+                    <div style={{ display: "grid", gap: 6, marginBottom: 13 }}>
+                      {[["AGE", String(p.age)], ["CITY", p.city], ["WORK", p.work], ["DIET", p.diet], ["SPEAKS", p.langs]].map(function (row) {
+                        return (
+                          <div key={row[0]} style={{ display: "flex", gap: 11, alignItems: "baseline" }}>
+                            <span className="bm-sans" style={{ fontSize: 9.5, letterSpacing: ".14em", color: MUTED, width: 54, flexShrink: 0 }}>{row[0]}</span>
+                            <span className="bm-sans" style={{ fontSize: 13.5, lineHeight: 1.45 }}>{row[1]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <p className="bm-serif" style={{ margin: "0 0 15px", paddingTop: 12, borderTop: "1px solid " + LINE, fontSize: 14, fontStyle: "italic", color: MUTED }}>
+                      {p.note}
+                    </p>
+
+                    <div style={{ display: "flex", gap: 9 }}>
+                      <button
+                        className="bm-sans bm-ghost bm-focus"
+                        style={{ flex: 1, background: "transparent", color: MUTED, border: "1px solid " + LINE, borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+                      >
                         Pass
                       </button>
-                      <button className="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
-                        Like
+                      <button
+                        onClick={function () { toggleLike(p.id); }}
+                        className="bm-sans bm-talk bm-focus"
+                        style={{
+                          flex: 1,
+                          background: isLiked ? VIOLET_DEEP : VIOLET,
+                          color: "#FFFFFF",
+                          border: "none",
+                          borderRadius: 999,
+                          padding: "11px",
+                          fontSize: 13.5,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {isLiked ? "Liked" : "Like"}
                       </button>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
 
-        {activeTab === 'matches' ? (
+        {/* ---------------- MATCHES ---------------- */}
+        {tab === "matches" && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Your Matches ({mockMatches.length})
-            </h2>
-            <div className="space-y-3">
-              {mockMatches.map(function (match) {
-                return (
-                  <div key={match.id} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-400" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{match.name}</h3>
-                        <p className="text-sm text-gray-600">{match.lastMessage}</p>
+            {matches.length === 0 ? (
+              <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
+                <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>No one yet.</p>
+                <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
+                  Like someone on Browse and they'll appear here.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 12 }}>
+                {matches.map(function (p) {
+                  return (
+                    <article key={p.id} className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
+                        <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>{p.name}</h2>
+                        <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>{p.work} — {p.city}</p>
+                      <button
+                        onClick={function () { setTab("chat"); }}
+                        className="bm-sans bm-talk bm-focus"
+                        style={{ width: "100%", background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Start Speed Match
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ) : null}
+        )}
 
-        {activeTab === 'chat' ? (
-          <div>
-            <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-400" />
-              <h3 className="font-semibold text-gray-900">Priya</h3>
+        {/* ---------------- CHAT ---------------- */}
+        {tab === "chat" && (
+          <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 17px", borderBottom: "1px solid " + LINE }}>
+              <span style={{ width: 34, height: 34, borderRadius: 999, background: VIOLET, display: "block" }} />
+              <span className="bm-serif" style={{ fontSize: 18 }}>Priya</span>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-4 mb-4 space-y-3">
-              {mockMessages.map(function (msg) {
+            <div style={{ padding: "18px 17px", display: "flex", flexDirection: "column", gap: 13, minHeight: 240 }}>
+              {THREAD.map(function (m, i) {
+                const mine = m.who === "me";
                 return (
-                  <div key={msg.id} className={msg.sender === 'You' ? ROW_MINE : ROW_THEIRS}>
-                    <div className={msg.sender === 'You' ? BUBBLE_MINE : BUBBLE_THEIRS}>
-                      <p>{msg.text}</p>
-                      <p className="text-xs mt-1 opacity-70">{msg.time}</p>
+                  <div key={i} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "78%" }}>
+                    <div
+                      className="bm-sans"
+                      style={{
+                        background: mine ? VIOLET : WASH,
+                        color: mine ? "#FFFFFF" : INK,
+                        border: mine ? "none" : "1px solid " + LINE,
+                        borderRadius: 13,
+                        padding: "10px 14px",
+                        fontSize: 14,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {m.text}
+                    </div>
+                    <div className="bm-sans" style={{ fontSize: 10.5, color: MUTED, marginTop: 4, textAlign: mine ? "right" : "left" }}>
+                      {m.at}
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="flex gap-2">
+            <div style={{ display: "flex", gap: 9, padding: "13px 15px", borderTop: "1px solid " + LINE }}>
               <input
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                value={draft}
+                onChange={function (e) { setDraft(e.target.value); }}
+                placeholder="Type a message"
+                className="bm-sans bm-input bm-focus"
+                style={{ flex: 1, padding: "11px 14px", border: "1px solid " + LINE, borderRadius: 999, fontSize: 14, background: WASH, color: INK, outline: "none" }}
               />
-              <button className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition">
+              <button
+                onClick={function () { setDraft(""); }}
+                className="bm-sans bm-talk bm-focus"
+                style={{ background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >
                 Send
               </button>
             </div>
           </div>
-        ) : null}
+        )}
+      </main>
 
-      </div>
+      <VoiceAssistant />
     </div>
   );
 }
+
+const css =
+  "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
+  ".bm-serif{font-family:'Newsreader',Georgia,serif}" +
+  ".bm-sans{font-family:'Schibsted Grotesk',system-ui,sans-serif}" +
+  "body{margin:0}" +
+  ".bm-card{transition:border-color .2s ease,box-shadow .2s ease}" +
+  ".bm-card:hover{border-color:#D6D0F0;box-shadow:0 6px 22px rgba(30,27,54,.06)}" +
+  ".bm-tab{transition:color .18s ease}" +
+  ".bm-talk{transition:transform .16s ease,background .2s ease}" +
+  ".bm-talk:active{transform:scale(.985)}" +
+  ".bm-ghost{transition:background .18s ease,border-color .18s ease}" +
+  ".bm-ghost:hover{background:#F3F0FD;border-color:#D6D0F0}" +
+  ".bm-input::placeholder{color:#A9A5C8}" +
+  ".bm-input:focus{border-color:#6D28D9;background:#FFFFFF}" +
+  ".bm-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +
+  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab{transition:none!important}}";
