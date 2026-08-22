@@ -8,9 +8,11 @@ import {
   PROFILE_PHOTO_COLUMNS,
 } from "../../../lib/profile-photos";
 import {
+  getAnonSupabase,
   getRequestUser,
   getServiceSupabase,
   hasBearerToken,
+  missingConfigResponse,
   tableHasColumn,
   unauthorizedResponse,
 } from "../../../lib/server-supabase";
@@ -41,17 +43,20 @@ export async function POST(request: Request) {
       return unauthorizedResponse("Sign in to upload a photo.");
     }
 
+    const verifier = getServiceSupabase() || getAnonSupabase();
+    if (!verifier) return missingConfigResponse();
+
+    const { user, error: authError } = await getRequestUser(request, verifier);
+    if (!user) {
+      return unauthorizedResponse(authError || "Sign in to upload a photo.");
+    }
+
     const supabase = getServiceSupabase();
     if (!supabase) {
       return NextResponse.json(
         { error: "Server is missing SUPABASE_SERVICE_KEY, which is required to store a photo." },
         { status: 500 }
       );
-    }
-
-    const { user, error: authError } = await getRequestUser(request, supabase);
-    if (!user) {
-      return unauthorizedResponse(authError || "Sign in to upload a photo.");
     }
 
     let form: FormData;
