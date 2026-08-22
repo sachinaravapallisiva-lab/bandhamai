@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import LegalArticle, { LegalList, LegalSection } from "../components/LegalArticle";
+import { VIOLET } from "../../lib/theme";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -13,26 +15,38 @@ export default function PrivacyPage() {
       <LegalArticle
         kicker="PRIVACY"
         title="Privacy Policy"
-        lede="This page describes how Bandham AI handles personal information for people in India and the US diaspora who use the site."
+        lede="This policy explains how Bandham AI handles personal information for adults in India and the US diaspora who use the matrimony service. It is a working notice, not a claim that we hold a privacy award or a certified seal."
       >
+        <LegalSection title="Who this covers">
+          <p style={{ margin: 0 }}>
+            It covers people who create an account, submit a profile, browse, use chat, or use voice search or the assistant. If a relative helps you fill a profile, the adult on the profile is still the person this policy is about.
+          </p>
+        </LegalSection>
+
         <LegalSection title="What we collect">
           <LegalList
             items={[
               "Account email and sign-in data from our login provider",
-              "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, and what you want)",
+              "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, and what you want in a match)",
               "Messages you send in chat, when that feature is used",
               "Voice you choose to send for speech-to-text search or the assistant. Audio goes to a transcription service so we can return text.",
               "Basic device and usage logs the host needs to run and secure the site",
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
-            We do not ask for a payment card on the site today.
+            We do not ask for a payment card, Aadhaar number, or passport scan on the site today. Do not put those in your profile or in chat.
           </p>
         </LegalSection>
 
         <LegalSection title="Why we use it">
           <p style={{ margin: 0 }}>
-            To run accounts, review profiles, show matches, operate search and chat, keep the service safer, and reach you about your account.
+            To run accounts, review profiles, show possible matches, operate search and chat, look into abuse, and reach you about your account. We use profile fields (city, language, work, and similar) to shortlist people, not to sell a marketing list.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Who can see a profile">
+          <p style={{ margin: 0 }}>
+            After a reviewer sets a profile live, other members can see the fields we display on Browse and Matches. Reviewers can see a submitted profile before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
           </p>
         </LegalSection>
 
@@ -40,19 +54,25 @@ export default function PrivacyPage() {
           <p style={{ margin: "0 0 8px" }}>We share data with:</p>
           <LegalList
             items={[
-              "Infrastructure we already use (hosting, database, transcription)",
+              "Infrastructure we already use (hosting, database, login, transcription)",
               "Reviewers who decide if a profile can go live",
-              "Authorities when the law requires it",
+              "Authorities when the law requires it, or when we believe there is a serious risk of harm",
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
-            We do not sell profile lists.
+            We do not sell profile lists. We do not publish member counts or a &quot;most trusted&quot; ranking based on your data.
           </p>
         </LegalSection>
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
             If VerifyAI ships, it may process extra signals you choose to provide. It will stay optional. This policy will be updated before that is a live product.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="India and the United States">
+          <p style={{ margin: 0 }}>
+            The service is used from India and the United States, so account and profile data may be stored or processed in either place through our hosts. If you are in India, you may have rights under the Digital Personal Data Protection Act and other Indian rules. If you are in the United States, state privacy laws may apply depending on where you live. This summary is not a full notice under every statute.
           </p>
         </LegalSection>
 
@@ -64,19 +84,23 @@ export default function PrivacyPage() {
 
         <LegalSection title="Your choices">
           <p style={{ margin: 0 }}>
-            In-app edit and delete tools are limited today. To correct a profile or ask us to remove an account, use the Contact page. We will handle those requests by hand until self-serve tools ship.
+            In-app edit and delete tools are limited today. To correct a profile, ask for a copy of what we have, or ask us to close an account, use the{" "}
+            <Link href="/contact" style={{ color: VIOLET }}>
+              Contact
+            </Link>{" "}
+            page. We will handle those requests by hand until self-serve tools ship. Some records (for example a safety report) may need to be kept if the law or an open case requires it.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Cookies and local storage">
+          <p style={{ margin: 0 }}>
+            We use what the site needs to stay signed in and to run the pages. We do not run a separate advertising cookie program on these pages.
           </p>
         </LegalSection>
 
         <LegalSection title="Children">
           <p style={{ margin: 0 }}>
             The service is not for anyone under 18. We do not knowingly collect data from minors.
-          </p>
-        </LegalSection>
-
-        <LegalSection title="India and the United States">
-          <p style={{ margin: 0 }}>
-            If you are in India, you may have rights under the Digital Personal Data Protection Act and other Indian rules. If you are in the United States, state privacy laws may apply depending on where you live. This summary is not a full notice under every statute.
           </p>
         </LegalSection>
 
