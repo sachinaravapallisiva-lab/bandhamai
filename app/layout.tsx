@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: "Bandham AI",
     template: "%s - Bandham AI",
   },
-  description: "Ask, don't swipe",
+  description: "Find your vibe match?",
   applicationName: "Bandham AI",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
