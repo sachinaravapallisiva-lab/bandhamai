@@ -274,7 +274,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 110px" }}>
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 24px" }}>
 
         {/* ---------------- BROWSE ---------------- */}
         {tab === "browse" && (
