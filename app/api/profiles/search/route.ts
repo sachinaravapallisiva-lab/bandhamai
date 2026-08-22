@@ -133,21 +133,18 @@ export async function GET(request: Request) {
       return NextResponse.json({
         profiles: [],
         empty: "inventory",
-        inventory: 0,
         criteria,
         source: "live",
       });
     }
 
-    const [photo_url, photo_blurred_url, diet, verified, user_id, created_at] = await Promise.all([
+    const [photo_url, diet, user_id, created_at] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
-      tableHasColumn(supabase, "profiles", "photo_blurred_url"),
       tableHasColumn(supabase, "profiles", "diet"),
-      tableHasColumn(supabase, "profiles", "verified"),
       tableHasColumn(supabase, "profiles", "user_id"),
       tableHasColumn(supabase, "profiles", "created_at"),
     ]);
-    const flags = { photo_url, photo_blurred_url, diet, verified, user_id, created_at };
+    const flags = { photo_url, diet, user_id, created_at };
 
     const inventory = await supabase
       .from("profiles")
@@ -163,7 +160,6 @@ export async function GET(request: Request) {
       return NextResponse.json({
         profiles: [],
         empty: "inventory",
-        inventory: 0,
         criteria,
         source: "live",
       });
@@ -213,7 +209,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       profiles,
       empty,
-      inventory: liveCount,
       criteria,
       source: "live",
     });

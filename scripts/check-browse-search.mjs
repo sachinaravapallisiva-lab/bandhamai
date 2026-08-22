@@ -33,4 +33,13 @@ assert(cards.length === 1 && cards[0].id === "live-1", "shortlist should keep th
 assert(toBrowseProfile(pending)?.name === "Should not leak", "mapper still maps a raw row; status filter is the API's job");
 assert(!toBrowseProfile({ full_name: "No id" }), "rows without id are dropped");
 
+const withPhotos = toBrowseProfile({
+  id: "live-2",
+  full_name: "Priya S",
+  photo_url: "https://example.com/full.webp",
+  photo_blurred_url: "https://example.com/blur.webp",
+});
+assert(withPhotos?.photoUrl === "https://example.com/full.webp", "Browse must use photo_url, not the blur derivative");
+assert(withPhotos && !("verified" in withPhotos), "do not invent VerifyAI on Browse cards");
+
 console.log("browse search parser ok", { doctor, woman, shortlist: cards.map((c) => c.name) });

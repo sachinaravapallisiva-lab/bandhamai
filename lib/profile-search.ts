@@ -23,7 +23,6 @@ export type BrowseProfile = {
   gender: string;
   note: string;
   photoUrl: string;
-  verified: boolean;
 };
 
 const SEARCH_CITIES = [
@@ -273,15 +272,11 @@ export function safeOrValue(value: string) {
 
 export function browseSelectColumns(flags: {
   photo_url: boolean;
-  photo_blurred_url: boolean;
   diet: boolean;
-  verified: boolean;
 }) {
   const cols: string[] = ["id", ...PROFILE_WRITE_FIELDS];
   if (flags.photo_url) cols.push("photo_url");
-  if (flags.photo_blurred_url) cols.push("photo_blurred_url");
   if (flags.diet) cols.push("diet");
-  if (flags.verified) cols.push("verified");
   return cols.join(",");
 }
 
@@ -321,12 +316,10 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
   const name = asText(row.full_name);
   const about = asText(row.about);
   const wants = asText(row.wants);
-  const blurred = asText(row.photo_blurred_url);
-  const photo = asText(row.photo_url);
 
   return {
     id,
-    name: name || "Member",
+    name,
     city: asText(row.city),
     work: asText(row.profession),
     education: asText(row.education),
@@ -335,8 +328,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     visa: asText(row.visa_status),
     gender: asText(row.gender),
     note: about || wants,
-    photoUrl: blurred || photo,
-    verified: row.verified === true,
+    photoUrl: asText(row.photo_url),
   };
 }
 

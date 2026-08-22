@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import VoiceAssistant from "./components/VoiceAssistant";
-import VerifyBadge from "./components/VerifyBadge";
 import SiteFooter from "./components/SiteFooter";
 import { ProfilePhoto } from "./components/ProfilePhoto";
 import { supabase } from "../lib/supabase";
@@ -515,11 +514,7 @@ export default function Home() {
             </section>
 
             <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
-              {searching && !loadedOnce
-                ? "LOOKING…"
-                : profiles.length
-                  ? profiles.length + " PEOPLE — A SHORTLIST, NOT A STACK"
-                  : "A SHORTLIST, NOT A STACK"}
+              {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
 
             {!searching && profiles.length === 0 ? (
@@ -530,7 +525,7 @@ export default function Home() {
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
                   {emptyKind === "matches"
                     ? "Try another city, profession, or a shorter ask."
-                    : "New profiles stay under review until someone sets them live. Nothing here is made up."}
+                    : "Submitted profiles stay under review until they are set live."}
                 </p>
               </div>
             ) : (
@@ -552,7 +547,6 @@ export default function Home() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
                           <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
                             {p.name}
-                            <VerifyBadge verified={p.verified} />
                           </h2>
                         </div>
                       </div>
@@ -631,7 +625,6 @@ export default function Home() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
                         <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
                           {p.name}
-                          <VerifyBadge verified={p.verified} />
                         </h2>
                       </div>
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
