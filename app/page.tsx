@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import VoiceAssistant from "./components/VoiceAssistant";
+import VerifyBadge from "./components/VerifyBadge";
+import { supabase } from "../lib/supabase";
+import { authJsonHeaders } from "../lib/client-auth";
 
 /* ------------------------------------------------------------------ *
    Bandhamai — main app
@@ -17,9 +21,9 @@ const LINE = "#E6E3F5";
 const WASH = "#FAF9FE";
 
 const PROFILES = [
-  { id: 1, name: "Ananya R.", age: 27, city: "Hyderabad", work: "Paediatrician, Rainbow Hospitals", diet: "Vegetarian", langs: "Telugu, English, Hindi", note: "Asked her own questions back.", fit: 94 },
-  { id: 2, name: "Divya K.", age: 28, city: "Secunderabad", work: "Dentist, own practice", diet: "Vegetarian", langs: "Telugu, English", note: "Wants to stay near family.", fit: 91 },
-  { id: 3, name: "Sruthi M.", age: 26, city: "Hyderabad", work: "Radiologist, AIG", diet: "Vegetarian", langs: "Telugu, Tamil, English", note: "Runs half marathons.", fit: 88 },
+  { id: 1, name: "Ananya R.", age: 27, city: "Hyderabad", work: "Paediatrician, Rainbow Hospitals", diet: "Vegetarian", langs: "Telugu, English, Hindi", note: "Asked her own questions back.", fit: 94, verified: true },
+  { id: 2, name: "Divya K.", age: 28, city: "Secunderabad", work: "Dentist, own practice", diet: "Vegetarian", langs: "Telugu, English", note: "Wants to stay near family.", fit: 91, verified: false },
+  { id: 3, name: "Sruthi M.", age: 26, city: "Hyderabad", work: "Radiologist, AIG", diet: "Vegetarian", langs: "Telugu, Tamil, English", note: "Runs half marathons.", fit: 88, verified: false },
 ];
 
 const THREAD = [
@@ -36,9 +40,47 @@ export default function Home() {
   const [liked, setLiked] = useState<number[]>([]);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [signedIn, setSignedIn] = useState(false);
+  const [myStatus, setMyStatus] = useState<string | null>(null);
+  const [profileLinked, setProfileLinked] = useState(false);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
+
+  useEffect(() => {
+    function applySession(session: { user?: { email?: string }; access_token?: string } | null) {
+      if (!session) {
+        setSignedIn(false);
+        setUserEmail("");
+        setMyStatus(null);
+        setProfileLinked(false);
+        return;
+      }
+      setSignedIn(true);
+      setUserEmail(session.user?.email || "");
+      authJsonHeaders().then(function (headers) {
+        if (!headers) return;
+        fetch("/api/profiles", { headers })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            setProfileLinked(!!data.linked);
+            setMyStatus(data.profile?.status || null);
+          })
+          .catch(function () { /* keep browse usable */ });
+      });
+    }
+
+    supabase.auth.getSession().then(function (result) {
+      applySession(result.data.session);
+    });
+    const { data } = supabase.auth.onAuthStateChange(function (_event, session) {
+      applySession(session);
+    });
+    return function () {
+      data.subscription.unsubscribe();
+    };
+  }, []);
 
   /* waveform */
   useEffect(() => {
@@ -132,12 +174,74 @@ export default function Home() {
       {/* masthead */}
       <header style={{ background: "#FFFFFF", borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 0" }}>
-          <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-            Bandhamai
-          </h1>
-          <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
-            Ask, don't swipe
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                Bandhamai
+              </h1>
+              <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
+                Ask, don&apos;t swipe
+              </p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+              {signedIn ? (
+                <>
+                  {!myStatus || !profileLinked ? (
+                    <Link
+                      href="/profile/new"
+                      className="bm-sans bm-talk bm-focus"
+                      style={{
+                        background: VIOLET,
+                        color: "#FFFFFF",
+                        borderRadius: 999,
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Create profile
+                    </Link>
+                  ) : myStatus === "pending" ? (
+                    <Link
+                      href="/profile/new"
+                      className="bm-sans bm-ghost bm-focus"
+                      style={{
+                        color: VIOLET,
+                        border: "1px solid " + LINE,
+                        borderRadius: 999,
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Under review
+                    </Link>
+                  ) : null}
+                  <span className="bm-sans" style={{ fontSize: 11, color: MUTED, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {userEmail}
+                  </span>
+                </>
+              ) : (
+                <Link
+                  href="/login?next=/"
+                  className="bm-sans bm-ghost bm-focus"
+                  style={{
+                    color: VIOLET,
+                    border: "1px solid " + LINE,
+                    borderRadius: 999,
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  Sign in
+                </Link>
+              )}
+            </div>
+          </div>
 
           <nav className="bm-sans" style={{ display: "flex", gap: 4, marginTop: 18 }}>
             {[["browse", "Browse"], ["matches", "Matches"], ["chat", "Chat"]].map(function (t) {
@@ -172,6 +276,59 @@ export default function Home() {
         {/* ---------------- BROWSE ---------------- */}
         {tab === "browse" && (
           <>
+            {signedIn && (!profileLinked || !myStatus) ? (
+              <section
+                className="bm-card"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid " + LINE,
+                  borderRadius: 14,
+                  padding: "18px",
+                  marginBottom: 18,
+                }}
+              >
+                <p className="bm-serif" style={{ margin: "0 0 6px", fontSize: 20 }}>
+                  {profileLinked ? "You don't have a profile yet." : "Add your profile."}
+                </p>
+                <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13.5, color: MUTED }}>
+                  Create one and a reviewer will put it live. It won&apos;t appear on Browse until then.
+                </p>
+                <Link
+                  href="/profile/new"
+                  className="bm-sans bm-talk bm-focus"
+                  style={{
+                    display: "inline-block",
+                    background: VIOLET,
+                    color: "#FFFFFF",
+                    borderRadius: 999,
+                    padding: "11px 18px",
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  Create your profile
+                </Link>
+              </section>
+            ) : null}
+
+            {signedIn && profileLinked && myStatus === "pending" ? (
+              <section
+                className="bm-card"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid " + LINE,
+                  borderRadius: 14,
+                  padding: "16px 18px",
+                  marginBottom: 18,
+                }}
+              >
+                <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
+                  Your profile was submitted for review. It is not live yet.
+                </p>
+              </section>
+            ) : null}
+
             <section
               style={{
                 background: "#FFFFFF",
@@ -289,7 +446,10 @@ export default function Home() {
                     style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "20px 18px" }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 13 }}>
-                      <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>{p.name}</h2>
+                      <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
+                        {p.name}
+                        <VerifyBadge verified={p.verified} />
+                      </h2>
                       <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
                     </div>
 
@@ -356,7 +516,10 @@ export default function Home() {
                   return (
                     <article key={p.id} className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
-                        <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>{p.name}</h2>
+                        <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
+                          {p.name}
+                          <VerifyBadge verified={p.verified} />
+                        </h2>
                         <span className="bm-sans" style={{ fontSize: 12, fontWeight: 600, color: VIOLET }}>{p.fit}%</span>
                       </div>
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>{p.work} — {p.city}</p>
