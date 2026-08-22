@@ -6,7 +6,7 @@ import { VIOLET } from "../../lib/theme";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "How Bandham AI handles account, profile, message, and voice data for users in India and the United States.",
+  description: "How Bandham AI handles account, profile, photo, message, and voice data for users in India and the United States.",
 };
 
 export default function PrivacyPage() {
@@ -28,6 +28,7 @@ export default function PrivacyPage() {
             items={[
               "Account email and sign-in data from our login provider",
               "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, and what you want in a match)",
+              "A profile photo you choose to upload. We may create a clearer or resized copy (resolution and sharpness only) and a blurred copy for product use.",
               "Messages you send in chat, when that feature is used",
               "Voice you choose to send for speech-to-text search or the assistant. Audio goes to a transcription service so we can return text.",
               "Basic device and usage logs the host needs to run and secure the site",
@@ -46,7 +47,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="Who can see a profile">
           <p style={{ margin: 0 }}>
-            After a reviewer sets a profile live, other members can see the fields we display on Browse and Matches. Reviewers can see a submitted profile before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
+            After a reviewer sets a profile live, other members can see the fields we display on Browse and Matches, including the profile photo we show. Reviewers can see a submitted profile and its photo before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
           </p>
         </LegalSection>
 
@@ -54,13 +55,19 @@ export default function PrivacyPage() {
           <p style={{ margin: "0 0 8px" }}>We share data with:</p>
           <LegalList
             items={[
-              "Infrastructure we already use (hosting, database, login, transcription)",
+              "Infrastructure we already use (hosting, database, login, storage, transcription)",
               "Reviewers who decide if a profile can go live",
               "Authorities when the law requires it, or when we believe there is a serious risk of harm",
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
             We do not sell profile lists. We do not publish member counts or a &quot;most trusted&quot; ranking based on your data.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Photos and enhance">
+          <p style={{ margin: 0 }}>
+            Photo enhance, when you use it, is a resolution and clarity pass only (rotate, resize, mild sharpen). It is not a beauty filter and it does not change your face or skin. We may store a blurred derivative. Hide-until-matched is not a live guarantee on the site today. Do not upload Aadhaar, passport, or other ID photos as a profile picture.
           </p>
         </LegalSection>
 
@@ -78,7 +85,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="How long we keep it">
           <p style={{ margin: 0 }}>
-            Account and profile data stay while the account is open. Safety and review notes may be kept longer if needed to handle abuse. Voice is processed to produce text. We do not present recordings as a public archive.
+            Account, profile, and photo data stay while the account is open. Safety and review notes may be kept longer if needed to handle abuse. Voice is processed to produce text. We do not present recordings as a public archive.
           </p>
         </LegalSection>
 

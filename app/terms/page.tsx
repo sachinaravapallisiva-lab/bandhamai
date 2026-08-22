@@ -46,8 +46,14 @@ export default function TermsPage() {
         </LegalSection>
 
         <LegalSection title="Photos">
+          <p style={{ margin: "0 0 8px" }}>
+            You can upload a photo when you create a profile. It must be of the person on the profile, recent, and not taken from someone else. Do not post other people&apos;s pictures.
+          </p>
+          <p style={{ margin: "0 0 8px" }}>
+            If you use enhance, we only change resolution and clarity (rotate, resize, and a mild sharpen). We do not apply beauty, face, or skin filters, and we do not rewrite how you look.
+          </p>
           <p style={{ margin: 0 }}>
-            Photo upload is not offered yet. When it is, photos must be of the person on the profile, recent, and not taken from someone else. Do not post other people&apos;s pictures.
+            We may also store a blurred copy for product use. That is not a promise that a photo stays hidden until you match. Once a reviewer sets a profile live, treat the photo we display as visible to other members.
           </p>
         </LegalSection>
 
@@ -89,7 +95,7 @@ export default function TermsPage() {
 
         <LegalSection title="Your content">
           <p style={{ margin: 0 }}>
-            You keep ownership of the words you submit. You give Bandham AI a license to host, review, and show that content to other members as part of the service. You also confirm you have the right to share it. We may remove content that breaks these terms.
+            You keep ownership of the words and photos you submit. You give Bandham AI a license to host, review, process (including a resolution pass and a blurred copy), and show that content to other members as part of the service. You also confirm you have the right to share it. We may remove content that breaks these terms.
           </p>
         </LegalSection>
 
