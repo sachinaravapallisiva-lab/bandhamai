@@ -139,14 +139,15 @@ export async function GET(request: Request) {
       });
     }
 
-    const flags = {
-      photo_url: await tableHasColumn(supabase, "profiles", "photo_url"),
-      photo_blurred_url: await tableHasColumn(supabase, "profiles", "photo_blurred_url"),
-      diet: await tableHasColumn(supabase, "profiles", "diet"),
-      verified: await tableHasColumn(supabase, "profiles", "verified"),
-      user_id: await tableHasColumn(supabase, "profiles", "user_id"),
-      created_at: await tableHasColumn(supabase, "profiles", "created_at"),
-    };
+    const [photo_url, photo_blurred_url, diet, verified, user_id, created_at] = await Promise.all([
+      tableHasColumn(supabase, "profiles", "photo_url"),
+      tableHasColumn(supabase, "profiles", "photo_blurred_url"),
+      tableHasColumn(supabase, "profiles", "diet"),
+      tableHasColumn(supabase, "profiles", "verified"),
+      tableHasColumn(supabase, "profiles", "user_id"),
+      tableHasColumn(supabase, "profiles", "created_at"),
+    ]);
+    const flags = { photo_url, photo_blurred_url, diet, verified, user_id, created_at };
 
     const inventory = await supabase
       .from("profiles")
@@ -205,7 +206,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const rows = (data || []) as Record<string, unknown>[];
+    const rows = (Array.isArray(data) ? data : []) as unknown as Record<string, unknown>[];
     const profiles = pickShortlist(rows, criteria);
     const empty = profiles.length === 0 ? (liveCount === 0 ? "inventory" : "matches") : null;
 

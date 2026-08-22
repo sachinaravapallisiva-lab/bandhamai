@@ -37,7 +37,7 @@ export default function Home() {
   const [liked, setLiked] = useState<BrowseProfile[]>([]);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [searching, setSearching] = useState(true);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
   const [userEmail, setUserEmail] = useState("");
