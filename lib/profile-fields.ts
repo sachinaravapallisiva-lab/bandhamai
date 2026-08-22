@@ -1,4 +1,5 @@
-/** Writable columns already used by POST /api/profiles — do not invent others. */
+/** Writable text columns already used by POST /api/profiles — do not invent others.
+ *  photo_url / photo_blurred_url are attached separately when those columns exist. */
 export const PROFILE_WRITE_FIELDS = [
   "full_name",
   "gender",
