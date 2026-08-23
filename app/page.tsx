@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
+import MessagePaywall from "./components/MessagePaywall";
 import { ProfilePhoto } from "./components/ProfilePhoto";
 import { supabase } from "../lib/supabase";
 import { authJsonHeaders } from "../lib/client-auth";
+import {
+  confirmCheckoutSession,
+  fetchEntitlement,
+  openBillingPortal,
+  startCheckout,
+} from "../lib/client-billing";
+import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import type { BrowseProfile } from "../lib/profile-search";
 
 /* ------------------------------------------------------------------ *
@@ -30,6 +39,7 @@ const THREAD = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [tab, setTab] = useState("browse");
   const [query, setQuery] = useState("");
   const [micState, setMicState] = useState("idle"); // idle | listening | thinking
@@ -46,6 +56,9 @@ export default function Home() {
   const [myStatus, setMyStatus] = useState<string | null>(null);
   const [profileLinked, setProfileLinked] = useState(false);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
+  const [billingBusy, setBillingBusy] = useState(false);
+  const [billingNote, setBillingNote] = useState("");
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
@@ -97,6 +110,9 @@ export default function Home() {
         setUserEmail("");
         setMyStatus(null);
         setProfileLinked(false);
+        fetchEntitlement().then(function (next) {
+          setEntitlement(next);
+        });
         return;
       }
       setSignedIn(true);
@@ -110,6 +126,9 @@ export default function Home() {
             setMyStatus(data.profile?.status || null);
           })
           .catch(function () { /* keep browse usable */ });
+      });
+      fetchEntitlement().then(function (next) {
+        setEntitlement(next);
       });
     }
 
@@ -128,6 +147,40 @@ export default function Home() {
 
   useEffect(() => {
     if (searchRef.current) searchRef.current("");
+  }, []);
+
+  useEffect(function () {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get("billing");
+    const sessionId = params.get("session_id") || "";
+    if (!billing) return;
+
+    const id = window.setTimeout(function () {
+      setTab("chat");
+      if (billing === "cancel") {
+        setBillingNote("Checkout was canceled. Browse stays free.");
+        return;
+      }
+      if (billing === "success") {
+        setBillingNote(BILLING_COPY.returning);
+        if (sessionId) {
+          confirmCheckoutSession(sessionId).then(function (next) {
+            setEntitlement(next);
+            if (next.canMessage) {
+              setBillingNote("Subscription is active. You can send messages.");
+            }
+          });
+        } else {
+          fetchEntitlement().then(function (next) {
+            setEntitlement(next);
+          });
+        }
+      }
+    }, 0);
+    return function () {
+      window.clearTimeout(id);
+    };
   }, []);
 
   /* waveform */
@@ -215,6 +268,59 @@ export default function Home() {
         ? prev.filter(function (p) { return p.id !== profile.id; })
         : prev.concat(profile);
     });
+  }
+
+  function goLoginForChat() {
+    router.push("/login?next=/");
+  }
+
+  function beginCheckout() {
+    if (!signedIn) {
+      goLoginForChat();
+      return;
+    }
+    setBillingBusy(true);
+    setBillingNote("");
+    startCheckout().then(function (result) {
+      setBillingBusy(false);
+      if (result.url) {
+        window.location.assign(result.url);
+        return;
+      }
+      setBillingNote(result.error || BILLING_COPY.notConfigured);
+      if (result.code === "billing_not_configured" || result.code === "table_missing") {
+        fetchEntitlement().then(function (next) {
+          setEntitlement(next);
+        });
+      }
+    });
+  }
+
+  function beginPortal() {
+    setBillingBusy(true);
+    setBillingNote("");
+    openBillingPortal().then(function (result) {
+      setBillingBusy(false);
+      if (result.url) {
+        window.location.assign(result.url);
+        return;
+      }
+      setBillingNote(result.error || "Could not open the billing portal.");
+    });
+  }
+
+  function trySendChat() {
+    if (!signedIn) {
+      goLoginForChat();
+      return;
+    }
+    if (!entitlement.canMessage) {
+      setTab("chat");
+      setBillingNote(entitlement.configured ? BILLING_COPY.headline : BILLING_COPY.notConfigured);
+      return;
+    }
+    setDraft("");
+    setBillingNote("This tab is a preview thread. Use a real recipient conversation to send.");
   }
 
   function passProfile(id: string) {
@@ -641,13 +747,27 @@ export default function Home() {
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
                         {[p.work, p.city].filter(Boolean).join(" — ") || "Liked from Browse"}
                       </p>
-                      <button
-                        onClick={function () { setSpeedPartner(p); }}
-                        className="bm-sans bm-talk bm-focus"
-                        style={{ width: "100%", background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-                      >
-                        Start Speed Match
-                      </button>
+                      <div style={{ display: "flex", gap: 9 }}>
+                        <button
+                          onClick={function () { setSpeedPartner(p); }}
+                          className="bm-sans bm-talk bm-focus"
+                          style={{ flex: 1, background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Start Speed Match
+                        </button>
+                        <button
+                          onClick={function () {
+                            setTab("chat");
+                            if (!signedIn || !entitlement.canMessage) {
+                              setBillingNote(signedIn ? "" : BILLING_COPY.signIn);
+                            }
+                          }}
+                          className="bm-sans bm-ghost bm-focus"
+                          style={{ flex: 1, background: "transparent", color: VIOLET, border: "1px solid " + LINE, borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Message
+                        </button>
+                      </div>
                     </article>
                   );
                 })}
@@ -691,6 +811,59 @@ export default function Home() {
               })}
             </div>
 
+            <div style={{ padding: "0 15px" }}>
+              {!entitlement.canMessage ? (
+                <MessagePaywall
+                  entitlement={entitlement}
+                  busy={billingBusy}
+                  note={billingNote}
+                  signedIn={signedIn}
+                  onSubscribe={beginCheckout}
+                  onManage={beginPortal}
+                  onSignIn={goLoginForChat}
+                />
+              ) : (
+                <div
+                  className="bm-card"
+                  style={{
+                    background: WASH,
+                    border: "1px solid " + LINE,
+                    borderRadius: 14,
+                    padding: "14px 16px",
+                    margin: "0 0 14px",
+                  }}
+                >
+                  <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
+                    Messaging is unlocked for this account. Cancel anytime in the customer portal.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={beginPortal}
+                    disabled={billingBusy}
+                    className="bm-sans bm-ghost bm-focus"
+                    style={{
+                      marginTop: 10,
+                      background: "transparent",
+                      color: VIOLET,
+                      border: "1px solid " + LINE,
+                      borderRadius: 999,
+                      padding: "8px 14px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: billingBusy ? "default" : "pointer",
+                    }}
+                  >
+                    {BILLING_COPY.manage}
+                  </button>
+                  {billingNote ? (
+                    <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                      {billingNote}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: "flex", gap: 9, padding: "13px 15px", borderTop: "1px solid " + LINE }}>
               <input
                 value={draft}
@@ -700,7 +873,7 @@ export default function Home() {
                 style={{ flex: 1, padding: "11px 14px", border: "1px solid " + LINE, borderRadius: 999, fontSize: 14, background: WASH, color: INK, outline: "none" }}
               />
               <button
-                onClick={function () { setDraft(""); }}
+                onClick={trySendChat}
                 className="bm-sans bm-talk bm-focus"
                 style={{ background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
               >
