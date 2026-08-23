@@ -1,4 +1,14 @@
+import {
+  CITY_ALIASES,
+  KEYWORD_ALIASES,
+  SEARCH_CITIES,
+  cityMatchValues,
+  isKnownCityName,
+  isKnownKeywordAlias,
+} from "./desi-search-aliases";
 import { PROFILE_WRITE_FIELDS } from "./profile-fields";
+
+export { cityMatchValues } from "./desi-search-aliases";
 
 /** Only approved rows appear on Browse. Creation always inserts `pending`. */
 export const LIVE_PROFILE_STATUS = "live";
@@ -25,61 +35,6 @@ export type BrowseProfile = {
   photoUrl: string;
   /** True only when profiles.verifyai_status is exactly `verified`. */
   verified: boolean;
-};
-
-const SEARCH_CITIES = [
-  "Hyderabad",
-  "Secunderabad",
-  "Vijayawada",
-  "Guntur",
-  "Warangal",
-  "Karimnagar",
-  "Nizamabad",
-  "Rajahmundry",
-  "Kakinada",
-  "Tirupati",
-  "Nellore",
-  "Visakhapatnam",
-  "Vizag",
-  "Kurnool",
-  "Anantapur",
-  "Khammam",
-  "Ongole",
-  "Eluru",
-  "Bhimavaram",
-  "Machilipatnam",
-  "Bengaluru",
-  "Bangalore",
-  "Mumbai",
-  "Delhi",
-  "Chennai",
-  "Pune",
-  "Dallas",
-  "Austin",
-  "Houston",
-  "Atlanta",
-  "Chicago",
-  "Seattle",
-  "San Jose",
-  "Bay Area",
-  "New Jersey",
-  "New York",
-  "Edison",
-  "Irving",
-  "Frisco",
-  "Princeton",
-];
-
-const CITY_ALIASES: Record<string, string> = {
-  vizag: "Visakhapatnam",
-  "twin cities": "Hyderabad",
-  "twin city": "Hyderabad",
-  bangalore: "Bengaluru",
-  bengaluru: "Bengaluru",
-  "new york city": "New York",
-  nyc: "New York",
-  "bay area": "Bay Area",
-  "new jersey": "New Jersey",
 };
 
 const STOPWORDS = new Set([
@@ -143,6 +98,11 @@ const STOPWORDS = new Set([
   "to",
   "of",
   "on",
+  "twenty",
+  "thirty",
+  "forty",
+  "fifty",
+  "sixty",
 ]);
 
 const FEMALE_WORDS = new Set(["female", "woman", "women", "girl", "girls", "lady", "ladies", "she", "her"]);
@@ -172,12 +132,20 @@ function titleCity(name: string) {
     .join(" ");
 }
 
+function escapeRe(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function phraseRe(phrase: string) {
+  return new RegExp("(?:^|\\s)(?:" + escapeRe(phrase) + ")(?:\\s|$)", "i");
+}
+
 function extractCity(text: string): { city: string | null; rest: string } {
   const aliasKeys = Object.keys(CITY_ALIASES).sort(function (a, b) {
     return b.length - a.length;
   });
   for (const alias of aliasKeys) {
-    const re = new RegExp("(?:^|\\s)(?:" + alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?:\\s|$)", "i");
+    const re = phraseRe(alias);
     if (re.test(text)) {
       return { city: CITY_ALIASES[alias], rest: text.replace(re, " ") };
     }
@@ -187,18 +155,43 @@ function extractCity(text: string): { city: string | null; rest: string } {
     return b.length - a.length;
   });
   for (const city of cities) {
-    const re = new RegExp("(?:^|\\s)(?:" + city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?:\\s|$)", "i");
+    const re = phraseRe(city);
     if (re.test(text)) {
-      return { city: city === "Vizag" ? "Visakhapatnam" : city === "Bangalore" ? "Bengaluru" : city, rest: text.replace(re, " ") };
+      return { city: city, rest: text.replace(re, " ") };
     }
   }
 
   const inMatch = text.match(/\b(?:in|from|near|at)\s+([a-z][a-z]+(?:\s+[a-z][a-z]+)?)\b/i);
-  if (inMatch && inMatch[1] && !STOPWORDS.has(inMatch[1].toLowerCase())) {
-    return { city: titleCity(inMatch[1]), rest: text.replace(inMatch[0], " ") };
+  const guess = inMatch && inMatch[1] ? normalize(inMatch[1]) : "";
+  const guessHead = guess.split(" ")[0] || "";
+  if (
+    inMatch &&
+    guess &&
+    !STOPWORDS.has(guess) &&
+    !STOPWORDS.has(guessHead) &&
+    !isKnownKeywordAlias(guess) &&
+    !isKnownKeywordAlias(guessHead)
+  ) {
+    return { city: titleCity(guess), rest: text.replace(inMatch[0], " ") };
   }
 
   return { city: null, rest: text };
+}
+
+function extractKeywordAliases(text: string): { keywords: string[]; rest: string } {
+  const aliases = Object.keys(KEYWORD_ALIASES).sort(function (a, b) {
+    return b.length - a.length;
+  });
+  const keywords: string[] = [];
+  let rest = text;
+  for (const alias of aliases) {
+    const re = phraseRe(alias);
+    if (!re.test(rest)) continue;
+    const keyword = KEYWORD_ALIASES[alias];
+    if (keyword && keywords.indexOf(keyword) === -1) keywords.push(keyword);
+    rest = rest.replace(re, " ");
+  }
+  return { keywords, rest: normalize(rest) };
 }
 
 function extractGender(text: string): { gender: SearchCriteria["gender"]; rest: string } {
@@ -216,20 +209,26 @@ function extractGender(text: string): { gender: SearchCriteria["gender"]; rest: 
   return { gender, rest: text.replace(new RegExp("\\b" + token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "ig"), " ") };
 }
 
-/** Deterministic criteria from a spoken/typed Browse prompt. No model required. */
+/**
+ * Deterministic criteria from a spoken/typed Browse prompt.
+ * English leftover keywords always survive. Desi aliases only enrich
+ * tokens the user actually said. No model required.
+ */
 export function parseSearchQuery(raw: string): SearchCriteria {
   const text = normalize(raw);
   if (!text) return { city: null, gender: null, keywords: [] };
 
   const cityHit = extractCity(text);
   const genderHit = extractGender(cityHit.rest);
-  const leftover = normalize(genderHit.rest);
+  const aliasHit = extractKeywordAliases(genderHit.rest);
+  const leftover = normalize(aliasHit.rest);
 
-  const keywords: string[] = [];
+  const keywords = aliasHit.keywords.slice();
   leftover.split(" ").forEach(function (word) {
     if (!word || STOPWORDS.has(word)) return;
     if (/^\d+$/.test(word)) return;
     if (word.length < 3 && word !== "ca") return;
+    if (isKnownCityName(word)) return;
     if (keywords.indexOf(word) === -1) keywords.push(word);
   });
 
@@ -238,6 +237,14 @@ export function parseSearchQuery(raw: string): SearchCriteria {
     gender: genderHit.gender,
     keywords: keywords.slice(0, 6),
   };
+}
+
+/** Optional xAI when the English + desi parse is still thin. Never required. */
+export function needsLlmAssist(query: string, criteria: SearchCriteria) {
+  if (!query.trim()) return false;
+  if (criteria.city && criteria.keywords.length > 0) return false;
+  if (criteria.keywords.length >= 2) return false;
+  return normalize(query).split(" ").filter(Boolean).length >= 2;
 }
 
 export function emptyCriteria(): SearchCriteria {
@@ -286,10 +293,34 @@ export function browseSelectColumns(flags: {
   return cols.join(",");
 }
 
+function cityLooksLike(profileCity: string, wanted: string) {
+  const a = profileCity.toLowerCase();
+  const b = wanted.toLowerCase();
+  if (!a || !b) return false;
+  if (a.includes(b) || b.includes(a)) return true;
+  const terms = cityMatchValues(wanted).map(function (term) {
+    return term.toLowerCase();
+  });
+  return terms.some(function (term) {
+    return a.includes(term) || term.includes(a);
+  });
+}
+
+function dietLooksLike(diet: string, keyword: string) {
+  const d = diet.toLowerCase();
+  const k = keyword.toLowerCase();
+  if (!d || !k) return false;
+  if (k === "vegetarian") return (d.includes("vegetarian") || d === "veg") && !d.includes("non");
+  if (k === "non-veg") return d.includes("non");
+  if (k === "eggetarian") return d.includes("egg");
+  return d.includes(k);
+}
+
 export function scoreBrowseRow(row: Record<string, unknown>, criteria: SearchCriteria) {
   let score = 0;
-  const city = asText(row.city).toLowerCase();
+  const city = asText(row.city);
   const gender = asText(row.gender).toLowerCase();
+  const diet = asText(row.diet);
   const haystacks = [
     asText(row.profession),
     asText(row.education),
@@ -297,18 +328,22 @@ export function scoreBrowseRow(row: Record<string, unknown>, criteria: SearchCri
     asText(row.wants),
     asText(row.mother_tongue),
     asText(row.diet),
+    asText(row.visa_status),
     asText(row.full_name),
   ].map(function (s) {
     return s.toLowerCase();
   });
 
-  if (criteria.city && city.includes(criteria.city.toLowerCase())) score += 5;
+  if (criteria.city && cityLooksLike(city, criteria.city)) score += 5;
   if (criteria.gender && gender === criteria.gender.toLowerCase()) score += 3;
 
   criteria.keywords.forEach(function (kw) {
     const needle = kw.toLowerCase();
     if (asText(row.profession).toLowerCase().includes(needle)) score += 4;
     else if (asText(row.education).toLowerCase().includes(needle)) score += 3;
+    else if (dietLooksLike(diet, needle)) score += 3;
+    else if (asText(row.visa_status).toLowerCase().includes(needle)) score += 3;
+    else if (asText(row.mother_tongue).toLowerCase().includes(needle)) score += 3;
     else if (haystacks.some(function (h) { return h.includes(needle); })) score += 2;
   });
 
