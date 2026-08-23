@@ -5,6 +5,7 @@ import { authJsonHeaders } from "../../lib/client-auth";
 import type { BrowseProfile } from "../../lib/profile-search";
 import {
   SPEED_MATCH_NO_ANSWER_ID,
+  SPEED_MATCH_NO_ANSWER_LABEL,
   SPEED_MATCH_QUESTION_COUNT,
   SPEED_MATCH_SECONDS,
   SPEED_MATCH_QUESTIONS,
@@ -177,7 +178,7 @@ export default function SpeedMatch({
             Ten questions with {partner.name || "this profile"}
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
-            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap Don't want to answer if you would rather skip. Time running out records the same choice.
+            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap {SPEED_MATCH_NO_ANSWER_LABEL} if you would rather skip. Time running out records the same choice.
           </p>
           <div style={{ display: "flex", gap: 9 }}>
             <button
