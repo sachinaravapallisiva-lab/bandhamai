@@ -11,6 +11,15 @@ export type SpeedMatchChoice = {
   label: string;
 };
 
+/** Canonical tap choice for skip / timer / prefer-not. No free-text answers. */
+export const SPEED_MATCH_NO_ANSWER_ID = "dont_answer";
+export const SPEED_MATCH_NO_ANSWER_ALIAS = "prefer_not";
+export const SPEED_MATCH_NO_ANSWER_LABEL = "Don't want to answer";
+export const SPEED_MATCH_NO_ANSWER_CHOICE: SpeedMatchChoice = {
+  id: SPEED_MATCH_NO_ANSWER_ID,
+  label: SPEED_MATCH_NO_ANSWER_LABEL,
+};
+
 export type SpeedMatchQuestion = {
   id: string;
   prompt: string;
@@ -138,6 +147,35 @@ export const SPEED_MATCH_QUESTIONS: SpeedMatchQuestion[] = [
   },
 ];
 
+export function isNoAnswerChoiceId(choiceId: string | null | undefined) {
+  return (
+    !choiceId ||
+    choiceId === SPEED_MATCH_NO_ANSWER_ID ||
+    choiceId === SPEED_MATCH_NO_ANSWER_ALIAS
+  );
+}
+
+export function choicesForQuestion(question: SpeedMatchQuestion) {
+  if (question.choices.some(function (c) { return c.id === SPEED_MATCH_NO_ANSWER_ID; })) {
+    return question.choices;
+  }
+  return question.choices.concat(SPEED_MATCH_NO_ANSWER_CHOICE);
+}
+
+export function isValidChoiceId(question: SpeedMatchQuestion, choiceId: string) {
+  if (isNoAnswerChoiceId(choiceId)) return true;
+  return question.choices.some(function (c) { return c.id === choiceId; });
+}
+
+export function noAnswerPayload(questionId: string, timedOut: boolean): SpeedMatchStoredAnswer {
+  return {
+    question_id: questionId,
+    choice_id: SPEED_MATCH_NO_ANSWER_ID,
+    timed_out: timedOut,
+    skipped: true,
+  };
+}
+
 export function progressLabel(index: number) {
   return index + 1 + "/" + SPEED_MATCH_QUESTION_COUNT;
 }
@@ -169,19 +207,19 @@ export function withAnswer(
 
 export function countAnswered(answers: SpeedMatchStoredAnswer[]) {
   return answers.filter(function (row) {
-    return !!row.choice_id;
+    return !!row.choice_id && !isNoAnswerChoiceId(row.choice_id);
   }).length;
 }
 
 export function choiceLabel(questionId: string, choiceId: string | null) {
-  if (!choiceId) return "Skipped";
+  if (isNoAnswerChoiceId(choiceId)) return SPEED_MATCH_NO_ANSWER_LABEL;
   const question = SPEED_MATCH_QUESTIONS.find(function (q) {
     return q.id === questionId;
   });
   const choice = question?.choices.find(function (c) {
     return c.id === choiceId;
   });
-  return choice?.label || "Skipped";
+  return choice?.label || SPEED_MATCH_NO_ANSWER_LABEL;
 }
 
 export function parseRoundAnswers(raw: unknown): SpeedMatchStoredAnswer[] | null {
@@ -195,9 +233,15 @@ export function parseRoundAnswers(raw: unknown): SpeedMatchStoredAnswer[] | null
     const row = item as Record<string, unknown>;
     if (row.question_id !== expected.id) return null;
 
-    const choiceId = row.choice_id;
-    if (choiceId !== null && typeof choiceId !== "string") return null;
-    if (choiceId && !expected.choices.some(function (c) { return c.id === choiceId; })) {
+    const rawChoice = row.choice_id;
+    if (rawChoice !== null && typeof rawChoice !== "string") return null;
+
+    let choiceId: string | null;
+    if (rawChoice === null || isNoAnswerChoiceId(rawChoice)) {
+      choiceId = SPEED_MATCH_NO_ANSWER_ID;
+    } else if (isValidChoiceId(expected, rawChoice)) {
+      choiceId = rawChoice;
+    } else {
       return null;
     }
 
@@ -205,7 +249,7 @@ export function parseRoundAnswers(raw: unknown): SpeedMatchStoredAnswer[] | null
       question_id: expected.id,
       choice_id: choiceId,
       timed_out: row.timed_out === true,
-      skipped: row.skipped === true || choiceId === null,
+      skipped: row.skipped === true || isNoAnswerChoiceId(choiceId),
     });
   }
   return out;
