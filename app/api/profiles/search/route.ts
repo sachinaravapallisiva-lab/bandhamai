@@ -19,8 +19,10 @@ import {
   BROWSE_SHORTLIST_SIZE,
   LIVE_PROFILE_STATUS,
   browseSelectColumns,
+  cityMatchValues,
   ilikeContains,
   mergeCriteria,
+  needsLlmAssist,
   parseSearchQuery,
   pickShortlist,
   safeOrValue,
@@ -29,7 +31,17 @@ import {
 
 export const runtime = "nodejs";
 
-const KEYWORD_COLUMNS = ["profession", "education", "about", "wants", "mother_tongue", "full_name"] as const;
+const KEYWORD_COLUMNS = [
+  "profession",
+  "education",
+  "about",
+  "wants",
+  "mother_tongue",
+  "visa_status",
+  "full_name",
+] as const;
+
+const LLM_ASSIST_MS = 400;
 
 function dataClient() {
   return getServiceSupabase() || getAnonSupabase();
@@ -71,7 +83,7 @@ function parseLlmCriteria(raw: string): SearchCriteria | null {
   }
 }
 
-/** Optional xAI pass. Never blocks Browse — timeout or any failure returns null. */
+/** Optional xAI pass. Failures and the short timeout return null. */
 async function extractCriteriaWithLlm(query: string): Promise<SearchCriteria | null> {
   const key = process.env.XAI_API_KEY;
   if (!key) return null;
@@ -79,7 +91,7 @@ async function extractCriteriaWithLlm(query: string): Promise<SearchCriteria | n
   const controller = new AbortController();
   const timer = setTimeout(function () {
     controller.abort();
-  }, 900);
+  }, LLM_ASSIST_MS);
 
   try {
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
@@ -92,12 +104,12 @@ async function extractCriteriaWithLlm(query: string): Promise<SearchCriteria | n
       body: JSON.stringify({
         model: "grok-4.6",
         temperature: 0,
-        max_tokens: 180,
+        max_tokens: 120,
         messages: [
           {
             role: "system",
             content:
-              'Extract matrimony Browse filters. Reply with JSON only: {"city":string|null,"gender":"Female"|"Male"|"Other"|null,"keywords":string[]}. keywords are profession, education, language, or lifestyle words. Ignore age. No commentary.',
+              'Extract matrimony Browse filters from the user\'s words only. Reply with JSON only: {"city":string|null,"gender":"Female"|"Male"|"Other"|null,"keywords":string[]}. Keep normal English cities and professions. If they used Indian shorthand, expand Hyd→Hyderabad, Blr→Bengaluru, Madras→Chennai, Vizag→Visakhapatnam. Do not invent language, community, diet, or visa keywords they did not say. Ignore age. No commentary.',
           },
           { role: "user", content: query },
         ],
@@ -115,6 +127,14 @@ async function extractCriteriaWithLlm(query: string): Promise<SearchCriteria | n
   }
 }
 
+/** Use an in-flight LLM result only if it already settled. Never wait on it. */
+async function takeIfReady<T>(promise: Promise<T>): Promise<T | null> {
+  const pending = { pending: true };
+  const winner = await Promise.race([promise, Promise.resolve(pending)]);
+  if (winner && typeof winner === "object" && "pending" in winner) return null;
+  return winner as T;
+}
+
 export async function GET(request: Request) {
   try {
     const supabase = dataClient();
@@ -123,33 +143,39 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const query = asString(url.searchParams.get("q")).slice(0, 280);
 
-    let criteria = parseSearchQuery(query);
-    if (query && (!criteria.city || criteria.keywords.length === 0)) {
-      criteria = mergeCriteria(criteria, await extractCriteriaWithLlm(query));
-    }
+    const parsed = parseSearchQuery(query);
+    const llmPromise = needsLlmAssist(query, parsed) ? extractCriteriaWithLlm(query) : null;
 
     const hasStatus = await tableHasColumn(supabase, "profiles", "status");
     if (!hasStatus) {
       return NextResponse.json({
         profiles: [],
         empty: "inventory",
-        criteria,
+        criteria: parsed,
         source: "live",
+        parse: "deterministic",
+        llm: false,
       });
     }
 
-    const [photo_url, diet, user_id, created_at] = await Promise.all([
+    const [photo_url, diet, user_id, created_at, inventory] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
       tableHasColumn(supabase, "profiles", "diet"),
       tableHasColumn(supabase, "profiles", "user_id"),
       tableHasColumn(supabase, "profiles", "created_at"),
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", LIVE_PROFILE_STATUS),
     ]);
     const flags = { photo_url, diet, user_id, created_at };
 
-    const inventory = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("status", LIVE_PROFILE_STATUS);
+    let criteria = parsed;
+    let usedLlm = false;
+    if (llmPromise) {
+      const extra = await takeIfReady(llmPromise);
+      if (extra) {
+        criteria = mergeCriteria(parsed, extra);
+        usedLlm = true;
+      }
+    }
 
     if (inventory.error) {
       return NextResponse.json({ error: inventory.error.message }, { status: 400 });
@@ -162,6 +188,8 @@ export async function GET(request: Request) {
         empty: "inventory",
         criteria,
         source: "live",
+        parse: "deterministic",
+        llm: usedLlm,
       });
     }
 
@@ -175,7 +203,22 @@ export async function GET(request: Request) {
     let q = supabase.from("profiles").select(select).eq("status", LIVE_PROFILE_STATUS);
 
     if (viewerId) q = q.neq("user_id", viewerId);
-    if (criteria.city) q = q.ilike("city", ilikeContains(criteria.city));
+    if (criteria.city) {
+      const cities = cityMatchValues(criteria.city)
+        .map(safeOrValue)
+        .filter(Boolean);
+      if (cities.length === 1) {
+        q = q.ilike("city", ilikeContains(cities[0]));
+      } else if (cities.length > 1) {
+        q = q.or(
+          cities
+            .map(function (city) {
+              return "city.ilike." + ilikeContains(city);
+            })
+            .join(",")
+        );
+      }
+    }
     if (criteria.gender) q = q.ilike("gender", criteria.gender);
 
     const keywordColumns: string[] = KEYWORD_COLUMNS.slice();
@@ -211,6 +254,8 @@ export async function GET(request: Request) {
       empty,
       criteria,
       source: "live",
+      parse: "deterministic",
+      llm: usedLlm,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong.";
