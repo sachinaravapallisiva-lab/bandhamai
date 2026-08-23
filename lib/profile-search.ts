@@ -7,8 +7,10 @@ import {
   isKnownKeywordAlias,
 } from "./desi-search-aliases";
 import { PROFILE_WRITE_FIELDS } from "./profile-fields";
+import { visaLooksLike } from "./visa-status";
 
 export { cityMatchValues } from "./desi-search-aliases";
+export { visaKeywordVariants, visaLooksLike } from "./visa-status";
 
 /** Only approved rows appear on Browse. Creation always inserts `pending`. */
 export const LIVE_PROFILE_STATUS = "live";
@@ -342,7 +344,7 @@ export function scoreBrowseRow(row: Record<string, unknown>, criteria: SearchCri
     if (asText(row.profession).toLowerCase().includes(needle)) score += 4;
     else if (asText(row.education).toLowerCase().includes(needle)) score += 3;
     else if (dietLooksLike(diet, needle)) score += 3;
-    else if (asText(row.visa_status).toLowerCase().includes(needle)) score += 3;
+    else if (visaLooksLike(asText(row.visa_status), needle)) score += 3;
     else if (asText(row.mother_tongue).toLowerCase().includes(needle)) score += 3;
     else if (haystacks.some(function (h) { return h.includes(needle); })) score += 2;
   });
