@@ -1,5 +1,10 @@
 import { readFileSync } from "node:fs";
 import {
+  PROFILE_ACTION_MIN,
+  PROFILE_CARD_RADIUS,
+  PROFILE_PHOTO_HEIGHT,
+} from "../lib/profile-card.ts";
+import {
   BROWSE_EMPTY_INVENTORY_TITLE,
   BROWSE_EMPTY_RESULTS_TITLE,
   GURU_INTRO,
@@ -22,6 +27,8 @@ const orb = readFileSync(new URL("../app/components/VoiceAssistant.tsx", import.
 const empty = readFileSync(new URL("../app/components/EmptyState.tsx", import.meta.url), "utf8");
 const matchCard = readFileSync(new URL("../app/components/MatchCard.tsx", import.meta.url), "utf8");
 const discover = readFileSync(new URL("../app/components/DiscoverCard.tsx", import.meta.url), "utf8");
+const chips = readFileSync(new URL("../app/components/ProfileFactChips.tsx", import.meta.url), "utf8");
+const cardChrome = readFileSync(new URL("../lib/profile-card.ts", import.meta.url), "utf8");
 const chrome = readFileSync(new URL("../app/components/AppChrome.tsx", import.meta.url), "utf8");
 
 const userFacing = [GURU_TITLE, GURU_ORB_LABEL, GURU_INTRO, GURU_SPEAKER].join("\n");
@@ -59,10 +66,37 @@ assert(page.includes("MatchCard"), "Matches uses the cream card");
 assert(matchCard.includes("VerifyBadge"), "Matches keep the violet VerifyAI badge");
 assert(matchCard.includes("PresenceMark"), "Matches keep the signed-in presence mark");
 assert(matchCard.includes("VIOLET_DEEP") || matchCard.includes("#4C1D95"), "Matches name uses deep violet");
-assert(matchCard.includes("borderRadius: 22"), "Matches card radius matches Discover");
+assert(matchCard.includes("PROFILE_CARD_RADIUS"), "Matches card radius matches Discover");
+assert(discover.includes("PROFILE_CARD_RADIUS"), "Browse card uses the shared Soft Minimal radius");
+assert(PROFILE_CARD_RADIUS === 22, "card family radius stays 22");
+assert(PROFILE_PHOTO_HEIGHT === 280, "card family photo height stays photo-first");
+assert(PROFILE_ACTION_MIN === 44, "primary card actions stay 44px");
+assert(cardChrome.includes("PROFILE_CARD_RADIUS"), "shared card chrome exports the radius lock");
+assert(cardChrome.includes("PROFILE_PHOTO_HEIGHT"), "shared card chrome exports the photo height lock");
+assert(cardChrome.includes("PROFILE_ACTION_MIN"), "shared card chrome exports the 44px action lock");
+assert(discover.includes("CREAM") && matchCard.includes("CREAM"), "both cards sit on cream");
+assert(discover.includes("VIOLET") && matchCard.includes("VIOLET"), "both cards use violet accents");
+assert(discover.includes("PROFILE_PHOTO_HEIGHT") && matchCard.includes("PROFILE_PHOTO_HEIGHT"), "photo size is one family");
+assert(discover.includes("minHeight: PROFILE_ACTION_MIN") && matchCard.includes("minHeight: PROFILE_ACTION_MIN"), "primary actions are 44px");
+assert(discover.includes("ProfileFactChips") && matchCard.includes("ProfileFactChips"), "quiet chips are shared");
+assert(chips.includes("WASH") || chips.includes("#F7F1E8"), "chips stay on wash, not loud chrome");
+assert(chips.includes("<svg"), "chips use SVG icons, not emoji");
+assert(!/\bGOLD\b/.test(matchCard), "MatchCard has no GOLD accent bar");
+assert(!/#C4A36A/.test(matchCard), "MatchCard has no gold hex bar");
+assert(!/linear-gradient\(90deg.*GOLD/.test(matchCard), "MatchCard gold gradient bar is gone");
 assert(matchCard.includes("Start Speed Match"), "Speed Match stays on Matches cards");
 assert(!page.includes("Start Speed Match") || !/tab === \"browse\"[\s\S]*Start Speed Match/.test(page), "Speed Match stays off Browse");
 assert(discover.includes("Interested"), "Pack 1 DiscoverCard actions stay");
+assert(discover.includes("Pass") && discover.includes("Save"), "Browse keeps Pass and Save");
+assert(matchCard.includes("Message"), "Matches keep Message");
+assert(discover.includes("<svg") && matchCard.includes("<svg"), "card actions use SVG icons, not emoji");
+assert(discover.includes("SafetyActions") && matchCard.includes("SafetyActions"), "safety stays on both cards");
+assert(discover.includes("InstagramShareControls") && matchCard.includes("InstagramShareControls"), "Instagram share stays on both cards");
+assert(discover.includes("DownloadBiodata") && matchCard.includes("DownloadBiodata"), "biodata download stays when opted in");
+const datingChrome = /\b(swipe|streaks?|hot near you|hot-near-you|for you tonight|for-you-tonight|super[\s-]?like|boost now|vibe check|crush|hook-?up|drinks tonight)\b/i;
+assert(!datingChrome.test(stripComments(discover)), "DiscoverCard has no dating chrome strings");
+assert(!datingChrome.test(stripComments(matchCard)), "MatchCard has no dating chrome strings");
+assert(!datingChrome.test(stripComments(chips)), "shared chips have no dating chrome strings");
 assert(chrome.includes("Bandhamai"), "wordmark is still Bandhamai");
 assert(page.includes("Bandhamai"), "home wordmark is still Bandhamai");
 

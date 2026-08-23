@@ -3,51 +3,27 @@
 import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
-import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
+import {
+  PROFILE_ACTION_MIN,
+  PROFILE_BODY_PAD,
+  PROFILE_CARD_RADIUS,
+  PROFILE_PHOTO_BG,
+  PROFILE_PHOTO_FALLBACK,
+  PROFILE_PHOTO_HEIGHT,
+  profileInitials,
+} from "../../lib/profile-card";
+import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
+import ProfileFactChips from "./ProfileFactChips";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "";
-  const first = parts[0][0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] || "" : "";
-  return (first + last).toUpperCase();
-}
-
-function ChipIcon({ kind }: { kind: "lang" | "edu" | "home" }) {
-  const common = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true as const };
-  if (kind === "edu") {
-    return (
-      <svg {...common}>
-        <path d="M3 10.5 12 6l9 4.5L12 15 3 10.5Z" stroke={MUTED} strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M7 12.5v4.2c0 .4 2.2 1.8 5 1.8s5-1.4 5-1.8v-4.2" stroke={MUTED} strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (kind === "home") {
-    return (
-      <svg {...common}>
-        <path d="M4.5 11.2 12 5.5l7.5 5.7V20h-5.2v-5.1H9.7V20H4.5v-8.8Z" stroke={MUTED} strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg {...common}>
-      <path d="M7 8.5c1.8-2.4 5.2-3 7.6-1.4 2.2 1.5 2.8 4.4 1.4 6.7" stroke={MUTED} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M8.2 16.8c.8.4 1.7.6 2.6.6 3 0 5.4-2.2 5.4-5" stroke={MUTED} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="9.2" cy="10.6" r="1" fill={MUTED} />
-    </svg>
-  );
-}
-
 function HeartIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 19.4s-6.4-3.9-8.3-7.4C2 9.2 3.2 6.4 6.1 5.7c1.8-.4 3.4.3 4.3 1.7.9-1.4 2.5-2.1 4.3-1.7 2.9.7 4.1 3.5 2.4 6.3-1.9 3.5-8.3 7.4-8.3 7.4Z"
         fill="#FFFFFF"
@@ -58,7 +34,7 @@ function HeartIcon() {
 
 function CloseIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M7 7l10 10M17 7 7 17" stroke={VIOLET_DEEP} strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
@@ -66,7 +42,7 @@ function CloseIcon() {
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M7 5.4h10c.6 0 1 .4 1 1V19l-6-3.2L7 19V6.4c0-.6.4-1 1-1Z"
         stroke={VIOLET_DEEP}
@@ -77,6 +53,20 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
     </svg>
   );
 }
+
+const actionBase = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  minHeight: PROFILE_ACTION_MIN,
+  minWidth: PROFILE_ACTION_MIN,
+  borderRadius: 999,
+  padding: "10px 14px",
+  fontSize: 13.5,
+  fontWeight: 600,
+  cursor: "pointer" as const,
+};
 
 export default function DiscoverCard({
   profile,
@@ -107,7 +97,7 @@ export default function DiscoverCard({
       style={{
         background: CREAM,
         border: "1px solid " + LINE,
-        borderRadius: 22,
+        borderRadius: PROFILE_CARD_RADIUS,
         overflow: "hidden",
       }}
     >
@@ -120,24 +110,24 @@ export default function DiscoverCard({
             alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
             style={{
               width: "100%",
-              height: 300,
+              height: PROFILE_PHOTO_HEIGHT,
               objectFit: "cover",
               display: "block",
-              background: "#EDE4D4",
+              background: PROFILE_PHOTO_BG,
             }}
           />
         ) : (
           <div
             aria-hidden={profile.name ? undefined : true}
             style={{
-              height: 300,
-              background: "linear-gradient(160deg, #EFE4D2 0%, #D9C8EC 58%, #5B21B6 130%)",
+              height: PROFILE_PHOTO_HEIGHT,
+              background: PROFILE_PHOTO_FALLBACK,
               display: "grid",
               placeItems: "center",
             }}
           >
             <span className="bm-serif" style={{ fontSize: 52, color: CREAM, letterSpacing: "-.02em" }}>
-              {initials(profile.name)}
+              {profileInitials(profile.name)}
             </span>
           </div>
         )}
@@ -160,7 +150,7 @@ export default function DiscoverCard({
         ) : null}
       </div>
 
-      <div style={{ padding: "18px 18px 16px" }}>
+      <div style={{ padding: PROFILE_BODY_PAD }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <h2 className="bm-serif" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: VIOLET_DEEP, letterSpacing: "-.015em" }}>
             {profile.name || "Profile"}
@@ -187,109 +177,43 @@ export default function DiscoverCard({
           initialHandle={profile.instagram}
         />
 
-        {chips.length ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "stretch",
-              marginTop: 16,
-              padding: "12px 0",
-              borderTop: "1px solid " + LINE,
-              borderBottom: "1px solid " + LINE,
-            }}
-          >
-            {chips.map(function (chip, index) {
-              return (
-                <div
-                  key={chip.key}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "0 8px",
-                    borderLeft: index === 0 ? "none" : "1px solid " + LINE,
-                    minWidth: 0,
-                  }}
-                >
-                  <ChipIcon kind={chip.icon} />
-                  <span
-                    className="bm-sans"
-                    style={{
-                      fontSize: 12.5,
-                      color: MUTED,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {chip.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+        <ProfileFactChips chips={chips} />
 
         {prompt ? (
-          <div style={{ position: "relative", padding: "16px 28px 4px 0", minHeight: 72 }}>
-            <p className="bm-sans" style={{ margin: 0, fontSize: 12.5, color: VIOLET, fontWeight: 500 }}>
+          <div
+            style={{
+              marginTop: 14,
+              padding: "12px 14px",
+              background: WASH,
+              border: "1px solid " + LINE,
+              borderRadius: 14,
+            }}
+          >
+            <p className="bm-sans" style={{ margin: 0, fontSize: 12, color: MUTED, fontWeight: 500, letterSpacing: ".02em" }}>
               {profile.promptLabel}
             </p>
-            <p className="bm-serif" style={{ margin: "6px 0 0", fontSize: 18, lineHeight: 1.4, color: INK }}>
+            <p className="bm-serif" style={{ margin: "6px 0 0", fontSize: 17, lineHeight: 1.45, color: INK }}>
               {prompt}
             </p>
-            <span
-              aria-hidden="true"
-              className="bm-serif"
-              style={{
-                position: "absolute",
-                right: 0,
-                top: 18,
-                fontSize: 64,
-                lineHeight: 1,
-                color: "rgba(109,40,217,.12)",
-              }}
-            >
-              ”
-            </span>
           </div>
         ) : (
-          <div style={{ height: 14 }} />
+          <div style={{ height: 8 }} />
         )}
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={onInterested}
             className="bm-sans bm-talk bm-focus"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              background: "none",
+              ...actionBase,
+              flex: "1 1 132px",
+              background: VIOLET,
+              color: "#FFFFFF",
               border: "none",
-              padding: 0,
-              cursor: "pointer",
-              color: VIOLET_DEEP,
-              fontSize: 13.5,
-              fontWeight: 600,
             }}
           >
-            <span
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 999,
-                background: VIOLET,
-                display: "grid",
-                placeItems: "center",
-                boxShadow: "0 8px 18px rgba(109,40,217,.28)",
-              }}
-            >
-              <HeartIcon />
-            </span>
+            <HeartIcon />
             Interested
           </button>
 
@@ -298,31 +222,14 @@ export default function DiscoverCard({
             onClick={onPass}
             className="bm-sans bm-ghost bm-focus"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
+              ...actionBase,
+              flex: "1 1 88px",
+              background: CREAM,
               color: VIOLET_DEEP,
-              fontSize: 13.5,
-              fontWeight: 600,
+              border: "1px solid " + LINE,
             }}
           >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 999,
-                background: CREAM,
-                border: "1px solid " + LINE,
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <CloseIcon />
-            </span>
+            <CloseIcon />
             Pass
           </button>
 
@@ -332,31 +239,14 @@ export default function DiscoverCard({
             aria-pressed={saved}
             className="bm-sans bm-ghost bm-focus"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
+              ...actionBase,
+              flex: "1 1 88px",
+              background: CREAM,
               color: VIOLET_DEEP,
-              fontSize: 13.5,
-              fontWeight: 600,
+              border: "1px solid " + LINE,
             }}
           >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 999,
-                background: CREAM,
-                border: "1px solid " + LINE,
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <BookmarkIcon filled={saved} />
-            </span>
+            <BookmarkIcon filled={saved} />
             {saved ? "Saved" : "Save"}
           </button>
         </div>
