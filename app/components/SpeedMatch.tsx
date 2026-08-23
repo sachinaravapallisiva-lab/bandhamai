@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { authJsonHeaders } from "../../lib/client-auth";
 import type { BrowseProfile } from "../../lib/profile-search";
 import {
+  SPEED_MATCH_NO_ANSWER_ID,
   SPEED_MATCH_QUESTION_COUNT,
   SPEED_MATCH_SECONDS,
   SPEED_MATCH_QUESTIONS,
   SPEED_MATCH_SQL_FILE,
   choiceLabel,
+  choicesForQuestion,
   countAnswered,
   emptyAnswers,
+  isNoAnswerChoiceId,
+  noAnswerPayload,
   progressLabel,
   questionAt,
   withAnswer,
@@ -40,7 +44,7 @@ export default function SpeedMatch({
 
   const answersRef = useRef(answers);
   const lockedRef = useRef(false);
-  const chooseRef = useRef<(choiceId: string | null, timedOut: boolean, skipped: boolean) => void>(
+  const chooseRef = useRef<(choiceId: string, timedOut: boolean) => void>(
     function () {}
   );
 
@@ -105,18 +109,24 @@ export default function SpeedMatch({
       });
   }
 
-  function choose(choiceId: string | null, timedOut: boolean, skipped: boolean) {
+  function choose(choiceId: string, timedOut: boolean) {
     if (phase !== "play" || lockedRef.current) return;
     lockedRef.current = true;
     const question = questionAt(index);
     if (!question) return;
 
-    const next = withAnswer(answersRef.current, index, {
-      question_id: question.id,
-      choice_id: choiceId,
-      timed_out: timedOut,
-      skipped: skipped || choiceId === null,
-    });
+    const next = withAnswer(
+      answersRef.current,
+      index,
+      isNoAnswerChoiceId(choiceId)
+        ? noAnswerPayload(question.id, timedOut)
+        : {
+            question_id: question.id,
+            choice_id: choiceId,
+            timed_out: timedOut,
+            skipped: false,
+          }
+    );
     answersRef.current = next;
     setAnswers(next);
 
@@ -140,7 +150,7 @@ export default function SpeedMatch({
       setLeft(remaining);
       if (remaining <= 0) {
         clearInterval(id);
-        chooseRef.current(null, true, true);
+        chooseRef.current(SPEED_MATCH_NO_ANSWER_ID, true);
       }
     }, 100);
     return function () {
@@ -167,7 +177,7 @@ export default function SpeedMatch({
             Ten questions with {partner.name || "this profile"}
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
-            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Skip if you need to.
+            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap Don't want to answer if you would rather skip. Time running out records the same choice.
           </p>
           <div style={{ display: "flex", gap: 9 }}>
             <button
@@ -241,18 +251,19 @@ export default function SpeedMatch({
           <h2 className="bm-serif" style={{ margin: "0 0 16px", fontSize: 22, fontWeight: 400, lineHeight: 1.3 }}>
             {question.prompt}
           </h2>
-          <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-            {question.choices.map(function (choice) {
+          <div style={{ display: "grid", gap: 8 }}>
+            {choicesForQuestion(question).map(function (choice) {
+              const quiet = isNoAnswerChoiceId(choice.id);
               return (
                 <button
                   key={choice.id}
                   type="button"
-                  onClick={function () { choose(choice.id, false, false); }}
+                  onClick={function () { choose(choice.id, false); }}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     textAlign: "left",
-                    background: WASH,
-                    color: INK,
+                    background: quiet ? "#FFFFFF" : WASH,
+                    color: quiet ? MUTED : INK,
                     border: "1px solid " + LINE,
                     borderRadius: 12,
                     padding: "12px 14px",
@@ -266,23 +277,6 @@ export default function SpeedMatch({
               );
             })}
           </div>
-          <button
-            type="button"
-            onClick={function () { choose(null, false, true); }}
-            className="bm-sans bm-focus"
-            style={{
-              background: "none",
-              border: "none",
-              color: MUTED,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              textDecoration: "underline",
-              padding: 0,
-            }}
-          >
-            Skip
-          </button>
         </>
       ) : null}
 
@@ -308,7 +302,7 @@ export default function SpeedMatch({
                   <p className="bm-serif" style={{ margin: "0 0 4px", fontSize: 16 }}>
                     {q.prompt}
                   </p>
-                  <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: row?.choice_id ? INK : MUTED }}>
+                  <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: isNoAnswerChoiceId(row?.choice_id) ? MUTED : INK }}>
                     {choiceLabel(q.id, row?.choice_id || null)}
                     {row?.timed_out ? " · time ran out" : ""}
                   </p>
