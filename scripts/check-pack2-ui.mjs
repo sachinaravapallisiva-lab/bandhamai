@@ -56,7 +56,7 @@ assert(empty.includes("VIOLET_DEEP") || empty.includes("#4C1D95"), "empty state 
 assert(empty.includes("borderRadius: 22"), "empty state uses Pack 1 card radius");
 
 assert(page.includes("MatchCard"), "Matches uses the cream card");
-assert(matchCard.includes("VerifyBadge"), "Matches keep the quiet gold VerifyAI mark");
+assert(matchCard.includes("VerifyBadge"), "Matches keep the violet VerifyAI badge");
 assert(matchCard.includes("PresenceMark"), "Matches keep the signed-in presence mark");
 assert(matchCard.includes("VIOLET_DEEP") || matchCard.includes("#4C1D95"), "Matches name uses deep violet");
 assert(matchCard.includes("borderRadius: 22"), "Matches card radius matches Discover");

@@ -79,8 +79,30 @@ const offer = read("app/components/VerifyOffer.tsx");
 assert(offer.includes("$4.99") || offer.includes("VERIFYAI_PRICE_LABEL"), "offer shows $4.99");
 assert(offer.includes("/api/verifyai/checkout"), "offer uses real Checkout");
 
+assert(VERIFYAI_COPY.badgeLabel === "Verified", "visible badge word is Verified");
+assert(VERIFYAI_COPY.badgePhrase === "Verified with VerifyAI.", "tap / title / name lock");
+
+const badge = read("app/components/VerifyBadge.tsx");
+assert(badge.includes("if (!verified) return null"), "badge still only renders when verified");
+assert(badge.includes("<button"), "badge is tappable, not icon-only");
+assert(badge.includes("VERIFYAI_COPY.badgeLabel") || badge.includes(">Verified<"), "visible Verified label");
+assert(
+  badge.includes("VERIFYAI_COPY.badgePhrase") || badge.includes("Verified with VerifyAI."),
+  "title and accessible name use Verified with VerifyAI."
+);
+assert(badge.includes("title={phrase}") || badge.includes('title="Verified with VerifyAI."'), "title lock");
+assert(badge.includes("aria-label={phrase}") || badge.includes('aria-label="Verified with VerifyAI."'), "aria-label lock");
+assert(badge.includes("VIOLET"), "badge uses theme VIOLET");
+assert(badge.includes("VIOLET_DEEP"), "badge uses theme VIOLET_DEEP");
+assert(!/\bGOLD\b/.test(badge), "badge is not gold");
+assert(!/#C4A36A|#FFD700|#F5C518/i.test(badge), "no gold hex on the badge");
+assert(!/#16[Aa]34[Aa]|#22[Cc]55[Ee]|#15803[Dd]|#10[Bb]981/i.test(badge), "badge is not green");
+assert(!/#1[Dd]9[Bb][Ff]0|#1[Dd][Aa]1[Ff]2|#1877[Ff]2|#0[Aa]66[Cc]2/i.test(badge), "badge is not a blue tick");
+assert(!badge.includes('title="VerifyAI"'), "old icon-only title is gone");
+assert(!badge.includes('aria-label="VerifyAI"'), "old icon-only name is gone");
+
 const sql = read("supabase/verifyai.sql");
 assert(sql.includes("verifyai_payments"), "payments table");
 assert(sql.includes("499"), "default amount is 499 cents");
 
-console.log("verifyai badge + $4.99 checkout rules ok");
+console.log("verifyai violet badge + $4.99 checkout rules ok");
