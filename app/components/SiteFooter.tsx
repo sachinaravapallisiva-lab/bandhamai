@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FOOTER_LINKS } from "../../lib/site";
-import { LINE, MUTED } from "../../lib/theme";
+import { CREAM, LINE, MUTED } from "../../lib/theme";
 
 export default function SiteFooter({
   extraBottom = 0,
@@ -10,7 +10,7 @@ export default function SiteFooter({
   return (
     <footer
       style={{
-        background: "#FFFFFF",
+        background: CREAM,
         borderTop: "1px solid " + LINE,
         paddingBottom: extraBottom,
       }}

@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Live site: [https://bandhamai.vercel.app](https://bandhamai.vercel.app)
 
-The product UI stays the current website look (violet / white, Browse · Matches · Chat). Do not treat this repo as a new visual system until that is an explicit follow-up.
+Pack 1 UI is live in this repo: warm cream surfaces, deep violet brand, photo-first Discover (one card at a time), quiet gold VerifyAI shield, Interested / Pass / Save, and a small guru mic chip. Speed Match stays Tier 2 and is not surfaced on Discover. Later packs cover splash, onboarding, chat, and settings.
 
 ## Getting Started
 
@@ -301,8 +301,8 @@ Two surfaces. They do not share a backend job.
 
 | Surface | What it does | What it never does |
 | --- | --- | --- |
-| Top search box + **Tap to speak** | Typed or spoken person search: Grok STT → desi/English parse → `/api/profiles/search` | Open the violet orb, run `/api/guru`, write chat text |
-| Violet orb / love guru | Coaching, talking to parents, profile wording if asked (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, ghostwrite a sendable message, auto-reply, rate the other person |
+| Top search box + **Tap to speak** | Typed or spoken person search: Grok STT → desi/English parse → `/api/profiles/search` | Open the mic chip, run `/api/guru`, write chat text |
+| Mic chip / love guru | Coaching, talking to parents, profile wording if asked (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, ghostwrite a sendable message, auto-reply, rate the other person |
 
 If someone asks the guru to find people, it may say “use the search box above.” It must not run a search.
 
@@ -313,17 +313,17 @@ If someone asks the guru to find people, it may say “use the search box above.
 **Profile search (top box)**
 
 1. On Browse, the box is labeled **PROFILE SEARCH**. Placeholder starts with “Search profiles”.
-2. Type `doctor in Hyderabad` and press Search or Enter. Cards come from `/api/profiles/search`. The orb stays closed.
-3. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and searches. The orb still stays closed.
+2. Type `doctor in Hyderabad` and press Search or Enter. Cards come from `/api/profiles/search`. The mic chip stays closed.
+3. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and searches. The mic chip still stays closed.
 4. Network tab: search path is `/api/transcribe` then `/api/profiles/search`. No `/api/guru` or `/api/chat`.
 
-**Love guru (violet orb)**
+**Love guru (mic chip)**
 
-1. Open the orb. Intro says it is the love guru and points at the search box above. Title is **Love guru**, not a person-search prompt.
+1. Open the chip. Intro says it is the love guru and points at the search box above. Title is **Love guru**, not a person-search prompt.
 2. Ask “Find me a doctor in Dallas.” It should tell you to use the search box. Browse cards must not change from this chat.
 3. Ask “How do I talk to her parents?” You get coaching, not a shortlist.
 4. Ask it to write a first message she would think you wrote, or to rate someone, or for a match % / VerifyAI score. It should refuse.
-5. Network tab: orb posts `/api/guru` (or leftover `/api/chat`, same handler). No `/api/profiles/search`.
+5. Network tab: chip posts `/api/guru` (or leftover `/api/chat`, same handler). No `/api/profiles/search`.
 
 ### Microphone
 
@@ -331,8 +331,8 @@ Browse search and the love guru both call `getUserMedia`. iOS will prompt using 
 
 ### Out of scope for this shell
 
-- **Speed Match** is live from Matches after Like: 10 Indian / desi matrimony dealbreaker questions, 15 seconds each. It is not a swipe deck and does not invent a match score. Persist needs [`supabase/speed_match.sql`](supabase/speed_match.sql).
-- **VerifyAI** is a quiet badge on existing cards when `verifyai_status` is verified. Do not redesign the site for it.
+- **Speed Match** is live from Matches after Interested: 10 Indian / desi matrimony dealbreaker questions, 15 seconds each. It is not a swipe deck, is not shown on Discover, and does not invent a match score. Persist needs [`supabase/speed_match.sql`](supabase/speed_match.sql).
+- **VerifyAI** is a quiet gold shield beside the name when `verifyai_status` is verified.
 - Android is not added yet.
 - Placeholder icons in `public/icons/` should be replaced before TestFlight.
 

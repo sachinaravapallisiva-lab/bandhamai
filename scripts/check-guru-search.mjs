@@ -19,7 +19,7 @@ const guruLib = readFileSync(new URL("../lib/guru.ts", import.meta.url), "utf8")
 
 assert(SEARCH_PLACEHOLDER.toLowerCase().includes("search profiles"), "search placeholder names the job");
 assert(SEARCH_HINT.toLowerCase().includes("search for people"), "search hint names people search");
-assert(SEARCH_HINT.toLowerCase().includes("violet orb"), "search hint points at the orb for advice");
+assert(SEARCH_HINT.toLowerCase().includes("mic chip"), "search hint points at the mic chip for advice");
 assert(GURU_INTRO.toLowerCase().includes("love guru"), "guru intro names the guru");
 assert(GURU_INTRO.toLowerCase().includes("search box above"), "guru intro soft-handoffs to search");
 assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old search-shaped guru intro is gone");

@@ -11,6 +11,7 @@
     "check:verifyai": "node --experimental-strip-types scripts/check-verifyai.mjs",
     "check:speed-match": "node --experimental-strip-types scripts/check-speed-match.mjs",
     "check:guru-search": "node --experimental-strip-types scripts/check-guru-search.mjs",
+    "check:pack1-ui": "node --experimental-strip-types scripts/check-pack1-ui.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },

@@ -1,4 +1,4 @@
-import { INK, LINE, MUTED, WASH } from "../../lib/theme";
+import { CREAM, INK, LINE, MUTED, WASH } from "../../lib/theme";
 
 export function ProfilePhoto({
   src,
@@ -46,7 +46,7 @@ export function PhotoCardPreview({
     <article
       className="bm-card"
       style={{
-        background: "#FFFFFF",
+        background: CREAM,
         border: "1px solid " + LINE,
         borderRadius: 14,
         padding: "16px",
