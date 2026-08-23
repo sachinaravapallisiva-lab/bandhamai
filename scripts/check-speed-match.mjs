@@ -20,7 +20,7 @@ assert(SPEED_MATCH_SECONDS === 15, "locked to 15 seconds");
 assert(SPEED_MATCH_QUESTIONS.length === 10, "bank must be exactly 10");
 
 const ids = new Set();
-const banned = /\b(flirt|party|hookup|hook-up|crush|drinks tonight|vibe check|swipe|hot take|never have i)\b/i;
+const banned = /\b(flirt|party|hookup|hook-up|crush|drinks tonight|vibe check|swipe|hot take|never have i|love language|attachment style)\b/i;
 
 SPEED_MATCH_QUESTIONS.forEach(function (q, i) {
   assert(q.id && !ids.has(q.id), "question ids must be unique: " + q.id);
@@ -58,7 +58,7 @@ const first = withAnswer(answers, 0, {
   skipped: false,
 });
 assert(countAnswered(first) === 1, "one recorded choice");
-assert(choiceLabel("diet", "vegetarian") === "Vegetarian household", "choice label lookup");
+assert(choiceLabel("diet", "vegetarian") === "Vegetarian only", "choice label lookup");
 assert(choiceLabel("diet", null) === "Skipped", "skip label");
 
 const parsed = parseRoundAnswers(first);
@@ -72,6 +72,10 @@ const badChoice = first.map(function (row, i) {
 assert(parseRoundAnswers(badChoice) === null, "unknown choice rejected");
 
 assert(!("match_percent" in first[0]), "do not invent a score on answers");
+
+SPEED_MATCH_QUESTIONS.forEach(function (q) {
+  assert(!/\bhow do you feel\b/i.test(q.prompt), "keep prompts as hard filters: " + q.id);
+});
 
 console.log("speed match bank ok", {
   count: SPEED_MATCH_QUESTIONS.length,

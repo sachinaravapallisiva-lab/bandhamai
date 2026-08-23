@@ -167,7 +167,7 @@ export default function SpeedMatch({
             Ten questions with {partner.name || "this profile"}
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
-            Fifteen seconds each. These are deal-breakers families often ask about — not a score, and not a promise that you will match. Skip if you need to.
+            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Skip if you need to.
           </p>
           <div style={{ display: "flex", gap: 9 }}>
             <button

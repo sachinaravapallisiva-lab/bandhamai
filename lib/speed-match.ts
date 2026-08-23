@@ -32,107 +32,108 @@ export type SpeedMatchLocalRound = {
 };
 
 /**
- * Indian / desi matrimony dealbreakers and hard filters.
- * Short choices so 15 seconds is realistic. Not Western dating prompts.
+ * Indian / desi matrimony dealbreakers and hard filters only.
+ * Locked 10 from Sai's list. Not Western dating, not flirty, not party games.
+ * Parked (did not fit 10): language at home, alcohol / smoking comfort.
  */
 export const SPEED_MATCH_QUESTIONS: SpeedMatchQuestion[] = [
   {
     id: "diet",
-    prompt: "What food do you want at home after marriage?",
+    prompt: "Vegetarian or non-veg at home after marriage?",
     choices: [
-      { id: "vegetarian", label: "Vegetarian household" },
-      { id: "eggetarian", label: "Eggetarian is fine" },
-      { id: "nonveg", label: "Non-veg is fine" },
-      { id: "decide", label: "We'll decide meals together" },
+      { id: "vegetarian", label: "Vegetarian only" },
+      { id: "eggetarian", label: "Eggetarian ok" },
+      { id: "nonveg", label: "Non-veg ok" },
+      { id: "decide", label: "Flexible" },
     ],
   },
   {
     id: "location",
-    prompt: "After marriage, where do you want to live?",
+    prompt: "Live in India or abroad after marriage?",
     choices: [
       { id: "india", label: "India" },
-      { id: "abroad", label: "United States / abroad" },
-      { id: "either", label: "Either, depending on family and work" },
-      { id: "undecided", label: "Still deciding" },
+      { id: "abroad", label: "US / abroad" },
+      { id: "either", label: "Either" },
+      { id: "undecided", label: "Not sure yet" },
     ],
   },
   {
     id: "family_living",
-    prompt: "How do you want to live with family after marriage?",
+    prompt: "Joint family or nuclear after marriage?",
     choices: [
-      { id: "joint", label: "Joint family with parents" },
-      { id: "nearby", label: "Nuclear home, parents nearby" },
-      { id: "nuclear", label: "Nuclear, and distance is fine" },
-      { id: "open", label: "Open — depends on the situation" },
+      { id: "joint", label: "Joint with parents" },
+      { id: "nearby", label: "Nuclear, parents nearby" },
+      { id: "nuclear", label: "Nuclear, distance ok" },
+      { id: "open", label: "Depends" },
     ],
   },
   {
     id: "parents",
-    prompt: "How should parents be involved in this process?",
+    prompt: "Should parents be involved in this match?",
     choices: [
-      { id: "from_start", label: "Involved from the start" },
-      { id: "after_talk", label: "We talk first, then involve parents" },
-      { id: "inform", label: "We decide; parents are informed" },
-      { id: "talking", label: "Still talking this through" },
+      { id: "from_start", label: "From the start" },
+      { id: "after_talk", label: "After we talk" },
+      { id: "inform", label: "We decide, then inform" },
+      { id: "talking", label: "Still deciding" },
     ],
   },
   {
     id: "community",
-    prompt: "Does the same community or family background matter to you?",
+    prompt: "Same community preference?",
     choices: [
-      { id: "same", label: "Prefer the same community" },
-      { id: "values", label: "Open if values line up" },
-      { id: "none", label: "Not a filter for me" },
-      { id: "family", label: "Still deciding with family" },
+      { id: "same", label: "Prefer same community" },
+      { id: "values", label: "Open if values match" },
+      { id: "none", label: "No preference" },
+      { id: "family", label: "Deciding with family" },
     ],
   },
   {
     id: "dowry",
-    prompt: "What is your stance on dowry?",
+    prompt: "Dowry — asking or offering?",
     choices: [
-      { id: "refuse", label: "I will not ask for or accept it" },
-      { id: "walk_away", label: "Dealbreaker if either family brings it up" },
-      { id: "both_clear", label: "Both families must agree there is none" },
+      { id: "refuse", label: "Never ask or accept" },
+      { id: "walk_away", label: "Dealbreaker if it comes up" },
+      { id: "both_clear", label: "Both families must refuse" },
     ],
   },
   {
     id: "faith",
-    prompt: "How do you want faith practiced at home?",
+    prompt: "Temple, church, or mosque practice?",
     choices: [
-      { id: "regular", label: "Regular temple, church, or mosque" },
-      { id: "festivals", label: "Festivals and family rituals" },
-      { id: "private", label: "Private / personal" },
-      { id: "not_central", label: "Faith is not central for me" },
+      { id: "regular", label: "Regular practice" },
+      { id: "festivals", label: "Festivals / family rituals" },
+      { id: "private", label: "Private" },
+      { id: "not_central", label: "Not central" },
     ],
   },
   {
     id: "timeline",
-    prompt: "What is your timeline to marry?",
+    prompt: "How soon do you want to marry?",
     choices: [
       { id: "year", label: "Within a year" },
-      { id: "two_years", label: "In one to two years" },
-      { id: "families", label: "When both families are ready" },
-      { id: "none", label: "No fixed timeline yet" },
+      { id: "two_years", label: "1–2 years" },
+      { id: "families", label: "When families are ready" },
+      { id: "none", label: "No timeline yet" },
     ],
   },
   {
     id: "children",
-    prompt: "How do you feel about children?",
+    prompt: "Do you want children?",
     choices: [
-      { id: "want", label: "I want children" },
-      { id: "dont", label: "I do not want children" },
-      { id: "open", label: "Open, depending on my partner" },
+      { id: "want", label: "Yes" },
+      { id: "dont", label: "No" },
+      { id: "open", label: "Open" },
       { id: "undecided", label: "Still deciding" },
     ],
   },
   {
     id: "work",
-    prompt: "After marriage, should a spouse keep working?",
+    prompt: "Should your spouse work after marriage?",
     choices: [
-      { id: "working", label: "Yes — I want a working partner" },
-      { id: "either", label: "Support either path" },
-      { id: "home", label: "Prefer one person focuses on home" },
-      { id: "later", label: "We'll decide together later" },
+      { id: "working", label: "Yes, working partner" },
+      { id: "either", label: "Either path" },
+      { id: "home", label: "Prefer home focus" },
+      { id: "later", label: "Decide later" },
     ],
   },
 ];
