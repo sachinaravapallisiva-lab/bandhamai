@@ -355,7 +355,7 @@ Two surfaces. They do not share a backend job.
 | Surface | What it does | What it never does |
 | --- | --- | --- |
 | Top search box + **Tap to speak** | Typed or spoken person search: Grok STT → desi/English parse → `/api/profiles/search` | Open the assistant chip, run `/api/guru`, write chat text |
-| Bandham assistant (mic chip) | Serious suggestions and guidance: filters, honesty, evaluating fit, profile wording if asked (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, write pickup lines or sendable chat, coach parent-conversation scripts, auto-reply, rate the other person |
+| Bandham assistant (mic chip) | Serious suggestions and guidance: filters, honesty, evaluating fit, profile wording if asked. Can also collect an app issue summary and open a support ticket after confirm (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, write pickup lines or sendable chat, coach parent-conversation scripts, auto-reply, rate the other person, file a ticket from every message |
 
 If someone asks the assistant to find people, it may say “use the search box above.” It must not run a search.
 
@@ -378,6 +378,7 @@ If someone asks the assistant to find people, it may say “use the search box a
 4. Ask “How do I talk to her parents?” It should refuse a conversation script, not a shortlist.
 5. Ask it to write a first message she would think you wrote, or to rate someone, or for a match % / VerifyAI score. It should refuse.
 6. Network tab: chip posts `/api/guru` (or leftover `/api/chat`, same handler). No `/api/profiles/search`.
+7. Ask to open a ticket about a billing or app bug, give a short summary, then tap **Open ticket**. A row should land in `support_tickets`. Ordinary coaching must not create a row.
 
 ### Microphone
 
@@ -389,6 +390,48 @@ Browse search and the Bandham assistant both call `getUserMedia`. iOS will promp
 - **VerifyAI** is a quiet badge on existing cards when `verifyai_status` is verified. Do not redesign the site for it.
 - Android is not added yet.
 - Placeholder icons in `public/icons/` should be replaced before TestFlight.
+
+## Support tickets (assistant)
+
+The Bandham assistant can file an in-app ticket for **app issues** (bug, billing, account, other). This is separate from Block / Report / delete account. Harassment still uses Block and Report. Tickets are not an emergency service.
+
+The guru never writes the row itself. It proposes a draft (`propose_support_ticket` or a clear support intent). The orb shows a confirm chip. Only **Open ticket** calls `POST /api/support/tickets`.
+
+### What the app does
+
+1. `POST /api/support/tickets` — auth required. Inserts `public.support_tickets` (own `user_id`, optional account email, category, subject, body, `status=open`, `source=assistant`).
+2. Then emails the founder with Resend. If `RESEND_API_KEY` is missing or Resend errors, the ticket still stays saved and the error is logged.
+3. The member sees a ticket id and a short “we will look into it” note, plus the app-issue / Block-Report disclaimer.
+
+There is no admin UI in this pass. Review the queue in the Supabase table editor.
+
+### Supabase (Sai)
+
+Run [`supabase/support_tickets.sql`](supabase/support_tickets.sql) in the SQL editor. Until that file is applied, the API returns **503** and asks you to run it. Browse, search, and coaching still work.
+
+Do not run Instagram SQL from this file. Instagram columns stay as they are.
+
+### Vercel env (Sai)
+
+Set these on Production, Preview, and Development:
+
+| Name | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | Resend API key. Ticket rows still save if this is missing. |
+| `SUPPORT_INBOX_EMAIL` | Founder inbox. Default in code is `sachin.aravapallisiva@gmail.com`. |
+| `RESEND_FROM_EMAIL` | Optional. Defaults to Resend's onboarding sender until you verify a Bandham domain. |
+
+Do not commit secrets. Redeploy after saving env vars.
+
+### Test steps
+
+1. Apply `supabase/support_tickets.sql`. Confirm `public.support_tickets` exists (RLS on).
+2. Signed out: open the Bandham assistant, ask to open a ticket about “billing charged me twice”, give a summary. Confirm chip should offer **Sign in to open a ticket**. No row yet.
+3. Sign in. Repeat. Tap **Open ticket**. A row appears with your `user_id`, category `billing`, `status` `open`, `source` `assistant`. The chip shows a ticket id.
+4. If `RESEND_API_KEY` is set, Sai’s inbox (`SUPPORT_INBOX_EMAIL`) should get the notify. If the key is missing, the row still exists and the server log mentions the skip.
+5. Ask for profile wording or “find me a doctor”. No ticket row. Browse search is unchanged.
+6. Ask to report a person / harassment. The assistant should point to Block and Report, not open this ticket.
+7. `npm run check:support-tickets` and `npm run check:guru-search`.
 
 ## Learn More
 

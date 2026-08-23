@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { authJsonHeaders } from "../../lib/client-auth";
+import { loginHref } from "../../lib/next-path";
 import {
   GURU_INTRO,
   GURU_ORB_LABEL,
@@ -8,13 +10,19 @@ import {
   GURU_PLACEHOLDER,
   GURU_SPEAKER,
   GURU_STARTERS,
+  GURU_SUPPORT_NOTE,
   GURU_TITLE,
 } from "../../lib/surfaces";
+import {
+  SUPPORT_TICKETS_PATH,
+  ticketCreatedCopy,
+  type SupportTicketDraft,
+} from "../../lib/support";
 
 /* ------------------------------------------------------------------ *
    Bandham AI — Bandham assistant (mic chip)
-   Serious suggestions and guidance only. Never searches profiles.
-   Voice goes STT → /api/guru. Search lives in the box above.
+   Serious suggestions and guidance, plus confirmed app issue tickets.
+   Never searches profiles. Voice goes STT → /api/guru. Search lives above.
  * ------------------------------------------------------------------ */
 
 const SHELL = "#FDF8F1";
@@ -50,12 +58,21 @@ export default function VoiceAssistant() {
   const [state, setState] = useState("idle"); // idle | listening | thinking
   const [amps, setAmps] = useState<number[]>(Array(14).fill(0.2));
   const [draft, setDraft] = useState("");
+  const [ticketDraft, setTicketDraft] = useState<SupportTicketDraft | null>(null);
+  const [ticketBusy, setTicketBusy] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
   const linesRef = useRef<Line[]>(lines);
   linesRef.current = lines;
+
+  useEffect(() => {
+    authJsonHeaders().then(function (headers) {
+      setSignedIn(!!headers);
+    });
+  }, [open]);
 
   /* keep the transcript pinned to the bottom */
   useEffect(() => {
@@ -148,7 +165,21 @@ export default function VoiceAssistant() {
     const next = linesRef.current.concat({ who: "you", text: text });
     linesRef.current = next;
     setLines(next);
+    setTicketDraft(null);
     askGuru(next);
+  }
+
+  function readTicketDraft(raw: unknown): SupportTicketDraft | null {
+    if (!raw || typeof raw !== "object") return null;
+    const record = raw as { category?: unknown; subject?: unknown; body?: unknown };
+    const category = typeof record.category === "string" ? record.category : "";
+    const subject = typeof record.subject === "string" ? record.subject.trim() : "";
+    const body = typeof record.body === "string" ? record.body.trim() : "";
+    if (!subject || !body) return null;
+    if (category !== "bug" && category !== "billing" && category !== "account" && category !== "other") {
+      return { category: "other", subject, body };
+    }
+    return { category, subject, body };
   }
 
   function askGuru(history: Line[]) {
@@ -165,6 +196,8 @@ export default function VoiceAssistant() {
       })
       .then(function (result: any) {
         const reply = result.data && result.data.reply;
+        const nextDraft = readTicketDraft(result.data && result.data.ticket_draft);
+        setTicketDraft(nextDraft);
         if (result.ok && typeof reply === "string" && reply.trim()) {
           setLines(function (p) {
             return p.concat({ who: "bm", text: reply.trim() });
@@ -179,12 +212,66 @@ export default function VoiceAssistant() {
         });
       })
       .catch(function () {
+        setTicketDraft(null);
         setLines(function (p) {
           return p.concat({ who: "bm", text: FALLBACK_ERROR });
         });
       })
       .then(function () {
         setState("idle");
+      });
+  }
+
+  function confirmTicket() {
+    if (!ticketDraft || ticketBusy || state !== "idle") return;
+    setTicketBusy(true);
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSignedIn(false);
+          setLines(function (p) {
+            return p.concat({
+              who: "bm",
+              text: "Sign in to open a ticket. I will not file it until you confirm while signed in.",
+            });
+          });
+          return null;
+        }
+        setSignedIn(true);
+        return fetch(SUPPORT_TICKETS_PATH, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(ticketDraft),
+        }).then(function (r) {
+          return r.json().then(function (data: any) {
+            return { ok: r.ok, data: data };
+          });
+        });
+      })
+      .then(function (result) {
+        if (!result) return;
+        const id = result.data && result.data.ticket && result.data.ticket.id;
+        if (result.ok && typeof id === "string" && id.trim()) {
+          setTicketDraft(null);
+          setLines(function (p) {
+            return p.concat({ who: "bm", text: ticketCreatedCopy(id.trim()) });
+          });
+          return;
+        }
+        setLines(function (p) {
+          return p.concat({
+            who: "bm",
+            text: shortServerError(result.data && result.data.error) || "Couldn't save the ticket yet. Try again in a bit.",
+          });
+        });
+      })
+      .catch(function () {
+        setLines(function (p) {
+          return p.concat({ who: "bm", text: "Couldn't save the ticket yet. Try again in a bit." });
+        });
+      })
+      .then(function () {
+        setTicketBusy(false);
       });
   }
 
@@ -200,7 +287,7 @@ export default function VoiceAssistant() {
   }
 
   const live = state === "listening";
-  const busy = state === "thinking";
+  const busy = state === "thinking" || ticketBusy;
 
   /* ---------------- collapsed mic chip ---------------- */
   if (!open) {
@@ -345,6 +432,71 @@ export default function VoiceAssistant() {
                   </button>
                 );
               })}
+            </div>
+          ) : null}
+
+          {ticketDraft && state === "idle" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p className="ba-sans" style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.45 }}>
+                {GURU_SUPPORT_NOTE}
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                {signedIn ? (
+                  <button
+                    type="button"
+                    onClick={confirmTicket}
+                    disabled={ticketBusy}
+                    className="ba-sans ba-focus"
+                    style={{
+                      background: VIOLET,
+                      color: "#FFFFFF",
+                      border: "none",
+                      borderRadius: 999,
+                      padding: "7px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: ticketBusy ? "default" : "pointer",
+                      opacity: ticketBusy ? 0.6 : 1,
+                    }}
+                  >
+                    {ticketBusy ? "Saving ticket" : "Open ticket"}
+                  </button>
+                ) : (
+                  <a
+                    href={loginHref("/")}
+                    className="ba-sans ba-focus"
+                    style={{
+                      background: VIOLET,
+                      color: "#FFFFFF",
+                      borderRadius: 999,
+                      padding: "7px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Sign in to open a ticket
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={function () { setTicketDraft(null); }}
+                  disabled={ticketBusy}
+                  className="ba-sans ba-focus"
+                  style={{
+                    background: "#F7F1E8",
+                    color: VIOLET,
+                    border: "1px solid " + LINE,
+                    borderRadius: 999,
+                    padding: "7px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: ticketBusy ? "default" : "pointer",
+                  }}
+                >
+                  Not now
+                </button>
+              </div>
             </div>
           ) : null}
 

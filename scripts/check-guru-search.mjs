@@ -32,12 +32,14 @@ assert(GURU_INTRO.toLowerCase().includes("search box above"), "guru intro soft-h
 assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old search-shaped guru intro is gone");
 assert(!/talking to parents|talk to her parents/i.test(GURU_INTRO), "intro must not offer parent-talk coaching");
 assert(/suggestion|guidance|advice/i.test(GURU_INTRO), "intro names suggestions or guidance");
+assert(GURU_INTRO.toLowerCase().includes("ticket"), "intro mentions app issue tickets");
 
 const starterCopy = GURU_STARTERS.map(function (s) {
   return s.id + " " + s.label + " " + s.text;
 }).join("\n");
 assert(!/talk to her parents|how do i talk to her/i.test(starterCopy), "starters must not offer parent-talk or chat scripts");
 assert(!/pickup/i.test(starterCopy), "starters must not offer pickup lines");
+assert(/open a ticket/i.test(starterCopy), "starters include an app issue ticket path");
 assert(GURU_PLACEHOLDER.toLowerCase().includes("advice"), "guru placeholder is advice, not search");
 assert(SEARCH_PLACEHOLDER !== GURU_PLACEHOLDER, "placeholders must differ");
 assert(GURU_PATH === "/api/guru", "guru path lock");
@@ -56,12 +58,19 @@ assert(orb.includes("GURU_PATH") || orb.includes("/api/guru"), "orb posts to /ap
 assert(orb.includes("GURU_INTRO"), "orb uses the guru intro");
 assert(!orb.includes("/api/profiles/search"), "orb never searches profiles");
 assert(!orb.includes('"/api/chat"'), "orb does not keep the leftover /api/chat fetch");
+assert(orb.includes("SUPPORT_TICKETS_PATH") || orb.includes("/api/support/tickets"), "orb can confirm a ticket");
+assert(orb.includes("Open ticket"), "orb shows a confirm chip before filing");
+assert(!orb.includes("send this"), "orb UI must not offer send-this drafts");
 assert(!/match\s*%|match percent|verified badge/i.test(orb), "orb UI must not invent VerifyAI or match %");
 
 assert(guruRoute.includes("handleGuruChat"), "guru route uses the shared handler");
 assert(chatRoute.includes("handleGuruChat"), "legacy /api/chat is retargeted to guru");
 assert(!guruLib.includes("profile-search"), "guru handler must not import profile search");
 assert(!guruLib.includes("/api/profiles/search"), "guru handler must not call profile search");
+assert(guruLib.includes("propose_support_ticket"), "guru can propose a support ticket");
+assert(guruLib.includes("ticket_draft"), "guru returns a draft for confirm, not a silent create");
+assert(!guruLib.includes('.from("support_tickets")'), "guru handler must not write support_tickets");
+assert(!guruLib.includes("emailFounderTicket"), "guru handler must not email the founder");
 
 const prompt = guruLib.toLowerCase();
 assert(prompt.includes("bandham assistant"), "prompt names the assistant");

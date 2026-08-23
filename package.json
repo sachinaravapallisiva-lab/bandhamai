@@ -17,6 +17,7 @@
     "check:visa-status": "node --experimental-strip-types scripts/check-visa-status.mjs",
     "check:presence": "node --experimental-strip-types scripts/check-presence.mjs",
     "check:instagram": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-instagram.mjs",
+    "check:support-tickets": "node --experimental-strip-types scripts/check-support-tickets.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
