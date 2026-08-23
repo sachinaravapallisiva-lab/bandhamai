@@ -8,6 +8,7 @@ import { DELETE_CONFIRM_WORD } from "../../lib/safety";
 import { parseInstagramInput } from "../../lib/instagram";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
+import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
 
@@ -287,6 +288,7 @@ export default function AccountPage() {
               >
                 Your profile
               </Link>
+              <DownloadBiodata hasProfile={hasProfile} />
               <button
                 type="button"
                 disabled={busy}
