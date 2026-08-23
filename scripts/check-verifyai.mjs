@@ -23,6 +23,8 @@ assert(isVerifyaiVerified("verified") === true, "verified is the only badge");
 assert(isVerifyaiVerified("VERIFIED") === true, "case-insensitive stored value");
 assert(isVerifyaiVerified("pending") === false, "pending hidden");
 assert(isVerifyaiVerified("failed") === false, "failed hidden");
+assert(isVerifyaiVerified("revoked") === false, "revoked hidden");
+assert(isVerifyaiVerified("unverified") === false, "unverified hidden");
 assert(isVerifyaiVerified("") === false, "empty hidden");
 assert(isVerifyaiVerified(null) === false, "null hidden");
 assert(isVerifyaiVerified(true) === false, "boolean true is not a badge");

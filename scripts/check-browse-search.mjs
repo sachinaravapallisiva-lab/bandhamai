@@ -44,5 +44,7 @@ assert(withPhotos?.verified === false, "no VerifyAI badge without verifyai_statu
 assert(toBrowseProfile({ id: "v1", full_name: "A", verifyai_status: "verified" })?.verified === true, "badge only when verified");
 assert(toBrowseProfile({ id: "v2", full_name: "A", verifyai_status: "pending" })?.verified === false, "pending is not a badge");
 assert(toBrowseProfile({ id: "v3", full_name: "A", verifyai_status: "unverified" })?.verified === false, "unverified is not a badge");
+assert(toBrowseProfile({ id: "v4", full_name: "A", verifyai_status: "failed" })?.verified === false, "failed is not a badge");
+assert(toBrowseProfile({ id: "v5", full_name: "A", verifyai_status: "revoked" })?.verified === false, "revoked is not a badge");
 
 console.log("browse search parser ok", { doctor, woman, shortlist: cards.map((c) => c.name) });
