@@ -14,6 +14,7 @@ import { emptyPhotoUrls, type ProfilePhotoUrls } from "../../../lib/profile-phot
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
 import PhotoUpload from "../../components/PhotoUpload";
+import VerifyOffer from "../../components/VerifyOffer";
 
 type Mine = {
   profile: {
@@ -249,6 +250,9 @@ export default function NewProfilePage() {
           >
             Back to browse
           </Link>
+          <div style={{ marginTop: 22, textAlign: "left" }}>
+            <VerifyOffer signedIn={signedIn} nextPath="/profile/new" />
+          </div>
         </section>
       ) : (
         <>

@@ -152,37 +152,55 @@ Immediate danger stays with local authorities. The product is not an emergency s
 5. `/account` → Sign out actually returns you to Browse signed out (also `/logout`, which is not a 404).
 6. `/account` → type `DELETE` → profile hidden; login removed when the service role can. If login removal fails, the page says a request was recorded.
 
-## VerifyAI (quiet badge)
+## VerifyAI ($4.99 + quiet badge)
 
 VerifyAI ([verifyai.llc](https://verifyai.llc)) is the verification layer for Bandham profiles. It is not a second matrimony product in this UI.
 
-This repo does not contain a public VerifyAI API. `verifyai.llc` is a biometric-link product (contact@verifyai.llc). The app stores status on the Bandham profile and shows a quiet **VERIFYAI** badge **only** when `profiles.verifyai_status = 'verified'`. Pending, failed, revoked, missing, or invented values stay hidden.
+Flow:
+
+1. Member pays **$4.99 one-time** via real Stripe Checkout (`mode: payment`, `STRIPE_VERIFYAI_PRICE_ID`). Separate from the $9.99/mo messaging Price.
+2. Payment is stored. `verifyai_status` becomes `pending` if it was not already `verified`. **Paying does not show the badge.**
+3. The member is sent into the VerifyAI flow (`VERIFYAI_START_URL` hosted link, or `VERIFYAI_API_URL` + `VERIFYAI_API_KEY` session create).
+4. VerifyAI calls `POST /api/verifyai/webhook` on success. The badge appears only when `verifyai_status = 'verified'` **and** a paid $4.99 row exists. Operator `POST /api/verifyai` cannot skip payment.
+
+verifyai.llc does not publish a public API in this repo (biometric link product, contact@verifyai.llc). The start URL / API env is the handoff.
 
 ### Supabase
 
-Run [`supabase/verifyai.sql`](supabase/verifyai.sql). Adds `verifyai_status`, `verifyai_external_id`, and `verifyai_updated_at` on `profiles`.
+Run [`supabase/verifyai.sql`](supabase/verifyai.sql). Adds profile status columns plus `verifyai_payments` and `verifyai_sessions`.
 
-### Wiring the live service
+### Stripe Dashboard (Sai)
 
-1. Run the SQL.
-2. On Vercel, set `VERIFYAI_WEBHOOK_SECRET` (do not commit it). Redeploy.
-3. Point VerifyAI at `POST https://bandhamai.vercel.app/api/verifyai/webhook`.
-   - `Authorization: Bearer <VERIFYAI_WEBHOOK_SECRET>`, or
-   - `X-VerifyAI-Signature` = hex HMAC-SHA256 of the raw body (optional `X-VerifyAI-Timestamp`).
-4. JSON body (or `{ "data": { ... } }`) should include a status and one of `profile_id`, `user_id`, or `email`.
-   - Status values: `unverified` | `pending` | `verified` | `failed` | `revoked`
-   - Also accepted: `completed` / `success` → `verified`; `fail` → `failed`
-5. Operators can `POST /api/verifyai` with the same Bearer secret to set a status by hand while the service is wired. Members cannot self-verify.
-6. `GET /api/verifyai?profile_id=` returns `{ verified, status }`. `verified` is true only for `verified`.
+On the same Stripe account as messaging:
 
-Do not mark a row `verified` unless VerifyAI actually passed.
+1. Product e.g. **Bandham AI VerifyAI**.
+2. One-time **Price: $4.99**. Copy `price_...` into `STRIPE_VERIFYAI_PRICE_ID`.
+3. The existing webhook URL (`/api/stripe/webhook`) also records this payment (`metadata.purpose=verifyai`). No second webhook is required.
+
+Do not point `STRIPE_PRICE_ID` at the $4.99 Price. That env is the $9.99/mo messaging subscription.
+
+### Vercel env (Sai)
+
+In addition to the existing Stripe messaging keys:
+
+| Name | Purpose |
+| --- | --- |
+| `STRIPE_VERIFYAI_PRICE_ID` | $4.99 one-time Price ID |
+| `VERIFYAI_START_URL` | Hosted VerifyAI flow URL (used if no API) |
+| `VERIFYAI_API_URL` | Optional session-create endpoint |
+| `VERIFYAI_API_KEY` | Optional Bearer for that endpoint |
+| `VERIFYAI_WEBHOOK_SECRET` | Shared secret for `/api/verifyai/webhook` |
+
+Do not commit secrets.
 
 ### Test steps
 
-1. No column / no SQL → Browse cards have no badge.
-2. After SQL, a live profile with `verifyai_status` null or `pending` → no badge.
-3. Set one live row to `verified` (SQL editor or signed webhook) → quiet VERIFYAI label next to the name on Browse and Matches.
-4. Webhook without the secret → **401** or **503**. No status change.
+1. No SQL / no status → no badge.
+2. Pay $4.99 (or confirm a Checkout session) → `verifyai_payments` is `paid`, profile `pending`, **no badge**.
+3. Continue to VerifyAI (or set `VERIFYAI_START_URL`). Return without a success webhook → still no badge.
+4. Signed webhook with `status=verified` **and** a paid row → quiet VERIFYAI on Browse / Matches.
+5. Webhook `verified` without a paid row → **409**, badge stays off.
+6. Messaging $9.99/mo checkout is unchanged.
 
 ## Auth polish
 

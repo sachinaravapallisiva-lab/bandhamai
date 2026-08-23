@@ -72,7 +72,7 @@ export default function SafetyPage() {
 
         <LegalSection title="Meeting in person">
           <p style={{ margin: 0 }}>
-            Meet in a public place. Tell a friend or family member. Arrange your own travel. Do not send money, visa paperwork, or tickets to someone you only know here. A quiet VerifyAI badge appears only when that profile has a stored verified status. It is not a substitute for your own caution.
+            Meet in a public place. Tell a friend or family member. Arrange your own travel. Do not send money, visa paperwork, or tickets to someone you only know here. A quiet VerifyAI badge appears only after a $4.99 payment and a successful VerifyAI check. Paying is not enough. It is not a substitute for your own caution.
           </p>
         </LegalSection>
 

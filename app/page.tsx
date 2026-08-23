@@ -412,6 +412,9 @@ export default function Home() {
                     {userEmail}
                   </span>
                   <div style={{ display: "flex", gap: 10 }}>
+                    <Link href="/account#verify" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
+                      Get verified · $4.99
+                    </Link>
                     <Link href="/account" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
                       Account
                     </Link>

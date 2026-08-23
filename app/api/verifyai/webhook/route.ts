@@ -14,14 +14,13 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { getServiceSupabase, missingConfigResponse, tableHasColumn } from "../../../../lib/server-supabase";
 import {
-  VERIFYAI_EXTERNAL_ID_COLUMN,
   VERIFYAI_SQL_FILE,
   VERIFYAI_STATUS_COLUMN,
-  VERIFYAI_UPDATED_AT_COLUMN,
   isVerifyaiVerified,
   normalizeVerifyaiStatus,
 } from "../../../../lib/verifyai";
-import { asId } from "../../../../lib/safety-server";
+import { asId, resolveProfileUserId } from "../../../../lib/safety-server";
+import { hasPaidVerifyai, markVerifyaiSessionResult } from "../../../../lib/verifyai-checkout";
 
 export const runtime = "nodejs";
 
@@ -130,20 +129,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No Bandham profile matched this verification event." }, { status: 404 });
     }
 
-    const patch: Record<string, string | null> = {
-      [VERIFYAI_STATUS_COLUMN]: status,
-      [VERIFYAI_UPDATED_AT_COLUMN]: new Date().toISOString(),
-    };
-    if (externalId && (await tableHasColumn(supabase, "profiles", VERIFYAI_EXTERNAL_ID_COLUMN))) {
-      patch[VERIFYAI_EXTERNAL_ID_COLUMN] = externalId;
-    }
-    if (!(await tableHasColumn(supabase, "profiles", VERIFYAI_UPDATED_AT_COLUMN))) {
-      delete patch[VERIFYAI_UPDATED_AT_COLUMN];
+    const ownerId = userId || (await resolveProfileUserId(supabase, targetId)) || "";
+    if (isVerifyaiVerified(status)) {
+      if (!ownerId || !(await hasPaidVerifyai(supabase, ownerId, targetId))) {
+        return NextResponse.json(
+          {
+            error: "A paid $4.99 VerifyAI checkout is required before a verified badge. Payment alone is not enough; this event also needs a matching paid row.",
+            verified: false,
+          },
+          { status: 409 }
+        );
+      }
     }
 
-    const { error } = await supabase.from("profiles").update(patch).eq("id", targetId);
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    const marked = await markVerifyaiSessionResult(supabase, {
+      userId: ownerId || null,
+      profileId: targetId,
+      status,
+      externalId,
+    });
+    if (marked.error) {
+      return NextResponse.json({ error: marked.error }, { status: 400 });
     }
 
     return NextResponse.json({

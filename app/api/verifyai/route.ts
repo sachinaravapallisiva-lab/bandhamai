@@ -3,7 +3,7 @@
  *
  * GET is public for a profile id and only returns status / verified.
  * POST is for Sai / operators while the live verifyai.llc service is wired.
- * Members cannot self-verify.
+ * Members cannot self-verify. Setting verified still requires a paid $4.99 row.
  */
 import { NextResponse } from "next/server";
 import {
@@ -20,7 +20,8 @@ import {
   isVerifyaiVerified,
   normalizeVerifyaiStatus,
 } from "../../../lib/verifyai";
-import { asId } from "../../../lib/safety-server";
+import { asId, resolveProfileUserId } from "../../../lib/safety-server";
+import { hasPaidVerifyai } from "../../../lib/verifyai-checkout";
 
 export const runtime = "nodejs";
 
@@ -150,6 +151,19 @@ export async function POST(request: Request) {
 
     if (!targetId) {
       return NextResponse.json({ error: "Could not find a Bandham profile for that id or email." }, { status: 404 });
+    }
+
+    if (isVerifyaiVerified(status)) {
+      const ownerId = userId || (await resolveProfileUserId(supabase, targetId)) || "";
+      if (!ownerId || !(await hasPaidVerifyai(supabase, ownerId, targetId))) {
+        return NextResponse.json(
+          {
+            error: "A paid $4.99 VerifyAI checkout is required before a verified badge. Operator POST is not a shortcut around payment or the VerifyAI flow.",
+            verified: false,
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const patch: Record<string, string | null> = {

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:billing": "node --experimental-strip-types scripts/check-billing.mjs",
+    "check:verifyai": "node --experimental-strip-types scripts/check-verifyai.mjs",
     "check:speed-match": "node --experimental-strip-types scripts/check-speed-match.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"

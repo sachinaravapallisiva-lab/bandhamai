@@ -7,6 +7,7 @@ import { authJsonHeaders } from "../../lib/client-auth";
 import { DELETE_CONFIRM_WORD } from "../../lib/safety";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
+import VerifyOffer from "../components/VerifyOffer";
 
 type BlockRow = {
   id: string;
@@ -215,6 +216,8 @@ export default function AccountPage() {
               Sign out
             </button>
           </section>
+
+          <VerifyOffer signedIn={signedIn} nextPath="/account" />
 
           <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
             <h3 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 400 }}>
