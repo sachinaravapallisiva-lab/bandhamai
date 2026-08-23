@@ -9,6 +9,14 @@ import {
   parseInstagramInput,
 } from "../lib/instagram.ts";
 import { PROFILE_OPTIONAL_WRITE_FIELDS, PROFILE_WRITE_FIELDS } from "../lib/profile-fields.ts";
+import {
+  INSTAGRAM_HIDDEN_DISCLAIMER,
+  INSTAGRAM_SHARE_PATH,
+  INSTAGRAM_SHARES_SQL_FILE,
+  INSTAGRAM_SHARES_TABLE,
+  applyInstagramVisibility,
+  revealInstagramHandle,
+} from "../lib/instagram-shares.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -66,7 +74,14 @@ assert(!/facebook|linkedin|tiktok/i.test(create), "profile form does not add oth
 const field = read("app/components/InstagramField.tsx");
 assert(field.includes("CONNECT SOCIALS"), "section label");
 assert(field.includes("INSTAGRAM"), "instagram label");
-assert(field.toLowerCase().includes("optional"), "optional copy");
+assert(field.includes("INSTAGRAM_HIDDEN_DISCLAIMER"), "disclaimer is locked to the share copy");
+assert(INSTAGRAM_HIDDEN_DISCLAIMER.toLowerCase().includes("optional"), "optional copy");
+assert(INSTAGRAM_HIDDEN_DISCLAIMER.toLowerCase().includes("hidden"), "hidden until the owner shares");
+assert(!/verified|match %|verifyai/i.test(INSTAGRAM_HIDDEN_DISCLAIMER), "disclaimer does not invent VerifyAI or match %");
+
+const account = read("app/account/page.tsx");
+assert(account.includes("InstagramField"), "account edit has Instagram");
+assert(account.includes('method: "PATCH"'), "account can save Instagram");
 
 const chip = read("app/components/InstagramChip.tsx");
 assert(chip.includes('target="_blank"'), "chip opens a new tab");
@@ -77,12 +92,24 @@ const browse = read("app/page.tsx");
 assert(browse.includes("MatchCard"), "Matches uses the Pack 2 card");
 assert(!browse.includes("InstagramChip"), "page does not inline Instagram — cards own the chip");
 const card = read("app/components/DiscoverCard.tsx");
-assert(card.includes("InstagramChip"), "Arjun Browse card shows Instagram when set");
-assert(card.includes("PresenceMark"), "Browse keeps presence next to Instagram");
+assert(card.includes("InstagramShareControls"), "Browse card uses owner-initiated Instagram share");
+assert(!card.includes("InstagramChip"), "Browse card does not show a public Instagram chip");
+assert(card.includes("PresenceMark"), "Browse keeps presence");
 assert(!/facebook|linkedin|tiktok/i.test(card), "Browse card does not add other networks");
 const match = read("app/components/MatchCard.tsx");
-assert(match.includes("InstagramChip"), "Matches card shows Instagram when set");
+assert(match.includes("InstagramShareControls"), "Matches card uses owner-initiated Instagram share");
+assert(!match.includes("InstagramChip"), "Matches card does not show a public Instagram chip");
 assert(match.includes("PresenceMark"), "Matches keeps the presence mark");
+
+const shareUi = read("app/components/InstagramShareControls.tsx");
+assert(shareUi.includes("Show my Instagram to them"), "owner-initiated share copy");
+assert(shareUi.includes("Hide Instagram from them"), "owner can revoke");
+assert(shareUi.includes("InstagramChip"), "chip only after a received handle");
+assert(!/Ask to see Instagram|match %|VERIFYAI/i.test(shareUi), "no ask-to-see leak, no VerifyAI, no match %");
+
+const chat = read("app/chat/page.tsx");
+assert(chat.includes("InstagramShareControls"), "1:1 chat can grant Instagram");
+assert(chat.includes("PresenceMark"), "chat presence is unchanged");
 
 const write = read("app/api/profiles/route.ts");
 assert(write.includes("parseInstagramInput"), "POST validates Instagram");
@@ -92,13 +119,75 @@ assert(!/oauth|instagram\.com\/oauth|graph\.facebook/i.test(write), "no Instagra
 
 const search = read("app/api/profiles/search/route.ts");
 assert(search.includes("INSTAGRAM_COLUMN"), "search probes instagram column");
+assert(search.includes("applyInstagramVisibility"), "search strips handles unless granted");
+assert(search.includes("loadInstagramGrantedOwnerIds"), "search checks share rows");
+assert(search.includes("instagramSharesReady"), "search does not select instagram until shares SQL exists");
 
 const mapper = read("lib/profile-search.ts");
 assert(mapper.includes("instagram?: boolean"), "browse select can include instagram");
 assert(mapper.includes('field === "instagram"'), "browse omits instagram until the column exists");
-assert(mapper.includes("instagram: asText(row.instagram)"), "mapper passes the handle to cards");
+assert(mapper.includes("instagram: asText(row.instagram)"), "mapper passes a granted handle to cards");
+
+assert(INSTAGRAM_SHARES_TABLE === "instagram_shares", "shares table name lock");
+assert(INSTAGRAM_SHARES_SQL_FILE === "supabase/instagram_shares.sql", "shares SQL filename lock");
+assert(INSTAGRAM_SHARE_PATH === "/api/instagram/share", "share API path");
+
+const sharesSql = read("supabase/instagram_shares.sql");
+assert(sharesSql.includes("create table if not exists public.instagram_shares"), "creates instagram_shares");
+assert(sharesSql.includes("owner_user_id"), "owner_user_id");
+assert(sharesSql.includes("viewer_user_id"), "viewer_user_id");
+assert(sharesSql.includes("instagram_shares_pair_unique") || sharesSql.includes("unique (owner_user_id, viewer_user_id)"), "unique pair");
+assert(sharesSql.includes("enable row level security"), "RLS on");
+assert(sharesSql.includes("instagram_shares_insert_own"), "owner insert");
+assert(sharesSql.includes("instagram_shares_delete_own"), "owner delete");
+assert(sharesSql.includes("instagram_shares_select_party"), "owner or viewer select");
+assert(!/\bmatch_percent\b|\bcompatibility\b/i.test(sharesSql), "SQL must not invent match %");
+assert(!/verifyai/i.test(sharesSql), "shares SQL stays off VerifyAI");
+
+const shareApi = read("app/api/instagram/share/route.ts");
+assert(shareApi.includes("export async function POST"), "share is POST");
+assert(shareApi.includes("export async function DELETE"), "revoke is DELETE");
+assert(shareApi.includes("export async function GET"), "status is GET");
+assert(shareApi.includes("hasBearerToken"), "share requires auth");
+assert(shareApi.includes("Add your Instagram first"), "cannot share without a handle");
+assert(shareApi.includes("table_missing") || shareApi.includes("INSTAGRAM_SHARES_SQL_FILE"), "asks Sai to run shares SQL");
+
+assertEq(
+  revealInstagramHandle({ handle: "@ananya", viewerUserId: null, ownerUserId: "a", granted: false }),
+  "",
+  "public browse hides the handle"
+);
+assertEq(
+  revealInstagramHandle({ handle: "@ananya", viewerUserId: "b", ownerUserId: "a", granted: false }),
+  "",
+  "Like/match without a share hides the handle"
+);
+assertEq(
+  revealInstagramHandle({ handle: "@ananya", viewerUserId: "b", ownerUserId: "a", granted: true }),
+  "ananya",
+  "explicit share reveals the handle"
+);
+assertEq(
+  revealInstagramHandle({ handle: "@ananya", viewerUserId: "a", ownerUserId: "a", granted: false }),
+  "ananya",
+  "owner still sees their own handle"
+);
+
+const hidden = applyInstagramVisibility(
+  [{ id: "1", user_id: "a", instagram: "ananya" }],
+  "b",
+  []
+);
+assert(!("instagram" in hidden[0]), "list JSON drops instagram without a grant");
+const shown = applyInstagramVisibility(
+  [{ id: "1", user_id: "a", instagram: "ananya" }],
+  "b",
+  ["a"]
+);
+assertEq(shown[0].instagram, "ananya", "list JSON keeps instagram after a grant");
 
 console.log("instagram connect ok", {
   handle: parseInstagramInput("@ananya").handle,
   blocked: parseInstagramInput("https://facebook.com/ananya").error,
+  publicHidden: revealInstagramHandle({ handle: "ananya", granted: false }),
 });

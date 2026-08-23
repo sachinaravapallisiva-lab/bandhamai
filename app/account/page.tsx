@@ -5,8 +5,10 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { DELETE_CONFIRM_WORD } from "../../lib/safety";
+import { parseInstagramInput } from "../../lib/instagram";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
+import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
 
 type BlockRow = {
@@ -25,6 +27,31 @@ export default function AccountPage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [hasProfile, setHasProfile] = useState(false);
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [socialNote, setSocialNote] = useState("");
+
+  function loadProfile() {
+    authJsonHeaders().then(function (headers) {
+      if (!headers) return;
+      fetch("/api/profiles", { headers })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          const handle =
+            data && data.profile && typeof data.profile.instagram === "string"
+              ? data.profile.instagram
+              : "";
+          setInstagram(handle);
+          setHasProfile(!!(data && data.profile && data.profile.id));
+        })
+        .catch(function () {
+          /* account page still works without Instagram */
+        });
+    });
+  }
 
   function loadBlocks() {
     authJsonHeaders().then(function (headers) {
@@ -63,6 +90,7 @@ export default function AccountPage() {
       setEmail(session.user.email || "");
       setReady(true);
       loadBlocks();
+      loadProfile();
     });
   }, []);
 
@@ -104,6 +132,51 @@ export default function AccountPage() {
           setBlocksNote("Could not unblock.");
         });
     });
+  }
+
+  function saveInstagram() {
+    const parsed = parseInstagramInput(instagram);
+    if (parsed.error) {
+      setSocialNote(parsed.error);
+      return;
+    }
+    if (!hasProfile) {
+      setSocialNote("Create a profile first.");
+      return;
+    }
+
+    setSavingSocial(true);
+    setSocialNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingSocial(false);
+          setSocialNote("Sign in to save Instagram.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ instagram }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingSocial(false);
+          if (!res.ok) {
+            setSocialNote(data.error || "Could not save Instagram.");
+            return;
+          }
+          const handle = data.profile?.instagram || parsed.handle || "";
+          setInstagram(handle);
+          setSocialNote(handle ? "Instagram saved." : "Instagram removed.");
+        });
+      })
+      .catch(function () {
+        setSavingSocial(false);
+        setSocialNote("Network trouble. Try again?");
+      });
   }
 
   function deleteAccount() {
@@ -233,6 +306,44 @@ export default function AccountPage() {
                 Sign out
               </button>
             </div>
+          </section>
+
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <InstagramField
+              id="account-instagram"
+              value={instagram}
+              onChange={function (value) {
+                setInstagram(value);
+                if (socialNote) setSocialNote("");
+              }}
+              disabled={savingSocial || !hasProfile}
+            />
+            <button
+              type="button"
+              disabled={savingSocial || !hasProfile}
+              onClick={saveInstagram}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingSocial ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingSocial || !hasProfile ? "default" : "pointer",
+              }}
+            >
+              {savingSocial ? "Saving…" : "Save Instagram"}
+            </button>
+            {!hasProfile || socialNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                {hasProfile
+                  ? socialNote
+                  : "Create a profile first. Instagram is optional and stays hidden until you show it to someone."}
+              </p>
+            ) : null}
           </section>
 
           <VerifyOffer signedIn={signedIn} nextPath="/account" />
