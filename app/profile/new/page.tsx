@@ -14,6 +14,7 @@ import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
+import DownloadBiodata from "../../components/DownloadBiodata";
 import InstagramField from "../../components/InstagramField";
 import PhotoUpload from "../../components/PhotoUpload";
 import VerifyOffer from "../../components/VerifyOffer";
@@ -341,6 +342,9 @@ export default function NewProfilePage() {
                 Optional. You can add or clear Instagram after submit. Empty is fine.
               </p>
             )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", margin: "0 0 16px" }}>
+            <DownloadBiodata hasProfile variant="solid" />
           </div>
           <Link
             href="/"

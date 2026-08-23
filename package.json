@@ -18,6 +18,7 @@
     "check:presence": "node --experimental-strip-types scripts/check-presence.mjs",
     "check:instagram": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-instagram.mjs",
     "check:support-tickets": "node --experimental-strip-types scripts/check-support-tickets.mjs",
+    "check:biodata": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-biodata.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
@@ -26,6 +27,7 @@
     "@capacitor/ios": "^8.5.0",
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.1",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "^0.35.3",
