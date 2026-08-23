@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { GURU_SYSTEM_PROMPT } from "../lib/guru.ts";
 import {
   GURU_INTRO,
   GURU_PATH,
@@ -45,7 +44,7 @@ assert(chatRoute.includes("handleGuruChat"), "legacy /api/chat is retargeted to 
 assert(!guruLib.includes("profile-search"), "guru handler must not import profile search");
 assert(!guruLib.includes("/api/profiles/search"), "guru handler must not call profile search");
 
-const prompt = GURU_SYSTEM_PROMPT.toLowerCase();
+const prompt = guruLib.toLowerCase();
 assert(prompt.includes("love guru"), "prompt names the guru");
 assert(prompt.includes("never search") || prompt.includes("you never search"), "prompt forbids search");
 assert(prompt.includes("search box above"), "prompt may soft-handoff only");
