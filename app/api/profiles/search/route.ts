@@ -29,6 +29,7 @@ import {
   visaKeywordVariants,
   type SearchCriteria,
 } from "../../../../lib/profile-search";
+import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
 import { VERIFYAI_STATUS_COLUMN } from "../../../../lib/verifyai";
 
@@ -267,6 +268,19 @@ export async function GET(request: Request) {
         blocked
       );
     }
+
+    if (flags.user_id) {
+      const presenceByUser = await loadPresenceByUserIds(
+        supabase,
+        rows.map(function (row) {
+          return typeof row.user_id === "string" ? row.user_id : "";
+        })
+      );
+      rows = rows.map(function (row) {
+        return attachLastSeen(row, presenceByUser);
+      });
+    }
+
     const profiles = pickShortlist(rows, criteria);
     const empty = profiles.length === 0 ? (liveCount === 0 ? "inventory" : "matches") : null;
 

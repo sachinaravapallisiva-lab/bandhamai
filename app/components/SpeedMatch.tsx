@@ -23,6 +23,7 @@ import {
   type SpeedMatchStoredAnswer,
 } from "../../lib/speed-match";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
+import PresenceMark from "./PresenceMark";
 
 type Phase = "intro" | "play" | "done";
 type PersistKind = "local" | "saved" | "table_missing" | "error";
@@ -176,6 +177,7 @@ export default function SpeedMatch({
           </p>
           <h2 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 23, fontWeight: 400 }}>
             Ten questions with {partner.name || "this profile"}
+            <PresenceMark online={partner.online} compact />
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
             Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap {SPEED_MATCH_NO_ANSWER_LABEL} if you would rather skip. Time running out records the same choice.

@@ -198,6 +198,28 @@ assert(toBrowseProfile({ id: "v2", full_name: "A", verifyai_status: "pending" })
 assert(toBrowseProfile({ id: "v3", full_name: "A", verifyai_status: "unverified" })?.verified === false, "unverified is not a badge");
 assert(toBrowseProfile({ id: "v4", full_name: "A", verifyai_status: "failed" })?.verified === false, "failed is not a badge");
 assert(toBrowseProfile({ id: "v5", full_name: "A", verifyai_status: "revoked" })?.verified === false, "revoked is not a badge");
+assert(toBrowseProfile({ id: "o1", full_name: "A" })?.online === false, "no last_seen stays offline");
+assert(
+  toBrowseProfile({ id: "o2", full_name: "A", last_seen_at: new Date().toISOString() })?.online === true,
+  "recent last_seen is online"
+);
+assert(
+  toBrowseProfile({
+    id: "o3",
+    full_name: "A",
+    last_seen_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+  })?.online === false,
+  "stale last_seen is offline"
+);
+assert(
+  toBrowseProfile({
+    id: "o4",
+    full_name: "A",
+    last_seen_at: new Date().toISOString(),
+    verifyai_status: "pending",
+  })?.verified === false,
+  "online is not a VerifyAI badge"
+);
 
 const aboutCard = toBrowseProfile({
   id: "about-1",

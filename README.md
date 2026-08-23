@@ -202,6 +202,35 @@ Do not commit secrets.
 5. Webhook `verified` without a paid row → **409**, badge stays off.
 6. Messaging $9.99/mo checkout is unchanged.
 
+## Online / offline (presence)
+
+Signed-in members who are using the app show a small **green** mark. It is not VerifyAI and not a match %. Seeded sample profiles without a `user_id` stay **Offline**.
+
+### What the app does
+
+1. `POST /api/presence/heartbeat` — auth required; upserts `public.presence.last_seen_at = now()`.
+2. Signed-in clients ping that route about every 35 seconds, and again when the tab becomes visible or focused.
+3. `GET /api/profiles/search` adds `online: true` when `last_seen_at` is within **3 minutes**.
+4. `GET /api/presence?user_id=` — auth required; used by the live `/chat` partner header.
+5. Browse cards, Matches cards, and `/chat` show a green circular dot + **Online**, or muted **Offline**.
+
+The home Chat tab is still a layout preview (Priya is not a live person). Presence there is not faked.
+
+### Supabase (Sai)
+
+Run [`supabase/presence.sql`](supabase/presence.sql) in the SQL editor. Until that file is applied, heartbeat returns **503** and every card stays Offline. Browse and Chat still work.
+
+Do not add Stripe or VerifyAI env for this. Existing Supabase keys are enough.
+
+### Test steps (two browsers / two accounts)
+
+1. Apply `supabase/presence.sql`. Confirm `public.presence` exists (RLS on).
+2. Browser A: sign in as account A. Open Browse or `/chat` and stay on the tab. In Supabase, `presence` should get a row for A with a fresh `last_seen_at`.
+3. Browser B: sign in as account B. Search Browse. If A has a **live** profile, B should see a **green Online** mark on A's card. Seeded cards without `user_id` stay Offline.
+4. Close Browser A (or sign A out). After about 3 minutes, refresh Browse in Browser B — A should show muted **Offline**.
+5. `/chat` in Browser B: enter account A's user id → partner header should match Online / Offline.
+6. Sign out. Heartbeats stop. Quiet VERIFYAI badge (if any) is unchanged.
+
 ## Auth polish
 
 Login already used `?next=`. It now allowlists internal paths only (`/`, `/matches`, `/chat`, `/profile/new`, `/account`, legal pages, `/logout`). `//evil.com` and unknown paths fall back to `/`.

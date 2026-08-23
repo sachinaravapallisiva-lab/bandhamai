@@ -6,6 +6,7 @@ import {
   isKnownCityName,
   isKnownKeywordAlias,
 } from "./desi-search-aliases";
+import { isRecentlySeen } from "./presence";
 import { PROFILE_WRITE_FIELDS } from "./profile-fields";
 import { visaLooksLike } from "./visa-status";
 
@@ -39,6 +40,8 @@ export type BrowseProfile = {
   photoUrl: string;
   /** True only when profiles.verifyai_status is exactly `verified`. */
   verified: boolean;
+  /** True when public.presence.last_seen_at is within ~3 minutes. */
+  online: boolean;
 };
 
 export type BrowseFactChip = {
@@ -411,6 +414,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     promptLabel: about ? "About" : wants ? "Wants" : "",
     photoUrl: asText(row.photo_url),
     verified: asText(row.verifyai_status).toLowerCase() === "verified",
+    online: row.online === true || isRecentlySeen(row.last_seen_at),
   };
 }
 
