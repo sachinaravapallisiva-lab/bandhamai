@@ -37,8 +37,9 @@ export default function ChatPage() {
   const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingNote, setBillingNote] = useState("");
-  const [partnerOnline, setPartnerOnline] = useState(false);
+  const [partnerPresence, setPartnerPresence] = useState<{ id: string; online: boolean } | null>(null);
   const recipientRef = useRef("");
+  const partnerOnline = !!(partnerPresence && partnerPresence.id === recipientId && partnerPresence.online);
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
@@ -72,16 +73,16 @@ export default function ChatPage() {
   }, [recipientId]);
 
   useEffect(function () {
-    if (!userId || !recipientId) {
-      setPartnerOnline(false);
-      return;
-    }
+    if (!userId || !recipientId) return;
+
+    let cancelled = false;
+    const lookingUp = recipientId;
 
     function loadPartner() {
       authJsonHeaders()
         .then(function (headers) {
           if (!headers) return { online: false };
-          return fetch(PRESENCE_LOOKUP_PATH + "?user_id=" + encodeURIComponent(recipientId), { headers })
+          return fetch(PRESENCE_LOOKUP_PATH + "?user_id=" + encodeURIComponent(lookingUp), { headers })
             .then(function (r) {
               return r.json();
             })
@@ -93,15 +94,15 @@ export default function ChatPage() {
             });
         })
         .then(function (result) {
-          if (recipientRef.current === recipientId) {
-            setPartnerOnline(!!result && result.online);
-          }
+          if (cancelled) return;
+          setPartnerPresence({ id: lookingUp, online: !!(result && result.online) });
         });
     }
 
     loadPartner();
     const id = window.setInterval(loadPartner, PRESENCE_HEARTBEAT_MS);
     return function () {
+      cancelled = true;
       window.clearInterval(id);
     };
   }, [userId, recipientId]);
