@@ -13,6 +13,8 @@ export const VERIFYAI_COPY = {
     "Payment recorded. Your profile is not verified yet. Continue into the VerifyAI check.",
   notConfigured:
     "Verification checkout is not configured. Set STRIPE_VERIFYAI_PRICE_ID (and the existing Stripe keys) on Vercel.",
+  wrongPrice:
+    "STRIPE_VERIFYAI_PRICE_ID must be a one-time $4.99 Price (Checkout mode payment). Do not point it at the $9.99/mo messaging subscription.",
   startMissing:
     "Payment is on file, but the VerifyAI start URL is not configured. Set VERIFYAI_START_URL or VERIFYAI_API_URL. The badge stays off until VerifyAI succeeds.",
   already: "This profile is already verified.",
@@ -28,6 +30,17 @@ export const VERIFYAI_UPDATED_AT_COLUMN = "verifyai_updated_at";
 
 export function isVerifyaiStatus(value: string): value is VerifyaiStatus {
   return (VERIFYAI_STATUSES as readonly string[]).includes(value);
+}
+
+/** Sai lock: VerifyAI Price must be one-time $4.99, not a recurring subscription Price. */
+export function isOneTimeVerifyaiPrice(price: {
+  type?: string | null;
+  unit_amount?: number | null;
+  recurring?: unknown;
+}) {
+  if (price.type === "recurring" || price.recurring) return false;
+  if (typeof price.unit_amount === "number" && price.unit_amount !== VERIFYAI_PRICE_CENTS) return false;
+  return price.type === "one_time" || !price.recurring;
 }
 
 /** Badge is on only for this exact status. Pending / failed / missing stay hidden. */

@@ -18,6 +18,7 @@ import {
   VERIFYAI_PRICE_LABEL,
   VERIFYAI_PURPOSE,
   VERIFYAI_SQL_FILE,
+  isOneTimeVerifyaiPrice,
 } from "../../../../lib/verifyai";
 import { loadVerifyaiState } from "../../../../lib/verifyai-checkout";
 import { appOrigin, getStripe, stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
@@ -60,6 +61,14 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     const priceId = stripeVerifyaiPriceId();
     if (!stripe || !priceId) return checkoutNotConfigured();
+
+    const price = await stripe.prices.retrieve(priceId);
+    if (!isOneTimeVerifyaiPrice(price)) {
+      return NextResponse.json(
+        { error: VERIFYAI_COPY.wrongPrice, code: "verifyai_price_not_one_time" },
+        { status: 503 }
+      );
+    }
 
     const origin = appOrigin(request);
     const session = await stripe.checkout.sessions.create({

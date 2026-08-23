@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { STRIPE_ENV_KEYS } from "../lib/billing.ts";
 import {
+  VERIFYAI_COPY,
   VERIFYAI_PRICE_CENTS,
   VERIFYAI_PRICE_LABEL,
   VERIFYAI_PRICE_ENV,
   VERIFYAI_PURPOSE,
+  isOneTimeVerifyaiPrice,
   isVerifyaiVerified,
   normalizeVerifyaiStatus,
 } from "../lib/verifyai.ts";
@@ -34,11 +36,20 @@ assert(VERIFYAI_PRICE_LABEL === "$4.99", "label has no fake discount");
 assert(VERIFYAI_PURPOSE === "verifyai", "checkout metadata purpose");
 assert(VERIFYAI_PRICE_ENV === "STRIPE_VERIFYAI_PRICE_ID", "separate Price env");
 assert(!STRIPE_ENV_KEYS.includes("STRIPE_VERIFYAI_PRICE_ID"), "do not require VerifyAI Price for messaging");
+assert(VERIFYAI_COPY.wrongPrice.includes("one-time"), "wrong-price copy names one-time");
+assert(isOneTimeVerifyaiPrice({ type: "one_time", unit_amount: 499, recurring: null }) === true, "accept $4.99 one-time");
+assert(isOneTimeVerifyaiPrice({ type: "recurring", unit_amount: 999, recurring: { interval: "month" } }) === false, "reject messaging subscription Price");
+assert(isOneTimeVerifyaiPrice({ type: "one_time", unit_amount: 999, recurring: null }) === false, "reject a one-time Price that is not $4.99");
 
 const checkout = read("app/api/verifyai/checkout/route.ts");
 assert(checkout.includes('mode: "payment"'), "VerifyAI checkout is one-time payment");
 assert(checkout.includes("STRIPE_VERIFYAI_PRICE_ID") || checkout.includes("stripeVerifyaiPriceId"), "uses VerifyAI Price");
 assert(!checkout.includes('mode: "subscription"'), "do not bill VerifyAI on messaging subscription");
+assert(checkout.includes("isOneTimeVerifyaiPrice"), "reject a recurring Price on VerifyAI checkout");
+
+const messaging = read("app/api/stripe/checkout/route.ts");
+assert(messaging.includes('mode: "subscription"'), "messaging stays a $9.99/mo subscription");
+assert(!messaging.includes("STRIPE_VERIFYAI_PRICE_ID"), "messaging checkout does not use the VerifyAI Price");
 
 const confirm = read("app/api/verifyai/confirm/route.ts");
 assert(!confirm.includes('verifyai_status: "verified"'), "confirm does not set verified");
