@@ -7,7 +7,7 @@ import {
   isKnownKeywordAlias,
 } from "./desi-search-aliases";
 import { isRecentlySeen } from "./presence";
-import { PROFILE_WRITE_FIELDS } from "./profile-fields";
+import { PROFILE_WRITE_FIELDS, normalizeProfileGender } from "./profile-fields";
 import { visaLooksLike } from "./visa-status";
 
 export { cityMatchValues } from "./desi-search-aliases";
@@ -384,7 +384,9 @@ export function scoreBrowseRow(row: Record<string, unknown>, criteria: SearchCri
   });
 
   if (criteria.city && cityLooksLike(city, criteria.city)) score += 5;
-  if (criteria.gender && gender === criteria.gender.toLowerCase()) score += 3;
+  const wantedGender = normalizeProfileGender(criteria.gender);
+  const storedGender = normalizeProfileGender(gender);
+  if (wantedGender && storedGender && wantedGender === storedGender) score += 3;
 
   criteria.keywords.forEach(function (kw) {
     const needle = kw.toLowerCase();

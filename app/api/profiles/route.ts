@@ -9,9 +9,11 @@ import {
   unauthorizedResponse,
 } from "../../../lib/server-supabase";
 import {
+  PROFILE_GENDER_ERROR,
   PROFILE_OPTIONAL_WRITE_FIELDS,
   PROFILE_WRITE_FIELDS,
   REQUIRED_PROFILE_FIELDS,
+  normalizeProfileGender,
   type ProfileWriteField,
 } from "../../../lib/profile-fields";
 import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
@@ -96,6 +98,12 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    const gender = normalizeProfileGender(fields.gender);
+    if (!gender) {
+      return NextResponse.json({ error: PROFILE_GENDER_ERROR }, { status: 400 });
+    }
+    fields.gender = gender;
 
     const instagram = parseInstagramInput(fields.instagram);
     if (instagram.error) {

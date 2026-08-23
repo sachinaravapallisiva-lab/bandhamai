@@ -33,6 +33,7 @@ import {
 import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
 import { INSTAGRAM_COLUMN } from "../../../../lib/instagram";
+import { normalizeProfileGender } from "../../../../lib/profile-fields";
 import { applyInstagramVisibility } from "../../../../lib/instagram-shares";
 import {
   instagramSharesReady,
@@ -237,7 +238,8 @@ export async function GET(request: Request) {
         );
       }
     }
-    if (criteria.gender) q = q.ilike("gender", criteria.gender);
+    const genderCode = normalizeProfileGender(criteria.gender);
+    if (genderCode) q = q.eq("gender", genderCode);
 
     const keywordColumns: string[] = KEYWORD_COLUMNS.slice();
     if (flags.diet) keywordColumns.push("diet");

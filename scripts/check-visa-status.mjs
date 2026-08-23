@@ -102,7 +102,8 @@ assert(fields.includes("kind: \"select\"") || fields.includes('kind: "select"'),
 assert(fields.includes("optionGroups: VISA_STATUS_GROUPS"), "visa field uses grouped headings");
 assert(fields.includes("VISA_STATUS_UNGROUPED"), "visa field keeps the ungrouped tail");
 assert(fields.includes('key: "gender"'), "gender field remains");
-assert(fields.includes('options: ["Female", "Male", "Other"]'), "gender stays a flat select");
+assert(fields.includes("PROFILE_GENDER_OPTIONS"), "gender stays a flat select");
+assert(!fields.includes('"Other"'), "gender does not offer Other");
 
 const formPage = read("app/profile/new/page.tsx");
 assert(formPage.includes("<optgroup"), "profile create renders optgroup headings");
