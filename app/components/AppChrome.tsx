@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BM_CSS, INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
+import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import SiteFooter from "./SiteFooter";
 
 export default function AppChrome({
@@ -13,7 +13,7 @@ export default function AppChrome({
   return (
     <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
       <style>{BM_CSS}</style>
-      <header style={{ background: "#FFFFFF", borderBottom: "1px solid " + LINE }}>
+      <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
             <div>

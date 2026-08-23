@@ -11,15 +11,15 @@ import {
 } from "../../lib/surfaces";
 
 /* ------------------------------------------------------------------ *
-   Bandham AI — love guru (violet orb)
+   Bandham AI — love guru (mic chip)
    Coaching only. Never searches profiles.
    Voice goes STT → /api/guru. Search lives in the box above.
  * ------------------------------------------------------------------ */
 
-const SHELL = "#FFFFFF";
-const LINE = "#E6E3F5";
+const SHELL = "#FDF8F1";
+const LINE = "#E8DFD2";
 const TEXT = "#1E1B36";
-const MUTED = "#7B77A8";
+const MUTED = "#7B6F8A";
 const VIOLET = "#6D28D9";
 
 type Line = { who: "you" | "bm"; text: string };
@@ -201,7 +201,7 @@ export default function VoiceAssistant() {
   const live = state === "listening";
   const busy = state === "thinking";
 
-  /* ---------------- collapsed orb ---------------- */
+  /* ---------------- collapsed mic chip ---------------- */
   if (!open) {
     return (
       <>
@@ -212,31 +212,28 @@ export default function VoiceAssistant() {
           className="ba-orb ba-focus"
           style={{
             position: "fixed",
-            right: "calc(22px + env(safe-area-inset-right, 0px))",
-            bottom: "calc(22px + env(safe-area-inset-bottom, 0px))",
+            right: "calc(16px + env(safe-area-inset-right, 0px))",
+            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
             zIndex: 50,
-            width: 58,
-            height: 58,
+            height: 36,
+            padding: "0 12px",
             borderRadius: 999,
             border: "none",
             cursor: "pointer",
             background: VIOLET,
-            display: "grid",
-            placeItems: "center",
-            boxShadow: "0 8px 26px rgba(109,40,217,.32)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            boxShadow: "0 4px 14px rgba(109,40,217,.22)",
           }}
         >
-          <span className="ba-ping" />
-          <span
-            style={{
-              width: 15,
-              height: 15,
-              borderRadius: 999,
-              background: "#FFFFFF",
-              display: "block",
-              position: "relative",
-            }}
-          />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="9" y="3.5" width="6" height="10" rx="3" stroke="#FFFFFF" strokeWidth="1.7" />
+            <path d="M7 11.5a5 5 0 0 0 10 0M12 16.5v3.2" stroke="#FFFFFF" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+          <span className="ba-sans" style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 600 }}>
+            {GURU_TITLE}
+          </span>
         </button>
       </>
     );
@@ -333,7 +330,7 @@ export default function VoiceAssistant() {
                     onClick={function () { addUserAndAsk(starter.text); }}
                     className="ba-sans ba-focus"
                     style={{
-                      background: "#FAF9FE",
+                      background: "#F7F1E8",
                       color: VIOLET,
                       border: "1px solid " + LINE,
                       borderRadius: 999,
@@ -415,7 +412,7 @@ export default function VoiceAssistant() {
                 borderRadius: 999,
                 fontSize: 13,
                 color: TEXT,
-                background: "#FAF9FE",
+                background: "#F7F1E8",
                 outline: "none",
               }}
             />
@@ -425,7 +422,7 @@ export default function VoiceAssistant() {
               disabled={!draft.trim() || busy || live}
               className="ba-send ba-focus ba-sans"
               style={{
-                background: draft.trim() ? VIOLET : "#FAF9FE",
+                background: draft.trim() ? VIOLET : "#F7F1E8",
                 color: draft.trim() ? "#FFFFFF" : MUTED,
                 border: draft.trim() ? "none" : "1px solid " + LINE,
                 borderRadius: 999,
@@ -457,9 +454,7 @@ const css =
   ".ba-line{animation:baRise .35s ease}" +
   "@keyframes baRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}" +
   ".ba-orb{position:relative;transition:transform .2s ease}" +
-  ".ba-orb:hover{transform:scale(1.06)}" +
-  ".ba-ping{position:absolute;inset:0;border-radius:999px;border:1px solid #6D28D9;opacity:.5;animation:baPing 2.4s cubic-bezier(.2,.6,.3,1) infinite}" +
-  "@keyframes baPing{0%{transform:scale(.7);opacity:.55}100%{transform:scale(1.35);opacity:0}}" +
+  ".ba-orb:hover{transform:scale(1.03)}" +
   ".ba-dot{width:8px;height:8px;border-radius:999px;display:block}" +
   ".ba-dot.on{animation:baPulse 1.3s ease-in-out infinite}" +
   "@keyframes baPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.65}}" +
@@ -470,10 +465,10 @@ const css =
   ".ba-talk:active{transform:scale(.98)}" +
   ".ba-x:hover{color:#1E1B36}" +
   ".ba-input::placeholder{color:#A9A5C8}" +
-  ".ba-input:focus{border-color:#6D28D9;background:#FFFFFF}" +
+  ".ba-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
   ".ba-send{transition:transform .15s ease,background .18s ease}" +
   ".ba-send:active{transform:scale(.92)}" +
   ".ba-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +
   ".ba-feed::-webkit-scrollbar{width:3px}" +
   ".ba-feed::-webkit-scrollbar-thumb{background:#E6E3F5;border-radius:3px}" +
-  "@media (prefers-reduced-motion:reduce){.ba-panel,.ba-line,.ba-ping,.ba-dot.on,.ba-tick,.ba-orb{animation:none!important;transition:none!important}}";
+  "@media (prefers-reduced-motion:reduce){.ba-panel,.ba-line,.ba-dot.on,.ba-tick,.ba-orb{animation:none!important;transition:none!important}}";

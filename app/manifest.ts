@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Find your vibe match?",
     start_url: "/",
     display: "standalone",
-    background_color: "#FFFFFF",
-    theme_color: "#FFFFFF",
+    background_color: "#FDF8F1",
+    theme_color: "#FDF8F1",
     icons: [
       {
         src: "/icons/icon-192.png",

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Matches",
-  description: "People you liked on Bandham AI.",
+  description: "People you marked Interested on Bandham AI.",
 };
 
 /** So /login?next=/matches lands on the Matches tab instead of a 404. */
