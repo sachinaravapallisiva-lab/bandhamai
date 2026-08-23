@@ -231,6 +231,7 @@ export default function AccountDrawer() {
       if (!open) return;
 
       const previous = document.activeElement;
+      const trigger = triggerRef.current;
       const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       const toFocus = closeRef.current;
@@ -266,7 +267,7 @@ export default function AccountDrawer() {
         document.removeEventListener("keydown", onKey);
         document.body.style.overflow = previousOverflow;
         if (previous instanceof HTMLElement) previous.focus();
-        else if (triggerRef.current) triggerRef.current.focus();
+        else if (trigger) trigger.focus();
       };
     },
     [open]
