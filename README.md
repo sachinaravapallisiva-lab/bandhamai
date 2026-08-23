@@ -50,6 +50,70 @@ No third-party face/beauty APIs. No new secrets — Storage uses the existing `S
 
 If the bucket is missing, the API returns **503** and asks you to run that SQL (or create a bucket named `profile-photos`). The app does not invent extra database columns at runtime — it probes with the same `tableHasColumn` helper as `user_id`.
 
+## Messaging subscription (Stripe)
+
+Browse, search, Speed Match, and profile create stay **free**. **Sending a message** needs an active **$9.99/month** Stripe subscription. The paywall copy is honest: messaging access only — not a match guarantee. There is no fake checkout, no countdown, and no “most people upgrade” line.
+
+If Stripe env vars are missing, the Chat paywall shows **“Billing is not configured”** and does not crash.
+
+### What the app does
+
+1. `POST /api/stripe/checkout` — signed-in Checkout Session (`mode: subscription`) for `STRIPE_PRICE_ID`.
+2. `POST /api/stripe/webhook` — verifies the Stripe signature and upserts `public.subscriptions`.
+3. `POST /api/stripe/confirm` — after return from Checkout, re-reads the Session from Stripe (not a fake receipt).
+4. `POST /api/stripe/portal` — Stripe Customer Portal for manage / cancel.
+5. `GET /api/stripe/entitlement` — whether this account can send.
+6. `POST /api/messages` — the only send path; returns **402** without an `active` or `trialing` row.
+
+The home Chat tab and `/chat` both check entitlement before Send. Client inserts into `messages` are also blocked by a trigger in the SQL file (if that table exists).
+
+### Stripe Dashboard (Sai)
+
+1. Create a Product, e.g. **Bandham AI messaging**.
+2. Add a recurring **Price: $9.99 / month**. Copy the Price ID (`price_...`). That is the default ship Price.
+3. Optional later: a second Price at $5.99/month. Put it in `STRIPE_FOUNDING_PRICE_ID` only when you want a follow-up. Checkout does **not** use it today.
+4. Developers → API keys: Secret key + Publishable key (test keys first).
+5. Developers → Webhooks → Add endpoint:
+   - URL: `https://bandhamai.vercel.app/api/stripe/webhook` (plus the same path on preview URLs if you test there)
+   - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
+   - Copy the webhook signing secret (`whsec_...`).
+6. Settings → Customer portal: turn on cancel / update payment method so “Manage subscription” works.
+7. Use a Stripe test card (`4242…`) until you switch to live keys.
+
+Do not put secrets in git. `.env.example` lists names only.
+
+### Vercel env (Sai)
+
+Set these on Production, Preview, and Development:
+
+| Name | Where it comes from |
+| --- | --- |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `STRIPE_PRICE_ID` | $9.99/month Price ID |
+
+Optional: `NEXT_PUBLIC_SITE_URL=https://bandhamai.vercel.app` so Checkout return URLs stay stable.
+
+Redeploy after saving env vars. Existing Supabase keys stay as they are.
+
+### Supabase SQL (Sai)
+
+In the SQL editor, run [`supabase/subscriptions.sql`](supabase/subscriptions.sql). That creates `public.subscriptions` (RLS: select own row; service role writes) and, if `public.messages` exists, a trigger so an insert cannot skip the paywall.
+
+The app does not invent profile columns for this. Entitlement lives on `subscriptions`.
+
+### Test steps
+
+1. With Stripe env **missing**, open Chat → Send. You should see **Billing is not configured**, not a crash.
+2. Sign out → Chat → Send. You should be asked to sign in. Browse still works.
+3. After env + SQL + webhook are live: sign in, Chat → **Subscribe $9.99/mo** → Stripe Checkout (test card) → return `/?billing=success`.
+4. Stripe Dashboard → Webhooks should show `checkout.session.completed` (and subscription events) succeeding.
+5. In Supabase, `subscriptions` should have your `user_id`, `stripe_customer_id`, `status` `active` (or `trialing`).
+6. Chat Send (or `POST /api/messages` with a Bearer token) should succeed. A second account without a row should get **402**.
+7. **Manage subscription** opens the Stripe Customer Portal. Cancel there; after the webhook, Send should paywall again.
+8. Speed Match, Browse search, and `/profile/new` stay usable without a subscription.
+
 Public bucket URLs are convenient, not privacy. Real hide-until-matched access control (authenticated bucket + signed URLs) is a follow-up.
 
 ### Test steps
@@ -159,7 +223,7 @@ This app does **not** turn Confirm email on or off. That is the Supabase project
 
 The iOS target is a Capacitor wrapper around the **hosted** Next.js app. It loads `https://bandhamai.vercel.app` in a WKWebView so the iPhone app matches the website without a static-export rewrite.
 
-That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`), Supabase, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
+That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`, `/api/stripe/*`, `/api/messages`), Supabase, Stripe, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
 
 ### What this repo already has
 

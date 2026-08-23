@@ -43,7 +43,7 @@ export default function TermsPage() {
 
         <LegalSection title="Messaging">
           <p style={{ margin: 0 }}>
-            Chat is for respectful, marriage-minded conversation. Do not send threats, spam, or sexual messages the other person did not ask for. Do not keep writing after someone asked you to stop. Do not use chat to sell goods, loans, crypto, or a job. Paid messaging may be added later as an extra. There is no paid checkout on the site today, and these terms do not describe a live payment product.
+            Chat is for respectful, marriage-minded conversation. Do not send threats, spam, or sexual messages the other person did not ask for. Do not keep writing after someone asked you to stop. Do not use chat to sell goods, loans, crypto, or a job. Sending messages requires an active $9.99/month subscription. Browse, search, Speed Match, and creating a profile stay free. The subscription is access to messaging. It is not a promise of a match, a meeting, or a marriage.
           </p>
         </LegalSection>
 
@@ -85,7 +85,7 @@ export default function TermsPage() {
 
         <LegalSection title="Payments">
           <p style={{ margin: 0 }}>
-            If we later charge for extra messaging or similar features, the screen will say so before you pay. Do not treat this page as a price list or a live card checkout.
+            Messaging is $9.99 per month, billed by Stripe through Checkout. The price is shown before you pay. You can manage or cancel in the Stripe customer portal. We do not store your full card number. Refunds, if any, follow Stripe and the card network rules that apply to you. A subscription does not guarantee that anyone will reply, that you will match, or that you will meet. Browse stays free if you do not subscribe. This page is a working draft and should be reviewed by a lawyer before you rely on it as a price contract.
           </p>
         </LegalSection>
 

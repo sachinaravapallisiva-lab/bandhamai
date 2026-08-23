@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
-            We do not ask for a payment card, Aadhaar number, or passport scan on the site today. Do not put those in your profile or in chat.
+            If you subscribe to messaging, Stripe collects the card or other payment method. We store Stripe customer and subscription ids so we know whether you can send messages. We do not store your full card number. We do not ask for an Aadhaar number or passport scan. Do not put those in your profile or in chat.
           </p>
         </LegalSection>
 
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           <p style={{ margin: "0 0 8px" }}>We share data with:</p>
           <LegalList
             items={[
-              "Infrastructure we already use (hosting, database, login, storage, transcription)",
+              "Infrastructure we already use (hosting, database, login, storage, transcription, and Stripe if you subscribe to messaging)",
               "Reviewers who decide if a profile can go live",
               "Authorities when the law requires it, or when we believe there is a serious risk of harm",
             ]}
