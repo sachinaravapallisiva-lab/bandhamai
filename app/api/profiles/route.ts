@@ -13,7 +13,7 @@ import {
   REQUIRED_PROFILE_FIELDS,
   type ProfileWriteField,
 } from "../../../lib/profile-fields";
-import { isOwnStoredPhotoUrl } from "../../../lib/profile-photos";
+import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -146,7 +146,10 @@ export async function POST(request: Request) {
 
     const photoUrl = asString(body.photo_url);
     const blurredUrl = asString(body.photo_blurred_url);
-    if (photoUrl && isOwnStoredPhotoUrl(photoUrl, user.id) && (await tableHasColumn(supabase, "profiles", "photo_url"))) {
+    if (!photoUrl || !isOwnStoredPhotoUrl(photoUrl, user.id)) {
+      return NextResponse.json({ error: PROFILE_PHOTO_REQUIRED_ERROR }, { status: 400 });
+    }
+    if (await tableHasColumn(supabase, "profiles", "photo_url")) {
       insertRow.photo_url = photoUrl;
     }
     if (

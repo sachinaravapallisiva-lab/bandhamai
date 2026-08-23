@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:billing": "node --experimental-strip-types scripts/check-billing.mjs",
     "check:verifyai": "node --experimental-strip-types scripts/check-verifyai.mjs",
+    "check:photo-required": "node --experimental-strip-types scripts/check-photo-required.mjs",
     "check:speed-match": "node --experimental-strip-types scripts/check-speed-match.mjs",
     "check:guru-search": "node --experimental-strip-types scripts/check-guru-search.mjs",
     "check:browse-search": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-browse-search.mjs",

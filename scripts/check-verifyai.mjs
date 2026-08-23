@@ -68,6 +68,9 @@ assert(verifyHook.includes("409"), "unpaid verified is 409");
 const start = read("app/api/verifyai/start/route.ts");
 assert(start.includes("402"), "start requires payment");
 assert(start.includes("buildVerifyaiStartUrl"), "start hands off to VerifyAI");
+assert(start.includes("hasPhoto") || start.includes("photoRequired"), "start requires a profile photo");
+assert(VERIFYAI_COPY.photoRequired.toLowerCase().includes("photo"), "photo required copy");
+assert(checkout.includes("hasPhoto") || checkout.includes("photoRequired"), "checkout requires a profile photo");
 
 const operator = read("app/api/verifyai/route.ts");
 assert(operator.includes("hasPaidVerifyai"), "operator cannot fake-verify without pay");

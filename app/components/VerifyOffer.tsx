@@ -11,6 +11,7 @@ type State = {
   paid: boolean;
   verified: boolean;
   status: string | null;
+  hasPhoto: boolean;
   checkoutConfigured: boolean;
   startConfigured: boolean;
   start_url?: string | null;
@@ -41,6 +42,7 @@ export default function VerifyOffer({
             paid: !!data.paid,
             verified: !!data.verified,
             status: data.status || null,
+            hasPhoto: !!data.hasPhoto,
             checkoutConfigured: data.checkoutConfigured !== false,
             startConfigured: !!data.startConfigured,
           });
@@ -76,6 +78,7 @@ export default function VerifyOffer({
               paid: !!data.paid,
               verified: !!data.verified,
               status: data.status || "pending",
+              hasPhoto: !!data.hasPhoto,
               checkoutConfigured: true,
               startConfigured: !!data.start_configured,
               start_url: data.start_url || null,
@@ -179,6 +182,7 @@ export default function VerifyOffer({
 
   const verified = !!(state && state.verified);
   const paid = !!(state && state.paid);
+  const hasPhoto = !!(state && state.hasPhoto);
 
   return (
     <section id="verify" className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
@@ -191,6 +195,13 @@ export default function VerifyOffer({
       {verified ? (
         <p className="bm-sans" style={{ margin: 0, fontSize: 14, color: INK }}>
           This profile is verified. The quiet badge is on.
+        </p>
+      ) : state && !hasPhoto ? (
+        <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
+          {VERIFYAI_COPY.photoRequired}{" "}
+          <Link href="/profile/new" className="bm-sans bm-focus" style={{ color: VIOLET, fontWeight: 600 }}>
+            Add a photo
+          </Link>
         </p>
       ) : paid ? (
         <button
@@ -214,7 +225,7 @@ export default function VerifyOffer({
       ) : (
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || (state != null && !hasPhoto)}
           onClick={pay}
           className="bm-sans bm-talk bm-focus"
           style={{
