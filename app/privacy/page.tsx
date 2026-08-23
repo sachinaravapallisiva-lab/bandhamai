@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            If VerifyAI ships, it may process extra signals you choose to provide. It will stay optional. This policy will be updated before that is a live product.
+            VerifyAI is the optional verification layer for Bandham profiles. If you pay $4.99, Stripe records the one-time payment and we send you into the VerifyAI flow. We may store a status on your profile (unverified, pending, verified, failed, or revoked). A quiet badge is shown only when that status is verified after VerifyAI succeeds. Payment alone does not verify you. VerifyAI is not a second matrimony product here, not a background check, and not a promise that someone is who they say they are.
           </p>
         </LegalSection>
 
@@ -91,11 +91,15 @@ export default function PrivacyPage() {
 
         <LegalSection title="Your choices">
           <p style={{ margin: 0 }}>
-            In-app edit and delete tools are limited today. To correct a profile, ask for a copy of what we have, or ask us to close an account, use the{" "}
+            You can close an account on the{" "}
+            <Link href="/account" style={{ color: VIOLET }}>
+              Account
+            </Link>{" "}
+            page. That tries to remove the login and hide the profile. To correct a profile or ask for a copy of what we have, use{" "}
             <Link href="/contact" style={{ color: VIOLET }}>
               Contact
-            </Link>{" "}
-            page. We will handle those requests by hand until self-serve tools ship. Some records (for example a safety report) may need to be kept if the law or an open case requires it.
+            </Link>
+            . Some records (for example a safety report) may need to be kept if the law or an open case requires it.
           </p>
         </LegalSection>
 

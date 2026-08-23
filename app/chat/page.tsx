@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import { authJsonHeaders } from "../../lib/client-auth";
 import { BILLING_COPY, emptyEntitlement } from "../../lib/billing";
 import {
   confirmCheckoutSession,
@@ -14,6 +15,7 @@ import {
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import MessagePaywall from "../components/MessagePaywall";
+import SafetyActions from "../components/SafetyActions";
 
 type ChatMessage = {
   id?: string;
@@ -168,20 +170,35 @@ export default function ChatPage() {
 
     const text = draft;
     setDraft("");
-    sendPaidMessage(recipientId, text).then(function (result) {
-      if (result.ok) {
-        setStatus("");
-        return;
-      }
-      if (result.code === "subscription_required" || result.status === 402) {
-        setDraft(text);
-        setEntitlement(emptyEntitlement({ ...entitlement, canMessage: false }));
-        setBillingNote(BILLING_COPY.headline);
-        return;
-      }
-      setDraft(text);
-      setStatus("Send failed: " + result.error);
-    });
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) return { blocked: false };
+        return fetch("/api/blocks?user_id=" + encodeURIComponent(recipientId), { headers })
+          .then(function (r) { return r.json(); })
+          .then(function (data) { return { blocked: !!data.blocked }; })
+          .catch(function () { return { blocked: false }; });
+      })
+      .then(function (gate) {
+        if (gate.blocked) {
+          setDraft(text);
+          setStatus("You cannot message this person. One of you blocked the other.");
+          return;
+        }
+        return sendPaidMessage(recipientId, text).then(function (result) {
+          if (result.ok) {
+            setStatus("");
+            return;
+          }
+          if (result.code === "subscription_required" || result.status === 402) {
+            setDraft(text);
+            setEntitlement(emptyEntitlement({ ...entitlement, canMessage: false }));
+            setBillingNote(BILLING_COPY.headline);
+            return;
+          }
+          setDraft(text);
+          setStatus("Send failed: " + result.error);
+        });
+      });
   }
 
   return (
@@ -249,6 +266,19 @@ export default function ChatPage() {
       >
         Load conversation
       </button>
+
+      {recipientId ? (
+        <SafetyActions
+          userId={recipientId}
+          surface="chat"
+          signedIn={!!userId}
+          nextPath="/chat"
+        />
+      ) : (
+        <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
+          Enter a recipient to block or report this conversation.
+        </p>
+      )}
 
       <div
         style={{

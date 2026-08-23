@@ -22,9 +22,11 @@ import {
 import {
   asStripeId,
   getStripe,
-  isStripeConfigured,
+  isStripeSignatureConfigured,
   stripeWebhookSecret,
 } from "../../../../lib/stripe";
+import { VERIFYAI_PURPOSE } from "../../../../lib/verifyai";
+import { recordVerifyaiPayment } from "../../../../lib/verifyai-checkout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +39,7 @@ function userIdFromMetadata(value: unknown) {
 
 export async function POST(request: Request) {
   try {
-    if (!isStripeConfigured()) {
+    if (!isStripeSignatureConfigured()) {
       return NextResponse.json(
         { error: BILLING_COPY.notConfigured, code: "billing_not_configured" },
         { status: 503 }
@@ -71,17 +73,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Server is missing Supabase configuration." }, { status: 500 });
     }
 
-    if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
-      return NextResponse.json(
-        { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
-        { status: 503 }
-      );
-    }
-
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      const purpose = session.metadata?.purpose || "";
+      if (session.mode === "payment" && purpose === VERIFYAI_PURPOSE) {
+        const userId =
+          userIdFromMetadata(session.metadata) ||
+          (typeof session.client_reference_id === "string" ? session.client_reference_id : "");
+        if (!userId) {
+          return NextResponse.json({ error: "VerifyAI checkout is missing user_id." }, { status: 500 });
+        }
+        if (session.payment_status === "paid" || session.status === "complete") {
+          const recorded = await recordVerifyaiPayment(supabase, {
+            userId,
+            profileId: session.metadata?.profile_id || null,
+            checkoutSessionId: session.id,
+            paymentIntentId: asStripeId(session.payment_intent),
+            amountCents: typeof session.amount_total === "number" ? session.amount_total : undefined,
+          });
+          if (recorded.error) {
+            return NextResponse.json({ error: recorded.error }, { status: 500 });
+          }
+        }
+        return NextResponse.json({ received: true, purpose: VERIFYAI_PURPOSE, verified: false });
+      }
+
       if (session.mode !== "subscription") {
         return NextResponse.json({ received: true });
+      }
+
+      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
+        return NextResponse.json(
+          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
+          { status: 503 }
+        );
       }
 
       const customerId = asStripeId(session.customer);
@@ -113,6 +138,12 @@ export async function POST(request: Request) {
       event.type === "customer.subscription.updated" ||
       event.type === "customer.subscription.deleted"
     ) {
+      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
+        return NextResponse.json(
+          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
+          { status: 503 }
+        );
+      }
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = asStripeId(subscription.customer);
       const userId =
@@ -134,6 +165,12 @@ export async function POST(request: Request) {
     }
 
     if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
+      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
+        return NextResponse.json(
+          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
+          { status: 503 }
+        );
+      }
       const invoice = event.data.object;
       const subscriptionId =
         asStripeId(invoice.parent?.subscription_details?.subscription) ||

@@ -20,6 +20,15 @@ export function stripePriceId() {
   return (process.env.STRIPE_PRICE_ID || "").trim();
 }
 
+/** One-time $4.99 VerifyAI SKU. Separate from STRIPE_PRICE_ID ($9.99/mo messaging). */
+export function stripeVerifyaiPriceId() {
+  return (process.env.STRIPE_VERIFYAI_PRICE_ID || "").trim();
+}
+
+export function isStripeSignatureConfigured() {
+  return !!(stripeSecretKey() && stripeWebhookSecret());
+}
+
 export function missingStripeEnv() {
   return STRIPE_ENV_KEYS.filter(function (key) {
     return !(process.env[key] || "").trim();

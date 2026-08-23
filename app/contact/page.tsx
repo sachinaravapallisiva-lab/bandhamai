@@ -20,7 +20,11 @@ export default function ContactPage() {
         Contact
       </h2>
       <p className="bm-sans" style={{ margin: "0 0 8px", fontSize: 14, color: MUTED, lineHeight: 1.55 }}>
-        Use this page for account help, a safety report, or a request to remove a profile. For legal pages, see{" "}
+        Use this page for leftover account help that the in-app tools cannot do. To block or report someone, use Block and Report on their profile or in a live chat. To close an account, use{" "}
+        <Link href="/account" style={{ color: VIOLET }}>
+          Account
+        </Link>
+        . For legal pages, see{" "}
         <Link href="/terms" style={{ color: VIOLET }}>
           Terms
         </Link>
@@ -39,7 +43,7 @@ export default function ContactPage() {
       </p>
       <ContactForm />
       <p className="bm-sans" style={{ margin: "18px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-        If someone is in danger, contact local authorities. This form is a stub until a public inbox is published.
+        If someone is in immediate danger, contact local authorities. This form still does not send email. It is not an emergency service.
       </p>
     </AppChrome>
   );

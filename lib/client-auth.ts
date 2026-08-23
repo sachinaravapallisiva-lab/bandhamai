@@ -1,10 +1,5 @@
 import { supabase } from "./supabase";
-
-export function safeNextPath(raw: string | null | undefined, fallback = "/") {
-  if (!raw) return fallback;
-  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
-  return fallback;
-}
+export { loginHref, safeNextPath } from "./next-path";
 
 export async function getAccessToken() {
   const { data } = await supabase.auth.getSession();

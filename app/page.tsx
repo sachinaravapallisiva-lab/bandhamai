@@ -8,8 +8,11 @@ import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
 import { ProfilePhoto } from "./components/ProfilePhoto";
+import VerifyBadge from "./components/VerifyBadge";
+import SafetyActions from "./components/SafetyActions";
 import { supabase } from "../lib/supabase";
 import { authJsonHeaders } from "../lib/client-auth";
+import { homeTabFromSearch, loginHref } from "../lib/next-path";
 import {
   confirmCheckoutSession,
   fetchEntitlement,
@@ -158,6 +161,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const fromQuery = homeTabFromSearch(new URLSearchParams(window.location.search).get("tab"));
+    if (fromQuery && fromQuery !== "browse") {
+      // URL is the source for /login?next=/matches → /?tab=matches.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTab(fromQuery);
+    }
     if (searchRef.current) searchRef.current("");
   }, []);
 
@@ -415,10 +424,21 @@ export default function Home() {
                   <span className="bm-sans" style={{ fontSize: 11, color: MUTED, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {userEmail}
                   </span>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <Link href="/account#verify" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
+                      Get verified · $4.99
+                    </Link>
+                    <Link href="/account" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
+                      Account
+                    </Link>
+                    <Link href="/logout" className="bm-sans bm-focus" style={{ fontSize: 11, color: MUTED, fontWeight: 600, textDecoration: "none" }}>
+                      Sign out
+                    </Link>
+                  </div>
                 </>
               ) : (
                 <Link
-                  href="/login?next=/"
+                  href={loginHref(tab === "matches" ? "/matches" : tab === "chat" ? "/chat" : "/")}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     color: VIOLET,
@@ -677,6 +697,7 @@ export default function Home() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
                           <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
                             {p.name}
+                            <VerifyBadge verified={p.verified} />
                           </h2>
                         </div>
                       </div>
@@ -729,6 +750,19 @@ export default function Home() {
                         {isLiked ? "Liked" : "Like"}
                       </button>
                     </div>
+                    <SafetyActions
+                      profileId={p.id}
+                      name={p.name}
+                      surface="profile"
+                      signedIn={signedIn}
+                      nextPath="/"
+                      onBlocked={function () {
+                        passProfile(p.id);
+                        setLiked(function (prev) {
+                          return prev.filter(function (x) { return x.id !== p.id; });
+                        });
+                      }}
+                    />
                   </article>
                 );
               })}
@@ -761,6 +795,7 @@ export default function Home() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
                         <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
                           {p.name}
+                          <VerifyBadge verified={p.verified} />
                         </h2>
                       </div>
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
@@ -787,6 +822,22 @@ export default function Home() {
                           Message
                         </button>
                       </div>
+                      <SafetyActions
+                        profileId={p.id}
+                        name={p.name}
+                        surface="profile"
+                        signedIn={signedIn}
+                        nextPath="/matches"
+                        onBlocked={function () {
+                          const blockedId = p.id;
+                          setLiked(function (prev) {
+                            return prev.filter(function (x) { return x.id !== blockedId; });
+                          });
+                          setSpeedPartner(function (current) {
+                            return current && current.id === blockedId ? null : current;
+                          });
+                        }}
+                      />
                     </article>
                   );
                 })}
@@ -798,6 +849,15 @@ export default function Home() {
         {/* ---------------- CHAT ---------------- */}
         {tab === "chat" && (
           <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "12px 17px", borderBottom: "1px solid " + LINE, background: WASH }}>
+              <p className="bm-sans" style={{ margin: 0, fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+                This tab is a layout preview, not a live person. Block or report someone from their Browse or Matches card, or from a live conversation at{" "}
+                <Link href="/chat" className="bm-focus" style={{ color: VIOLET }}>
+                  /chat
+                </Link>
+                .
+              </p>
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 17px", borderBottom: "1px solid " + LINE }}>
               <span style={{ width: 34, height: 34, borderRadius: 999, background: VIOLET, display: "block" }} />
               <span className="bm-serif" style={{ fontSize: 18 }}>Priya</span>

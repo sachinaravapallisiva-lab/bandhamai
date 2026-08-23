@@ -38,21 +38,21 @@ export default function SafetyPage() {
 
         <LegalSection title="Block and report">
           <p style={{ margin: "0 0 8px" }}>
-            You should be able to block a person and report a profile or a message. In-app block and report controls are planned. Until they ship, use the{" "}
-            <Link href="/contact" style={{ color: VIOLET }}>
-              Contact
-            </Link>{" "}
-            page. Say you want to report or block, and include:
+            Signed-in members can <strong>Block</strong> or <strong>Report</strong> from a Browse or Matches card, and from a live conversation at{" "}
+            <Link href="/chat" style={{ color: VIOLET }}>
+              /chat
+            </Link>
+            . Block hides that person on your Browse list and should stop messaging both ways. Report writes a review row we can look at. It is not a police report and it does not promise a response time.
           </p>
           <LegalList
             items={[
-              "The name or profile details you saw",
+              "The name or profile you saw",
               "What was said or sent, and about when",
               "Whether you want the person hidden from you, the profile taken down, or both",
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
-            If someone is in immediate danger, contact local police first. We are not an emergency service.
+            If someone is in immediate danger, contact local authorities first. We are not an emergency service and we do not dispatch police.
           </p>
         </LegalSection>
 
@@ -72,7 +72,7 @@ export default function SafetyPage() {
 
         <LegalSection title="Meeting in person">
           <p style={{ margin: 0 }}>
-            Meet in a public place. Tell a friend or family member. Arrange your own travel. Do not send money, visa paperwork, or tickets to someone you only know here. VerifyAI, when it exists, is a quiet helper. It is not a substitute for your own caution.
+            Meet in a public place. Tell a friend or family member. Arrange your own travel. Do not send money, visa paperwork, or tickets to someone you only know here. A quiet VerifyAI badge appears only after a $4.99 payment and a successful VerifyAI check. Paying is not enough. It is not a substitute for your own caution.
           </p>
         </LegalSection>
 
@@ -84,7 +84,11 @@ export default function SafetyPage() {
 
         <LegalSection title="Account removal">
           <p style={{ margin: 0 }}>
-            Self-serve account deletion is not in the app yet. Ask for removal on the Contact page. We will handle those requests until in-app tools ship.
+            Signed-in members can delete an account on the{" "}
+            <Link href="/account" style={{ color: VIOLET }}>
+              Account
+            </Link>{" "}
+            page. That tries to remove the login and hide the profile. If the login cannot be removed automatically, we keep a deletion request. Some safety reports may be kept if a case is still open.
           </p>
         </LegalSection>
 

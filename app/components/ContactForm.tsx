@@ -108,7 +108,7 @@ export default function ContactForm() {
         rows={5}
         className="bm-sans bm-input bm-focus"
         style={{ ...fieldStyle, minHeight: 120, resize: "vertical", marginBottom: 18 }}
-        placeholder="Account help, a safety report, or a removal request"
+        placeholder="Account help the in-app Block, Report, or Account delete tools cannot do"
       />
 
       <button

@@ -125,6 +125,118 @@ Public bucket URLs are convenient, not privacy. Real hide-until-matched access c
 5. If you ran the SQL, the `profiles` row should have `photo_url` and `photo_blurred_url`. If those columns are absent, files still land in Storage and the UI still previews the returned URLs.
 6. A missing bucket should show a clear “run supabase/profile_photos.sql” error, not a blank failure.
 
+## Block, report, and delete account
+
+In-app **Block** and **Report** sit on Browse cards, Matches cards, and live `/chat`. They are not Contact-only. **Delete account** is on `/account` (also linked from the footer and the signed-in header).
+
+### Supabase (Sai)
+
+Run [`supabase/safety.sql`](supabase/safety.sql) in the SQL editor. That creates `blocks`, `reports`, and `account_deletion_requests`, plus an optional insert policy on `messages` if that table already exists.
+
+Until that SQL is applied, the APIs return **503** and ask you to run the file. Browse still works.
+
+### What the tools do
+
+- **Block** — hides that profile on the viewer's Browse list and should stop messaging both ways (app check + SQL if `messages` exists). Unblock is on `/account`.
+- **Report** — writes a reviewable row (`reason`, `details`, `surface`). It does not call the police and does not promise a response time.
+- **Delete account** — asks you to type `DELETE`. Hides the profile (`status = removed`) and tries `auth.admin.deleteUser`. If the login cannot be removed, a deletion request stays for an operator. Sign-out still clears the session.
+
+Immediate danger stays with local authorities. The product is not an emergency service.
+
+### Test steps
+
+1. Signed out → Block / Report on a card asks you to sign in (`/login?next=/` or `/matches`).
+2. After `safety.sql`: sign in → Block a live card → it leaves your shortlist. Search again — that profile is gone for you. The other person should not see you either.
+3. Report the same (or another) card → a row in `reports`. Copy says we will look at it, and to call local authorities if someone is in danger.
+4. `/chat` with a recipient id → Block / Report under the recipient field. Send after a block should refuse.
+5. `/account` → Sign out actually returns you to Browse signed out (also `/logout`, which is not a 404).
+6. `/account` → type `DELETE` → profile hidden; login removed when the service role can. If login removal fails, the page says a request was recorded.
+
+## VerifyAI ($4.99 + quiet badge)
+
+VerifyAI ([verifyai.llc](https://verifyai.llc)) is the verification layer for Bandham profiles. It is not a second matrimony product in this UI.
+
+Flow:
+
+1. Member pays **$4.99 one-time** via real Stripe Checkout (`mode: payment`, `STRIPE_VERIFYAI_PRICE_ID`). Separate from the $9.99/mo messaging Price.
+2. Payment is stored. `verifyai_status` becomes `pending` if it was not already `verified`. **Paying does not show the badge.**
+3. The member is sent into the VerifyAI flow (`VERIFYAI_START_URL` hosted link, or `VERIFYAI_API_URL` + `VERIFYAI_API_KEY` session create).
+4. VerifyAI calls `POST /api/verifyai/webhook` on success. The badge appears only when `verifyai_status = 'verified'` **and** a paid $4.99 row exists. Operator `POST /api/verifyai` cannot skip payment.
+
+verifyai.llc does not publish a public API in this repo (biometric link product, contact@verifyai.llc). The start URL / API env is the handoff.
+
+### Supabase
+
+Run [`supabase/verifyai.sql`](supabase/verifyai.sql). Adds profile status columns plus `verifyai_payments` and `verifyai_sessions`.
+
+### Stripe Dashboard (Sai)
+
+On the same Stripe account as messaging:
+
+1. Product e.g. **Bandham AI VerifyAI**.
+2. One-time **Price: $4.99**. Copy `price_...` into `STRIPE_VERIFYAI_PRICE_ID`.
+3. The existing webhook URL (`/api/stripe/webhook`) also records this payment (`metadata.purpose=verifyai`). No second webhook is required.
+
+Do not point `STRIPE_PRICE_ID` at the $4.99 Price. That env is the $9.99/mo messaging subscription.
+
+### Vercel env (Sai)
+
+In addition to the existing Stripe messaging keys:
+
+| Name | Purpose |
+| --- | --- |
+| `STRIPE_VERIFYAI_PRICE_ID` | $4.99 one-time Price ID |
+| `VERIFYAI_START_URL` | Hosted VerifyAI flow URL (used if no API) |
+| `VERIFYAI_API_URL` | Optional session-create endpoint |
+| `VERIFYAI_API_KEY` | Optional Bearer for that endpoint |
+| `VERIFYAI_WEBHOOK_SECRET` | Shared secret for `/api/verifyai/webhook` |
+
+Do not commit secrets.
+
+### Test steps
+
+1. No SQL / no status → no badge.
+2. Pay $4.99 (or confirm a Checkout session) → `verifyai_payments` is `paid`, profile `pending`, **no badge**.
+3. Continue to VerifyAI (or set `VERIFYAI_START_URL`). Return without a success webhook → still no badge.
+4. Signed webhook with `status=verified` **and** a paid row → quiet VERIFYAI on Browse / Matches.
+5. Webhook `verified` without a paid row → **409**, badge stays off.
+6. Messaging $9.99/mo checkout is unchanged.
+
+## Auth polish
+
+Login already used `?next=`. It now allowlists internal paths only (`/`, `/matches`, `/chat`, `/profile/new`, `/account`, legal pages, `/logout`). `//evil.com` and unknown paths fall back to `/`.
+
+`/matches` exists so `/login?next=/matches` does not 404.
+
+### Forgot password
+
+On `/login`, enter an email and tap **Forgot password**. That calls Supabase `resetPasswordForEmail` and returns to `/login?mode=reset`. After the email link, the page asks for a new password (`updateUser`).
+
+In Supabase → Authentication → URL configuration, allow:
+
+- `https://bandhamai.vercel.app/login`
+- `https://bandhamai.vercel.app/**`
+- local `http://localhost:3000/login` for dev
+
+### Email confirmation
+
+This app does **not** turn Confirm email on or off. That is the Supabase project toggle (Authentication → Providers → Email → Confirm email).
+
+- If confirm is **off** (typical for the live smoke test): signup returns a session and continues. Leave that alone.
+- If confirm is **on**: signup returns no session and the existing “check your email” copy still shows. **Resend confirmation** is optional and does not change the signup call.
+
+### Sign out
+
+`/logout` and Account → Sign out call `supabase.auth.signOut()` and send you home. There is no fake 404 logout.
+
+### Test steps
+
+1. `/login?next=/matches` → after sign-in, Matches tab (not a 404, not an external site).
+2. `/login?next=https://example.com` and `/login?next=//evil.com` → home.
+3. Forgot password with your email → reset mail (after redirect URLs are set) → new password works.
+4. Signup still works the way it does today (session if confirm is off).
+5. Sign out from the header or `/logout` → Browse shows Sign in.
+
 ## iOS app (Capacitor)
 
 The iOS target is a Capacitor wrapper around the **hosted** Next.js app. It loads `https://bandhamai.vercel.app` in a WKWebView so the iPhone app matches the website without a static-export rewrite.
@@ -220,7 +332,7 @@ Browse search and the love guru both call `getUserMedia`. iOS will prompt using 
 ### Out of scope for this shell
 
 - **Speed Match** is live from Matches after Like: 10 Indian / desi matrimony dealbreaker questions, 15 seconds each. It is not a swipe deck and does not invent a match score. Persist needs [`supabase/speed_match.sql`](supabase/speed_match.sql).
-- **VerifyAI** may appear later as a quiet badge on the existing cards. Do not redesign the site for it.
+- **VerifyAI** is a quiet badge on existing cards when `verifyai_status` is verified. Do not redesign the site for it.
 - Android is not added yet.
 - Placeholder icons in `public/icons/` should be replaced before TestFlight.
 

@@ -28,6 +28,8 @@ import {
   safeOrValue,
   type SearchCriteria,
 } from "../../../../lib/profile-search";
+import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
+import { VERIFYAI_STATUS_COLUMN } from "../../../../lib/verifyai";
 
 export const runtime = "nodejs";
 
@@ -158,14 +160,15 @@ export async function GET(request: Request) {
       });
     }
 
-    const [photo_url, diet, user_id, created_at, inventory] = await Promise.all([
+    const [photo_url, diet, user_id, created_at, verifyai_status, inventory] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
       tableHasColumn(supabase, "profiles", "diet"),
       tableHasColumn(supabase, "profiles", "user_id"),
       tableHasColumn(supabase, "profiles", "created_at"),
+      tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", LIVE_PROFILE_STATUS),
     ]);
-    const flags = { photo_url, diet, user_id, created_at };
+    const flags = { photo_url, diet, user_id, created_at, verifyai_status };
 
     let criteria = parsed;
     let usedLlm = false;
@@ -194,7 +197,7 @@ export async function GET(request: Request) {
     }
 
     let viewerId: string | null = null;
-    if (flags.user_id && hasBearerToken(request)) {
+    if (hasBearerToken(request)) {
       const { user } = await getRequestUser(request, supabase);
       viewerId = user?.id || null;
     }
@@ -245,7 +248,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const rows = (Array.isArray(data) ? data : []) as unknown as Record<string, unknown>[];
+    let rows = (Array.isArray(data) ? data : []) as unknown as Record<string, unknown>[];
+    if (viewerId) {
+      const blocked = await loadBlockedSet(supabase, viewerId);
+      rows = applyBlockedFilter(
+        rows.map(function (row) {
+          return {
+            ...row,
+            id: row.id == null ? "" : String(row.id),
+            user_id: typeof row.user_id === "string" ? row.user_id : null,
+          };
+        }),
+        blocked
+      );
+    }
     const profiles = pickShortlist(rows, criteria);
     const empty = profiles.length === 0 ? (liveCount === 0 ? "inventory" : "matches") : null;
 
