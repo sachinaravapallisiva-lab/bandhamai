@@ -196,7 +196,11 @@ export default function VerifyOffer({
         <p className="bm-sans" style={{ margin: 0, fontSize: 14, color: INK }}>
           This profile is verified. The quiet badge is on.
         </p>
-      ) : state && !hasPhoto ? (
+      ) : !state ? (
+        <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
+          One moment…
+        </p>
+      ) : !hasPhoto ? (
         <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
           {VERIFYAI_COPY.photoRequired}{" "}
           <Link href="/profile/new" className="bm-sans bm-focus" style={{ color: VIOLET, fontWeight: 600 }}>
