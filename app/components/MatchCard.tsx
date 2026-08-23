@@ -1,9 +1,11 @@
 "use client";
 
+import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import { CREAM, GOLD, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
+import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import SafetyActions from "./SafetyActions";
@@ -150,6 +152,11 @@ export default function MatchCard({
             signedIn={signedIn}
             initialHandle={profile.instagram}
           />
+          {canShowOtherBiodataDownload({ signedIn, biodataShare: profile.biodataShare }) ? (
+            <div style={{ marginTop: 10 }}>
+              <DownloadBiodata profileId={profile.id} compact />
+            </div>
+          ) : null}
         </div>
       </div>
 

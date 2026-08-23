@@ -1,9 +1,11 @@
 "use client";
 
+import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
+import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import SafetyActions from "./SafetyActions";
@@ -171,6 +173,12 @@ export default function DiscoverCard({
           <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED, letterSpacing: ".01em" }}>
             {meta}
           </p>
+        ) : null}
+
+        {canShowOtherBiodataDownload({ signedIn, biodataShare: profile.biodataShare }) ? (
+          <div style={{ marginTop: 12 }}>
+            <DownloadBiodata profileId={profile.id} compact />
+          </div>
         ) : null}
 
         <InstagramShareControls

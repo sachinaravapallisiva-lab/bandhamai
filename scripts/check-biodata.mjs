@@ -19,6 +19,25 @@ import {
   firstNameSlug,
   profileToBiodataModel,
 } from "../lib/biodata.ts";
+import {
+  BIODATA_NOT_SHARED_ERROR,
+  BIODATA_OTHER_SIGNED_IN_ERROR,
+  BIODATA_SHARE_COLUMN,
+  BIODATA_SHARE_DEFAULT,
+  BIODATA_SHARE_HINT,
+  BIODATA_SHARE_LABEL,
+  BIODATA_SHARE_SAVE_LABEL,
+  BIODATA_SHARE_SAVING_LABEL,
+  BIODATA_SHARE_SQL_FILE,
+  BIODATA_SHARE_SQL_HINT,
+  BIODATA_UNAVAILABLE_ERROR,
+  biodataDownloadPath,
+  canShowOtherBiodataDownload,
+  decideBiodataAccess,
+  parseBiodataShare,
+  readBiodataTargetId,
+} from "../lib/biodata-share.ts";
+import { LIVE_PROFILE_STATUS } from "../lib/profile-search.ts";
 import { isVerifyaiVerified } from "../lib/verifyai.ts";
 
 function assert(cond, message) {
@@ -44,6 +63,13 @@ const copy = [
   BIODATA_PRODUCT,
   BIODATA_TAGLINE,
   BIODATA_SHARE_TITLE,
+  BIODATA_SHARE_LABEL,
+  BIODATA_SHARE_HINT,
+  BIODATA_SHARE_SAVE_LABEL,
+  BIODATA_SHARE_SAVING_LABEL,
+  BIODATA_NOT_SHARED_ERROR,
+  BIODATA_UNAVAILABLE_ERROR,
+  BIODATA_OTHER_SIGNED_IN_ERROR,
 ];
 copy.forEach(function (text) {
   assert(!text.includes("-") && !text.includes("—") && !text.includes("–"), "user-facing copy has no hyphen: " + text);
@@ -153,11 +179,102 @@ assert(pdfBytes.length > 400, "pdf is not empty");
 const sparsePdf = await buildBiodataPdf(empty);
 assertEq(Buffer.from(sparsePdf.subarray(0, 4)).toString("latin1"), "%PDF", "sparse profile still makes a PDF");
 
+assertEq(parseBiodataShare(undefined), false, "missing share is off");
+assertEq(parseBiodataShare(null), false, "null share is off");
+assertEq(parseBiodataShare(false), false, "false is off");
+assertEq(parseBiodataShare("false"), false, "string false is off");
+assertEq(parseBiodataShare(""), false, "empty share is off");
+assertEq(parseBiodataShare("no"), false, "no is off");
+assertEq(parseBiodataShare(0), false, "0 is off");
+assertEq(parseBiodataShare(true), true, "true is on");
+assertEq(parseBiodataShare("true"), true, "string true is on");
+assertEq(parseBiodataShare("TRUE"), true, "TRUE is on");
+assertEq(parseBiodataShare(1), true, "1 is on");
+assertEq(parseBiodataShare("1"), true, "string 1 is on");
+assertEq(parseBiodataShare("yes"), true, "yes is on");
+assertEq(parseBiodataShare("on"), true, "on is on");
+assertEq(BIODATA_SHARE_DEFAULT, false, "default stays off");
+assertEq(BIODATA_SHARE_COLUMN, "biodata_share", "column lock");
+assertEq(LIVE_PROFILE_STATUS, "live", "live status lock for other-profile gate");
+
+assertEq(biodataDownloadPath(), BIODATA_API_PATH, "own download uses the base path");
+assertEq(biodataDownloadPath("abc"), BIODATA_API_PATH + "?id=abc", "other download uses id");
+assertEq(
+  biodataDownloadPath("a b"),
+  BIODATA_API_PATH + "?id=" + encodeURIComponent("a b"),
+  "id is encoded"
+);
+assertEq(readBiodataTargetId(new URLSearchParams("id=p1")), "p1", "reads id");
+assertEq(readBiodataTargetId(new URLSearchParams("profile_id=p2")), "p2", "reads profile_id");
+assertEq(readBiodataTargetId(new URLSearchParams("id=p1&profile_id=p2")), "p1", "id wins over profile_id");
+assertEq(readBiodataTargetId(new URLSearchParams("")), "", "missing target stays empty");
+
+const ownLookup = decideBiodataAccess({
+  viewerUserId: "me",
+  isOwnLookup: true,
+  biodataShare: false,
+  targetStatus: "pending",
+});
+assert(ownLookup.ok && ownLookup.kind === "own", "own lookup is always allowed");
+
+const ownById = decideBiodataAccess({
+  viewerUserId: "me",
+  targetUserId: "me",
+  targetStatus: "pending",
+  biodataShare: false,
+  isOwnLookup: false,
+});
+assert(ownById.ok && ownById.kind === "own", "own id is always allowed");
+
+const pendingOther = decideBiodataAccess({
+  viewerUserId: "me",
+  targetUserId: "them",
+  targetStatus: "pending",
+  biodataShare: true,
+  isOwnLookup: false,
+});
+assert(!pendingOther.ok && pendingOther.status === 404, "pending other is 404");
+
+const missingOther = decideBiodataAccess({
+  viewerUserId: "me",
+  targetUserId: "them",
+  targetStatus: "",
+  biodataShare: true,
+  isOwnLookup: false,
+});
+assert(!missingOther.ok && missingOther.status === 404, "unknown status is 404");
+
+const liveOff = decideBiodataAccess({
+  viewerUserId: "me",
+  targetUserId: "them",
+  targetStatus: "live",
+  biodataShare: false,
+  isOwnLookup: false,
+});
+assert(!liveOff.ok && liveOff.status === 403, "live without opt-in is 403");
+assertEq(liveOff.ok ? "" : liveOff.error, BIODATA_NOT_SHARED_ERROR, "403 copy");
+
+const liveOn = decideBiodataAccess({
+  viewerUserId: "me",
+  targetUserId: "them",
+  targetStatus: "live",
+  biodataShare: "true",
+  isOwnLookup: false,
+});
+assert(liveOn.ok && liveOn.kind === "other", "live plus string true is allowed");
+
+assert(!canShowOtherBiodataDownload({ signedIn: false, biodataShare: true }), "hide when signed out");
+assert(!canShowOtherBiodataDownload({ signedIn: true, biodataShare: false }), "hide when opt-in is off");
+assert(canShowOtherBiodataDownload({ signedIn: true, biodataShare: true }), "show when signed in and opted in");
+
 const route = read("app/api/profiles/biodata/route.ts");
 assert(route.includes("export async function GET"), "server GET generates the PDF");
 assert(route.includes("hasBearerToken"), "auth required");
-assert(route.includes("eq(\"user_id\", user.id)") || route.includes(".eq(\"user_id\", user.id)"), "own profile only");
-assert(!/searchParams|profile_id|other.*profile/i.test(route), "no other-person profile id");
+assert(route.includes("eq(\"user_id\", user.id)") || route.includes(".eq(\"user_id\", user.id)"), "own profile path remains");
+assert(route.includes("eq(\"id\", targetId)") || route.includes(".eq(\"id\", targetId)"), "other profile by id");
+assert(route.includes("readBiodataTargetId"), "accepts id or profile_id");
+assert(route.includes("decideBiodataAccess"), "opt-in gate is server-side");
+assert(route.includes("findInstagramShare") || route.includes("revealInstagramHandle"), "other-profile Instagram still uses share rows");
 assert(route.includes("buildBiodataPdf"), "uses shared pdf builder");
 assert(route.includes("revealInstagramHandle") || route.includes("profileToBiodataModel"), "instagram privacy goes through the model");
 assert(route.includes("isVerifyaiVerified") || route.includes("profileToBiodataModel"), "verifyai goes through the model");
@@ -168,7 +285,8 @@ const button = read("app/components/DownloadBiodata.tsx");
 assert(button.includes("BIODATA_DOWNLOAD_LABEL"), "button uses locked label");
 assert(button.includes("navigator.share"), "mobile share sheet when available");
 assert(button.includes("download"), "falls back to file download");
-assert(button.includes(BIODATA_API_PATH) || button.includes("BIODATA_API_PATH"), "hits the API");
+assert(button.includes("biodataDownloadPath") || button.includes(BIODATA_API_PATH), "hits the API");
+assert(button.includes("profileId"), "button can target another profile");
 
 const account = read("app/account/page.tsx");
 assert(account.includes("DownloadBiodata"), "Account has Download biodata");
@@ -176,6 +294,38 @@ assert(account.includes("Your profile"), "stays next to Your profile");
 
 const profile = read("app/profile/new/page.tsx");
 assert(profile.includes("DownloadBiodata"), "profile screen has Download biodata");
+assert(profile.includes("BiodataShareField"), "create form has biodata opt-in");
+assert(profile.includes("biodata_share"), "create form persists the opt-in");
+
+assert(account.includes("BiodataShareField"), "account edit has biodata opt-in");
+assert(account.includes("biodata_share"), "account can save the opt-in");
+
+const field = read("app/components/BiodataShareField.tsx");
+assert(field.includes("BIODATA_SHARE_LABEL"), "checkbox uses locked label");
+assert(field.includes("type=\"checkbox\"") || field.includes('type="checkbox"'), "opt-in is a checkbox");
+
+const sql = read(BIODATA_SHARE_SQL_FILE);
+assert(sql.includes("add column if not exists biodata_share"), "sql adds biodata_share");
+assert(/default false/i.test(sql), "sql defaults off");
+assert(sql.includes("boolean"), "sql column is boolean");
+assert(!/default true/i.test(sql), "sql must not default on");
+assertEq(BIODATA_SHARE_SQL_HINT.includes(BIODATA_SHARE_SQL_FILE), true, "hint names the sql file");
+
+const write = read("app/api/profiles/route.ts");
+assert(write.includes("parseBiodataShare"), "POST/PATCH persist the opt-in");
+assert(write.includes("BIODATA_SHARE_COLUMN"), "writes the locked column");
+assert(write.includes("hasShare") || write.includes("biodata_share"), "PATCH can save share without Instagram");
+
+const discover = read("app/components/DiscoverCard.tsx");
+assert(discover.includes("DownloadBiodata"), "Browse card can show Download biodata");
+assert(discover.includes("canShowOtherBiodataDownload"), "Browse hides the button unless opted in");
+const match = read("app/components/MatchCard.tsx");
+assert(match.includes("DownloadBiodata"), "Matches card can show Download biodata");
+assert(match.includes("canShowOtherBiodataDownload"), "Matches hides the button unless opted in");
+
+const search = read("app/api/profiles/search/route.ts");
+assert(search.includes("BIODATA_SHARE_COLUMN") || search.includes("biodata_share"), "search selects the opt-in flag");
+assert(!/stripe|checkout|price_/i.test(search), "search still has no Stripe");
 
 const pkg = read("package.json");
 assert(pkg.includes("\"pdf-lib\""), "pdf-lib is the PDF library");
