@@ -3,8 +3,9 @@
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
-import PresenceMark from "./PresenceMark";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
+import InstagramChip from "./InstagramChip";
+import PresenceMark from "./PresenceMark";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
 
@@ -170,6 +171,12 @@ export default function DiscoverCard({
           <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED, letterSpacing: ".01em" }}>
             {meta}
           </p>
+        ) : null}
+
+        {profile.instagram ? (
+          <div style={{ marginTop: 10 }}>
+            <InstagramChip handle={profile.instagram} />
+          </div>
         ) : null}
 
         {chips.length ? (

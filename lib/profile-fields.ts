@@ -1,7 +1,8 @@
 import { VISA_STATUS_GROUPS, VISA_STATUS_UNGROUPED } from "./visa-status";
 
 /** Writable text columns already used by POST /api/profiles — do not invent others.
- *  photo_url / photo_blurred_url are attached separately when those columns exist. */
+ *  photo_url / photo_blurred_url are attached separately when those columns exist.
+ *  instagram is written only when public.profiles.instagram exists (supabase/instagram.sql). */
 export const PROFILE_WRITE_FIELDS = [
   "full_name",
   "gender",
@@ -12,7 +13,11 @@ export const PROFILE_WRITE_FIELDS = [
   "profession",
   "about",
   "wants",
+  "instagram",
 ] as const;
+
+/** Optional columns that must not be selected/inserted until tableHasColumn is true. */
+export const PROFILE_OPTIONAL_WRITE_FIELDS = ["instagram"] as const;
 
 export type ProfileWriteField = (typeof PROFILE_WRITE_FIELDS)[number];
 
@@ -29,6 +34,7 @@ export function emptyProfileForm(): ProfileWritePayload {
     profession: "",
     about: "",
     wants: "",
+    instagram: "",
   };
 }
 

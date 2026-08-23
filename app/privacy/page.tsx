@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           <LegalList
             items={[
               "Account email and sign-in data from our login provider",
-              "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, and what you want in a match)",
+              "Profile details you submit, such as name, gender, city, and optional fields (language, visa status, education, work, what you want in a match, and an Instagram username if you choose to connect one)",
               "A profile photo a signed-in user chooses to upload on profile create. We may create a clearer or resized copy (optional resolution and clarity enhance only) and a blurred copy for product use.",
               "Messages you send in chat, when that feature is used",
               "Voice you choose to send for speech-to-text search or the assistant. Audio goes to a transcription service so we can return text.",
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="Who can see a profile">
           <p style={{ margin: 0 }}>
-            Submitted profiles and their photos stay pending until a reviewer sets them live. After that, other members can see the fields we display on Browse and Matches, including the profile photo we show. Reviewers can see a submitted profile and its photo before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording.
+            Submitted profiles and their photos stay pending until a reviewer sets them live. After that, other members can see the fields we display on Browse and Matches, including the profile photo we show and an Instagram link if you added one. Reviewers can see a submitted profile and its photo before it is live. Chat is visible to the people in that thread and to operators if we must look at a report. Voice is processed to produce text for the feature you used. It is not posted as a public recording. We do not post to Instagram or sign you in with Instagram.
           </p>
         </LegalSection>
 

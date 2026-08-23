@@ -9,10 +9,12 @@ import {
   unauthorizedResponse,
 } from "../../../lib/server-supabase";
 import {
+  PROFILE_OPTIONAL_WRITE_FIELDS,
   PROFILE_WRITE_FIELDS,
   REQUIRED_PROFILE_FIELDS,
   type ProfileWriteField,
 } from "../../../lib/profile-fields";
+import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
 
 function asString(value: unknown) {
@@ -95,6 +97,11 @@ export async function POST(request: Request) {
       }
     }
 
+    const instagram = parseInstagramInput(fields.instagram);
+    if (instagram.error) {
+      return NextResponse.json({ error: instagram.error }, { status: 400 });
+    }
+
     const verifier = dataClient();
     if (!verifier) return missingConfigResponse();
 
@@ -142,7 +149,13 @@ export async function POST(request: Request) {
       // Manual approval: never go live from this endpoint.
       status: "pending",
     };
+    for (const key of PROFILE_OPTIONAL_WRITE_FIELDS) {
+      delete insertRow[key];
+    }
     if (linked) insertRow.user_id = user.id;
+    if (await tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN)) {
+      insertRow.instagram = instagram.handle;
+    }
 
     const photoUrl = asString(body.photo_url);
     const blurredUrl = asString(body.photo_blurred_url);
@@ -172,6 +185,85 @@ export async function POST(request: Request) {
       message: "submitted for review",
       linked,
       data,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Something went wrong.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/** Own-profile edit. v1 only writes Instagram — not a full re-review of other fields. */
+export async function PATCH(request: Request) {
+  try {
+    if (!hasBearerToken(request)) {
+      return unauthorizedResponse("Sign in to update your profile.");
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Send a JSON profile." }, { status: 400 });
+    }
+
+    const instagram = parseInstagramInput(body.instagram);
+    if (instagram.error) {
+      return NextResponse.json({ error: instagram.error }, { status: 400 });
+    }
+
+    const verifier = dataClient();
+    if (!verifier) return missingConfigResponse();
+
+    const { user, error: authError } = await getRequestUser(request, verifier);
+    if (!user) {
+      return unauthorizedResponse(authError || "Sign in to update your profile.");
+    }
+
+    const supabase = getServiceSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Server is missing SUPABASE_SERVICE_KEY, which is required to save a profile." },
+        { status: 500 }
+      );
+    }
+
+    if (!(await tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN))) {
+      return NextResponse.json({ error: INSTAGRAM_SQL_HINT }, { status: 503 });
+    }
+
+    const linked = await tableHasColumn(supabase, "profiles", "user_id");
+    if (!linked) {
+      return NextResponse.json({ error: "This profile is not linked to an account." }, { status: 400 });
+    }
+
+    const existing = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing.error) {
+      return NextResponse.json({ error: existing.error.message }, { status: 400 });
+    }
+    if (!existing.data) {
+      return NextResponse.json({ error: "Create a profile first." }, { status: 404 });
+    }
+
+    const updated = await supabase
+      .from("profiles")
+      .update({ instagram: instagram.handle })
+      .eq("id", existing.data.id)
+      .select()
+      .maybeSingle();
+
+    if (updated.error) {
+      return NextResponse.json({ error: updated.error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: updated.data,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong.";

@@ -42,6 +42,8 @@ export type BrowseProfile = {
   verified: boolean;
   /** True when public.presence.last_seen_at is within ~3 minutes. */
   online: boolean;
+  /** Clean Instagram handle without `@`, or empty. */
+  instagram: string;
 };
 
 export type BrowseFactChip = {
@@ -326,8 +328,13 @@ export function browseSelectColumns(flags: {
   diet: boolean;
   user_id?: boolean;
   verifyai_status?: boolean;
+  instagram?: boolean;
 }) {
-  const cols: string[] = ["id", ...PROFILE_WRITE_FIELDS];
+  const cols: string[] = ["id"];
+  PROFILE_WRITE_FIELDS.forEach(function (field) {
+    if (field === "instagram" && !flags.instagram) return;
+    cols.push(field);
+  });
   if (flags.photo_url) cols.push("photo_url");
   if (flags.diet) cols.push("diet");
   if (flags.user_id) cols.push("user_id");
@@ -415,6 +422,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     photoUrl: asText(row.photo_url),
     verified: asText(row.verifyai_status).toLowerCase() === "verified",
     online: row.online === true || isRecentlySeen(row.last_seen_at),
+    instagram: asText(row.instagram).replace(/^@+/, ""),
   };
 }
 

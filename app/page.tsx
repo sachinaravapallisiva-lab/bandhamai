@@ -419,7 +419,23 @@ export default function Home() {
                     >
                       Under review
                     </Link>
-                  ) : null}
+                  ) : (
+                    <Link
+                      href="/profile/new"
+                      className="bm-sans bm-ghost bm-focus"
+                      style={{
+                        color: VIOLET,
+                        border: "1px solid " + LINE,
+                        borderRadius: 999,
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Profile
+                    </Link>
+                  )}
                   <span className="bm-sans" style={{ fontSize: 11, color: MUTED, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {userEmail}
                   </span>
