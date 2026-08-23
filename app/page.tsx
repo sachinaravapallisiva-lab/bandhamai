@@ -583,22 +583,33 @@ export default function Home() {
                   type="button"
                   onClick={toggleMic}
                   disabled={busy}
-                  aria-label="Search profiles by voice"
-                  className="bm-sans bm-talk bm-focus"
+                  aria-label={live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
+                  className="bm-talk bm-focus"
                   style={{
+                    width: 42,
+                    height: 42,
+                    flexShrink: 0,
                     background: live ? VIOLET_DEEP : VIOLET,
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: 999,
-                    padding: "11px 14px",
-                    fontSize: 13,
-                    fontWeight: 600,
                     cursor: busy ? "default" : "pointer",
                     opacity: busy ? 0.55 : 1,
-                    whiteSpace: "nowrap",
+                    display: "grid",
+                    placeItems: "center",
                   }}
                 >
-                  {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
+                  <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+                    <rect x="5.4" y="1.6" width="5.2" height="8.2" rx="2.6" fill="#FFFFFF" />
+                    <path
+                      d="M3.6 7.6a4.4 4.4 0 0 0 8.8 0"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="1.35"
+                      strokeLinecap="round"
+                    />
+                    <path d="M8 12v2.2" fill="none" stroke="#FFFFFF" strokeWidth="1.35" strokeLinecap="round" />
+                  </svg>
                 </button>
                 <button
                   onClick={function () { runSearch(); }}
@@ -691,10 +702,6 @@ export default function Home() {
                   }}
                 />
               </div>
-            ) : searching ? (
-              <p className="bm-sans" style={{ fontSize: 13, color: MUTED, textAlign: "center", margin: "28px 0" }}>
-                {SEARCH_LOOKING_STATUS}
-              </p>
             ) : null}
           </>
         )}
