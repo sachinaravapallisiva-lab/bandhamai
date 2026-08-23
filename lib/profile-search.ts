@@ -207,7 +207,11 @@ function extractGender(text: string): { gender: SearchCriteria["gender"]; rest: 
   return { gender, rest: text.replace(new RegExp("\\b" + token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "ig"), " ") };
 }
 
-/** Deterministic criteria from a spoken/typed Browse prompt. No model required. */
+/**
+ * Deterministic criteria from a spoken/typed Browse prompt.
+ * English leftover keywords always survive. Desi aliases only enrich
+ * tokens the user actually said. No model required.
+ */
 export function parseSearchQuery(raw: string): SearchCriteria {
   const text = normalize(raw);
   if (!text) return { city: null, gender: null, keywords: [] };
@@ -233,7 +237,7 @@ export function parseSearchQuery(raw: string): SearchCriteria {
   };
 }
 
-/** True only when the desi pack left the prompt thin enough that xAI might help. */
+/** Optional xAI when the English + desi parse is still thin. Never required. */
 export function needsLlmAssist(query: string, criteria: SearchCriteria) {
   if (!query.trim()) return false;
   if (criteria.city && criteria.keywords.length > 0) return false;

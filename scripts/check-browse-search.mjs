@@ -21,6 +21,15 @@ function assertHas(list, value, label) {
   }
 }
 
+function assertNoInjectedDesi(criteria, label) {
+  const injected = ["telugu", "tamil", "nri", "iyengar", "reddy", "nair", "manglik", "joint family"];
+  injected.forEach(function (word) {
+    if (criteria.keywords.includes(word)) {
+      throw new Error(label + ": must not invent desi keyword " + word + " from an English prompt");
+    }
+  });
+}
+
 const doctor = parseSearchQuery("doctor in Hyderabad");
 assertEq(doctor.city, "Hyderabad", "doctor city");
 assertHas(doctor.keywords, "doctor", "doctor keywords");
@@ -30,6 +39,24 @@ const woman = parseSearchQuery("a woman in Dallas, vegetarian");
 assertEq(woman.city, "Dallas", "woman city");
 assertEq(woman.gender, "Female", "woman gender");
 assertHas(woman.keywords, "vegetarian", "woman keywords");
+
+const englishAustin = parseSearchQuery("software engineer in Austin");
+assertEq(englishAustin.city, "Austin", "English Austin city");
+assertHas(englishAustin.keywords, "software", "English software");
+assertHas(englishAustin.keywords, "engineer", "English engineer");
+assertNoInjectedDesi(englishAustin, "software engineer in Austin");
+assert(!needsLlmAssist("software engineer in Austin", englishAustin), "complete English prompt skips LLM");
+
+const englishDallas = parseSearchQuery("doctor in Dallas");
+assertEq(englishDallas.city, "Dallas", "English Dallas city");
+assertHas(englishDallas.keywords, "doctor", "English doctor");
+assertNoInjectedDesi(englishDallas, "doctor in Dallas");
+
+const englishKind = parseSearchQuery("a kind teacher who likes hiking");
+assertHas(englishKind.keywords, "kind", "English kind");
+assertHas(englishKind.keywords, "teacher", "English teacher");
+assertHas(englishKind.keywords, "hiking", "English hiking");
+assertNoInjectedDesi(englishKind, "kind teacher hiking");
 
 const hyd = parseSearchQuery("Telugu doctor in Hyd");
 assertEq(hyd.city, "Hyderabad", "Hyd → Hyderabad");
@@ -95,7 +122,8 @@ assert(
 const thin = parseSearchQuery("someone kind");
 assert(needsLlmAssist("someone kind", thin), "thin leftover prompt may ask xAI in parallel");
 assert(!needsLlmAssist("", parseSearchQuery("")), "empty query never asks xAI");
-assert(!needsLlmAssist("Telugu doctor in Hyd", hyd), "packed desi prompt never asks xAI");
+assert(!needsLlmAssist("Telugu doctor in Hyd", hyd), "complete desi-enriched prompt skips LLM");
+assert(!needsLlmAssist("doctor in Dallas", englishDallas), "complete English prompt skips LLM");
 
 const pending = {
   id: "pending-1",
@@ -114,6 +142,19 @@ const live = {
   visa_status: "NRI",
   about: "Joint family. Asked her own questions back.",
 };
+const englishOnlyProfile = {
+  id: "live-en",
+  full_name: "Maya L",
+  city: "Dallas",
+  profession: "Doctor",
+  education: "MD",
+  about: "I like hiking and live music.",
+};
+const englishCards = pickShortlist([englishOnlyProfile, live], englishDallas);
+assert(
+  englishCards.some(function (card) { return card.id === "live-en"; }),
+  "English doctor in Dallas must surface a profile with no desi vocabulary"
+);
 const cards = pickShortlist([live], doctor);
 assert(cards.length === 1 && cards[0].id === "live-1", "shortlist should keep the live row");
 assert(toBrowseProfile(pending)?.name === "Should not leak", "mapper still maps a raw row; status filter is the API's job");

@@ -1,7 +1,9 @@
 /**
- * Deterministic desi synonym pack for Browse search.
- * Communities and languages are keywords, not hate filters.
- * City values are canonical names stored / shown on profiles.
+ * Optional synonym pack on top of ordinary English Browse parse.
+ * Expands Indian shorthand when the user said it (Hyd → Hyderabad).
+ * Never required: English prompts and English-written profiles stay valid
+ * without Telugu, NRI, community, or other desi terms.
+ * Communities and languages are user-asked keywords, not default filters.
  */
 
 export const CITY_ALIASES: Record<string, string> = {

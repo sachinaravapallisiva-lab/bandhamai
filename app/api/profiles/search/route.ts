@@ -109,7 +109,7 @@ async function extractCriteriaWithLlm(query: string): Promise<SearchCriteria | n
           {
             role: "system",
             content:
-              'Extract matrimony Browse filters. Reply with JSON only: {"city":string|null,"gender":"Female"|"Male"|"Other"|null,"keywords":string[]}. Expand Hyd→Hyderabad, Blr→Bengaluru, Madras→Chennai, Vizag→Visakhapatnam. keywords are profession, language, community, diet, visa, or family-type words. Ignore age. No commentary.',
+              'Extract matrimony Browse filters from the user\'s words only. Reply with JSON only: {"city":string|null,"gender":"Female"|"Male"|"Other"|null,"keywords":string[]}. Keep normal English cities and professions. If they used Indian shorthand, expand Hyd→Hyderabad, Blr→Bengaluru, Madras→Chennai, Vizag→Visakhapatnam. Do not invent language, community, diet, or visa keywords they did not say. Ignore age. No commentary.',
           },
           { role: "user", content: query },
         ],
