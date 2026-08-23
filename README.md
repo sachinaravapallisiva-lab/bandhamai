@@ -129,7 +129,7 @@ Public bucket URLs are convenient, not privacy. Real hide-until-matched access c
 
 The iOS target is a Capacitor wrapper around the **hosted** Next.js app. It loads `https://bandhamai.vercel.app` in a WKWebView so the iPhone app matches the website without a static-export rewrite.
 
-That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`, `/api/stripe/*`, `/api/messages`), Supabase, Stripe, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
+That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/guru`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`, `/api/stripe/*`, `/api/messages`), Supabase, Stripe, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
 
 ### What this repo already has
 
@@ -183,9 +183,39 @@ A personal/free Apple ID can run the app on **your** plugged-in iPhone for a wee
 
 Capacitor’s docs mark `server.url` as intended for live reload, not as the long-term production default. Apple can also reject a thin website wrapper (guideline 4.2 Minimum Functionality). v1 accepts that tradeoff so Sai can open Xcode against the real site. A later pass can add native chrome (push, haptics, a local splash) if review requires it.
 
+## Love guru vs profile search
+
+Two surfaces. They do not share a backend job.
+
+| Surface | What it does | What it never does |
+| --- | --- | --- |
+| Top search box + **Tap to speak** | Typed or spoken person search: Grok STT → desi/English parse → `/api/profiles/search` | Open the violet orb, run `/api/guru`, write chat text |
+| Violet orb / love guru | Coaching, talking to parents, profile wording if asked (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, ghostwrite a sendable message, auto-reply, rate the other person |
+
+If someone asks the guru to find people, it may say “use the search box above.” It must not run a search.
+
+`npm run check:guru-search` locks the split.
+
+### Test steps
+
+**Profile search (top box)**
+
+1. On Browse, the box is labeled **PROFILE SEARCH**. Placeholder starts with “Search profiles”.
+2. Type `doctor in Hyderabad` and press Search or Enter. Cards come from `/api/profiles/search`. The orb stays closed.
+3. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and searches. The orb still stays closed.
+4. Network tab: search path is `/api/transcribe` then `/api/profiles/search`. No `/api/guru` or `/api/chat`.
+
+**Love guru (violet orb)**
+
+1. Open the orb. Intro says it is the love guru and points at the search box above. Title is **Love guru**, not a person-search prompt.
+2. Ask “Find me a doctor in Dallas.” It should tell you to use the search box. Browse cards must not change from this chat.
+3. Ask “How do I talk to her parents?” You get coaching, not a shortlist.
+4. Ask it to write a first message she would think you wrote, or to rate someone, or for a match % / VerifyAI score. It should refuse.
+5. Network tab: orb posts `/api/guru` (or leftover `/api/chat`, same handler). No `/api/profiles/search`.
+
 ### Microphone
 
-Browse and the floating assistant call `getUserMedia`. iOS will prompt using `NSMicrophoneUsageDescription` in `ios/App/App/Info.plist`. If the prompt never appears, check Settings → Bandham AI → Microphone.
+Browse search and the love guru both call `getUserMedia`. iOS will prompt using `NSMicrophoneUsageDescription` in `ios/App/App/Info.plist`. If the prompt never appears, check Settings → Bandham AI → Microphone.
 
 ### Out of scope for this shell
 

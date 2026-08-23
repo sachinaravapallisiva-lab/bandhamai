@@ -18,11 +18,23 @@ import {
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import type { BrowseProfile } from "../lib/profile-search";
+import {
+  SEARCH_HEARING_STATUS,
+  SEARCH_HINT,
+  SEARCH_LABEL,
+  SEARCH_LISTEN_STATUS,
+  SEARCH_LOOKING_STATUS,
+  SEARCH_PLACEHOLDER,
+  SEARCH_SPEAK_BUSY,
+  SEARCH_SPEAK_IDLE,
+  SEARCH_SPEAK_LIVE,
+} from "../lib/surfaces";
 
 /* ------------------------------------------------------------------ *
-   Bandhamai — main app
-   Browse (voice search) / Matches / Chat
-   Voice runs through /api/transcribe (Grok STT).
+   Bandham AI — main app
+   Browse (profile search only) / Matches / Chat
+   Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
+   Never opens the love guru from this path. Guru is the violet orb.
  * ------------------------------------------------------------------ */
 
 const VIOLET = "#6D28D9";
@@ -224,6 +236,7 @@ export default function Home() {
         const form = new FormData();
         form.append("file", new Blob(chunks, { type: "audio/webm" }), "audio.webm");
 
+        // Search-only: STT → runSearch → /api/profiles/search. Never /api/guru.
         fetch("/api/transcribe", { method: "POST", body: form })
           .then(function (r) { return r.json(); })
           .then(function (data: any) {
@@ -521,8 +534,11 @@ export default function Home() {
                 marginBottom: 26,
               }}
             >
+              <p className="bm-sans" style={{ margin: "0 0 6px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
+                {SEARCH_LABEL}
+              </p>
               <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
-                Say it the way you'd say it out loud. In noisy places, type instead.
+                {SEARCH_HINT}
               </p>
 
               <input
@@ -534,7 +550,8 @@ export default function Home() {
                     runSearch();
                   }
                 }}
-                placeholder="A doctor in Hyderabad, vegetarian, under thirty..."
+                placeholder={SEARCH_PLACEHOLDER}
+                aria-label="Search profiles"
                 className="bm-sans bm-input bm-focus"
                 style={{
                   width: "100%",
@@ -570,8 +587,10 @@ export default function Home() {
 
               <div style={{ display: "flex", gap: 9 }}>
                 <button
+                  type="button"
                   onClick={toggleMic}
                   disabled={busy}
+                  aria-label="Search profiles by voice"
                   className="bm-sans bm-talk bm-focus"
                   style={{
                     flex: 1,
@@ -586,7 +605,7 @@ export default function Home() {
                     opacity: busy ? 0.55 : 1,
                   }}
                 >
-                  {live ? "Tap to stop" : busy ? "One moment" : "Tap to speak"}
+                  {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
                   onClick={function () { runSearch(); }}
@@ -610,7 +629,7 @@ export default function Home() {
 
               <div className="bm-sans" style={{ minHeight: 18, marginTop: 11, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 12, color: busy ? VIOLET : MUTED }}>
-                  {live ? "Listening..." : micState === "thinking" ? "Thinking..." : searching ? "Looking..." : note}
+                  {live ? SEARCH_LISTEN_STATUS : micState === "thinking" ? SEARCH_HEARING_STATUS : searching ? SEARCH_LOOKING_STATUS : note}
                 </span>
                 {query ? (
                   <button

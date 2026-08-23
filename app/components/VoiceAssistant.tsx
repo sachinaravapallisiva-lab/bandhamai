@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import {
+  GURU_INTRO,
+  GURU_ORB_LABEL,
+  GURU_PATH,
+  GURU_PLACEHOLDER,
+  GURU_STARTERS,
+  GURU_TITLE,
+} from "../../lib/surfaces";
 
 /* ------------------------------------------------------------------ *
-   Bandhamai — floating voice assistant
-   Small orb bottom-right. Tap to open a compact panel.
-   Records real audio and posts it to /api/transcribe (Grok STT).
+   Bandham AI — love guru (violet orb)
+   Coaching only. Never searches profiles.
+   Voice goes STT → /api/guru. Search lives in the box above.
  * ------------------------------------------------------------------ */
 
 const SHELL = "#FFFFFF";
@@ -36,7 +44,7 @@ function toChatMessages(history: Line[]) {
 export default function VoiceAssistant() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<Line[]>([
-    { who: "bm", text: "Tell me who you're hoping to meet." },
+    { who: "bm", text: GURU_INTRO },
   ]);
   const [state, setState] = useState("idle"); // idle | listening | thinking
   const [amps, setAmps] = useState<number[]>(Array(14).fill(0.2));
@@ -139,12 +147,12 @@ export default function VoiceAssistant() {
     const next = linesRef.current.concat({ who: "you", text: text });
     linesRef.current = next;
     setLines(next);
-    askBandham(next);
+    askGuru(next);
   }
 
-  function askBandham(history: Line[]) {
+  function askGuru(history: Line[]) {
     setState("thinking");
-    fetch("/api/chat", {
+    fetch(GURU_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: toChatMessages(history) }),
@@ -200,7 +208,7 @@ export default function VoiceAssistant() {
         <style>{css}</style>
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open voice assistant"
+          aria-label={GURU_ORB_LABEL}
           className="ba-orb ba-focus"
           style={{
             position: "fixed",
@@ -268,7 +276,7 @@ export default function VoiceAssistant() {
           }}
         >
           <span className={"ba-dot" + (live || busy ? " on" : "")} style={{ background: live ? VIOLET : busy ? MUTED : LINE }} />
-          <span className="ba-serif" style={{ fontSize: 16, flex: 1 }}>Bandhamai</span>
+          <span className="ba-serif" style={{ fontSize: 16, flex: 1 }}>{GURU_TITLE}</span>
           <span className="ba-sans" style={{ fontSize: 9.5, letterSpacing: ".15em", color: MUTED }}>
             {live ? "LISTENING" : busy ? "THINKING" : "READY"}
           </span>
@@ -296,7 +304,7 @@ export default function VoiceAssistant() {
                   className="ba-sans"
                   style={{ fontSize: 9, letterSpacing: ".16em", color: mine ? MUTED : VIOLET, marginBottom: 5 }}
                 >
-                  {mine ? "YOU" : "BANDHAMAI"}
+                  {mine ? "YOU" : "GURU"}
                 </div>
                 <p
                   className="ba-serif"
@@ -314,6 +322,33 @@ export default function VoiceAssistant() {
               </div>
             );
           })}
+
+          {lines.length === 1 && state === "idle" ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {GURU_STARTERS.map(function (starter) {
+                return (
+                  <button
+                    key={starter.id}
+                    type="button"
+                    onClick={function () { addUserAndAsk(starter.text); }}
+                    className="ba-sans ba-focus"
+                    style={{
+                      background: "#FAF9FE",
+                      color: VIOLET,
+                      border: "1px solid " + LINE,
+                      borderRadius: 999,
+                      padding: "7px 11px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {starter.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           {busy && (
             <div className="ba-line ba-sans" style={{ fontSize: 12, color: MUTED, display: "flex", gap: 5, alignItems: "center" }}>
@@ -370,7 +405,7 @@ export default function VoiceAssistant() {
               value={draft}
               onChange={function (e) { setDraft(e.target.value); }}
               onKeyDown={onKey}
-              placeholder="or type it here"
+              placeholder={GURU_PLACEHOLDER}
               className="ba-sans ba-input ba-focus"
               style={{
                 flex: 1,
