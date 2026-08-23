@@ -1,4 +1,5 @@
 import { ALLOWED_NEXT_PATHS, safeNextPath } from "../lib/next-path.ts";
+import { VERIFYAI_RETURN_PATHS, safeVerifyaiReturnPath } from "../lib/verifyai.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -24,6 +25,11 @@ assert(safeNextPath(null) === "/", "null falls back");
 
 ALLOWED_NEXT_PATHS.forEach(function (path) {
   assert(safeNextPath(path) === path, "allowlist member " + path);
+});
+
+VERIFYAI_RETURN_PATHS.forEach(function (path) {
+  assert(ALLOWED_NEXT_PATHS.includes(path), "VerifyAI return " + path + " stays on the login next allowlist");
+  assert(safeVerifyaiReturnPath(path) === path, "VerifyAI return " + path + " is accepted");
 });
 
 console.log("auth next-path allowlist ok", { allowed: ALLOWED_NEXT_PATHS.length });

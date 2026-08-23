@@ -14,11 +14,14 @@ import {
 } from "../../../../lib/server-supabase";
 import {
   VERIFYAI_COPY,
+  VERIFYAI_DEFAULT_RETURN_PATH,
   VERIFYAI_PAYMENTS_TABLE,
   VERIFYAI_PRICE_LABEL,
   VERIFYAI_PURPOSE,
   VERIFYAI_SQL_FILE,
   isOneTimeVerifyaiPrice,
+  safeVerifyaiReturnPath,
+  verifyaiCheckoutReturnUrls,
 } from "../../../../lib/verifyai";
 import { loadVerifyaiState, verifyaiPhotoRequiredBody } from "../../../../lib/verifyai-checkout";
 import { appOrigin, getStripe, stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
@@ -30,6 +33,17 @@ function checkoutNotConfigured() {
     { error: VERIFYAI_COPY.notConfigured, code: "verifyai_checkout_not_configured" },
     { status: 503 }
   );
+}
+
+async function readCheckoutReturnPath(request: Request) {
+  try {
+    const body = (await request.json()) as Record<string, unknown>;
+    const next = typeof body.next === "string" ? body.next : "";
+    const returnPath = typeof body.return_path === "string" ? body.return_path : "";
+    return safeVerifyaiReturnPath(next || returnPath);
+  } catch {
+    return VERIFYAI_DEFAULT_RETURN_PATH;
+  }
 }
 
 export async function POST(request: Request) {
@@ -74,14 +88,16 @@ export async function POST(request: Request) {
     }
 
     const origin = appOrigin(request);
+    const returnPath = await readCheckoutReturnPath(request);
+    const returnUrls = verifyaiCheckoutReturnUrls(origin, returnPath);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: user.id,
       customer_email: user.email || undefined,
       allow_promotion_codes: false,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: origin + "/account?verify=paid&session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: origin + "/account?verify=cancel",
+      success_url: returnUrls.success_url,
+      cancel_url: returnUrls.cancel_url,
       metadata: {
         user_id: user.id,
         purpose: VERIFYAI_PURPOSE,

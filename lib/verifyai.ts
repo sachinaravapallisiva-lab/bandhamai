@@ -27,6 +27,52 @@ export const VERIFYAI_STATUSES = ["unverified", "pending", "verified", "failed",
 
 export type VerifyaiStatus = (typeof VERIFYAI_STATUSES)[number];
 
+/** Checkout may only send people back to Account or profile create (or a child of those). */
+export const VERIFYAI_RETURN_PATHS = ["/account", "/profile/new"] as const;
+export const VERIFYAI_DEFAULT_RETURN_PATH = "/account";
+
+function isAllowedVerifyaiReturnPathname(pathname: string) {
+  for (const allowed of VERIFYAI_RETURN_PATHS) {
+    if (pathname === allowed) return true;
+    if (pathname.startsWith(allowed + "/")) return true;
+  }
+  return false;
+}
+
+/**
+ * Allow only /account, /profile/new, or paths under those. Default /account.
+ * Reject protocol-relative URLs, backslashes, and off-site next values.
+ */
+export function safeVerifyaiReturnPath(raw: string | null | undefined, fallback = VERIFYAI_DEFAULT_RETURN_PATH) {
+  if (!raw) return fallback;
+
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("/")) return fallback;
+  if (trimmed.startsWith("//")) return fallback;
+  if (trimmed.includes("\\")) return fallback;
+  if (trimmed.includes("://")) return fallback;
+  if (/[\s\r\n\t\0]/.test(trimmed)) return fallback;
+  if (trimmed.includes("@")) return fallback;
+
+  const hashIndex = trimmed.indexOf("#");
+  const withoutHash = hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed;
+  const qIndex = withoutHash.indexOf("?");
+  const pathname = qIndex >= 0 ? withoutHash.slice(0, qIndex) : withoutHash;
+
+  if (pathname.includes("..")) return fallback;
+  if (!isAllowedVerifyaiReturnPathname(pathname)) return fallback;
+  return pathname;
+}
+
+export function verifyaiCheckoutReturnUrls(origin: string, rawPath: string | null | undefined) {
+  const path = safeVerifyaiReturnPath(rawPath);
+  const base = origin.replace(/\/$/, "");
+  return {
+    success_url: base + path + "?verify=paid&session_id={CHECKOUT_SESSION_ID}",
+    cancel_url: base + path + "?verify=cancel",
+  };
+}
+
 export const VERIFYAI_STATUS_COLUMN = "verifyai_status";
 export const VERIFYAI_EXTERNAL_ID_COLUMN = "verifyai_external_id";
 export const VERIFYAI_UPDATED_AT_COLUMN = "verifyai_updated_at";

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { loginHref } from "../../lib/next-path";
-import { VERIFYAI_COPY, VERIFYAI_PRICE_LABEL } from "../../lib/verifyai";
-import { INK, LINE, MUTED, VIOLET } from "../../lib/theme";
+import { safeVerifyaiReturnPath, VERIFYAI_COPY, VERIFYAI_PRICE_LABEL } from "../../lib/verifyai";
+import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 
 type State = {
   paid: boolean;
@@ -29,15 +29,26 @@ export default function VerifyOffer({
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   function load() {
+    setNeedsAuth(false);
+    setNote("");
     authJsonHeaders().then(function (headers) {
-      if (!headers) return;
+      if (!headers) {
+        setNeedsAuth(true);
+        return;
+      }
       fetch("/api/verifyai/me", { headers })
         .then(function (r) {
+          if (r.status === 401) {
+            setNeedsAuth(true);
+            return null;
+          }
           return r.json();
         })
         .then(function (data) {
+          if (!data) return;
           setState({
             paid: !!data.paid,
             verified: !!data.verified,
@@ -66,6 +77,7 @@ export default function VerifyOffer({
       authJsonHeaders().then(function (headers) {
         if (!headers) {
           setBusy(false);
+          setNeedsAuth(true);
           return;
         }
         return fetch("/api/verifyai/confirm", {
@@ -73,6 +85,11 @@ export default function VerifyOffer({
           headers: headers,
           body: JSON.stringify({ session_id: sessionId }),
         }).then(function (r) {
+          if (r.status === 401) {
+            setBusy(false);
+            setNeedsAuth(true);
+            return null;
+          }
           return r.json().then(function (data) {
             setState({
               paid: !!data.paid,
@@ -111,17 +128,28 @@ export default function VerifyOffer({
   function pay() {
     setBusy(true);
     setNote("");
+    const returnPath = safeVerifyaiReturnPath(nextPath);
     authJsonHeaders()
       .then(function (headers) {
         if (!headers) {
           setBusy(false);
+          setNeedsAuth(true);
           setNote("Sign in to pay $4.99.");
           return null;
         }
-        return fetch("/api/verifyai/checkout", { method: "POST", headers: headers });
+        return fetch("/api/verifyai/checkout", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ next: returnPath, return_path: returnPath }),
+        });
       })
       .then(function (res) {
         if (!res) return;
+        if (res.status === 401) {
+          setBusy(false);
+          setNeedsAuth(true);
+          return;
+        }
         return res.json().then(function (data) {
           if (data.url) {
             window.location.assign(data.url);
@@ -141,7 +169,10 @@ export default function VerifyOffer({
     setBusy(true);
     authJsonHeaders()
       .then(function (headers) {
-        if (!headers) return null;
+        if (!headers) {
+          setNeedsAuth(true);
+          return null;
+        }
         return fetch("/api/verifyai/start", { headers: headers });
       })
       .then(function (res) {
@@ -149,11 +180,23 @@ export default function VerifyOffer({
           setBusy(false);
           return;
         }
+        if (res.status === 401) {
+          setBusy(false);
+          setNeedsAuth(true);
+          return;
+        }
         return res.json().then(function (data) {
           setBusy(false);
           if (data.url) {
             window.location.assign(data.url);
             return;
+          }
+          const missingStart = res.status === 503 || data.error === VERIFYAI_COPY.startMissing;
+          if (missingStart) {
+            setState(function (prev) {
+              if (!prev) return prev;
+              return { ...prev, startConfigured: false };
+            });
           }
           setNote(data.error || VERIFYAI_COPY.startMissing);
         });
@@ -163,6 +206,34 @@ export default function VerifyOffer({
         setNote(VERIFYAI_COPY.startMissing);
       });
   }
+
+  const signInRetry = (
+    <div>
+      <p className="bm-sans" style={{ margin: "0 0 12px", fontSize: 14, color: INK, lineHeight: 1.5 }}>
+        Sign in again to load verification, or retry.
+      </p>
+      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <Link href={loginHref(nextPath)} className="bm-sans bm-focus" style={{ color: VIOLET, fontWeight: 600 }}>
+          Sign in
+        </Link>
+        <button
+          type="button"
+          onClick={load}
+          className="bm-sans bm-focus"
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            color: VIOLET,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
 
   if (!signedIn) {
     return (
@@ -183,6 +254,12 @@ export default function VerifyOffer({
   const verified = !!(state && state.verified);
   const paid = !!(state && state.paid);
   const hasPhoto = !!(state && state.hasPhoto);
+  const startMissing = !!(
+    paid &&
+    !verified &&
+    ((state && !state.startConfigured) || note === VERIFYAI_COPY.startMissing)
+  );
+  const showNote = note && note !== VERIFYAI_COPY.startMissing;
 
   return (
     <section id="verify" className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
@@ -196,16 +273,57 @@ export default function VerifyOffer({
         <p className="bm-sans" style={{ margin: 0, fontSize: 14, color: INK }}>
           This profile is verified. The quiet badge is on.
         </p>
+      ) : needsAuth ? (
+        signInRetry
       ) : !state ? (
-        <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-          One moment…
-        </p>
+        note ? (
+          <div>
+            <p className="bm-sans" style={{ margin: "0 0 12px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
+              {note}
+            </p>
+            <button
+              type="button"
+              onClick={load}
+              className="bm-sans bm-focus"
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: VIOLET,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
+            One moment…
+          </p>
+        )
       ) : !hasPhoto ? (
         <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
           {VERIFYAI_COPY.photoRequired}{" "}
           <Link href="/profile/new" className="bm-sans bm-focus" style={{ color: VIOLET, fontWeight: 600 }}>
             Add a photo
           </Link>
+        </p>
+      ) : startMissing ? (
+        <p
+          className="bm-sans"
+          style={{
+            margin: 0,
+            fontSize: 14,
+            color: INK,
+            lineHeight: 1.5,
+            background: WASH,
+            border: "1px solid " + LINE,
+            borderRadius: 10,
+            padding: "12px 14px",
+          }}
+        >
+          {VERIFYAI_COPY.startMissing}
         </p>
       ) : paid ? (
         <button
@@ -246,7 +364,7 @@ export default function VerifyOffer({
           {busy ? "One moment…" : "Get verified · " + VERIFYAI_PRICE_LABEL}
         </button>
       )}
-      {note ? (
+      {showNote ? (
         <p className="bm-sans" style={{ margin: "12px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
           {note}
         </p>
