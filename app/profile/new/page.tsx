@@ -325,6 +325,19 @@ export default function NewProfilePage() {
                         }}
                       >
                         <option value="">{field.placeholder}</option>
+                        {(field.optionGroups || []).map(function (group) {
+                          return (
+                            <optgroup key={group.heading} label={group.heading}>
+                              {group.options.map(function (opt) {
+                                return (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          );
+                        })}
                         {(field.options || []).map(function (opt) {
                           return (
                             <option key={opt} value={opt}>

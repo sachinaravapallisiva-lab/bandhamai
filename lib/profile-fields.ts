@@ -1,3 +1,5 @@
+import { VISA_STATUS_GROUPS, VISA_STATUS_UNGROUPED } from "./visa-status";
+
 /** Writable text columns already used by POST /api/profiles — do not invent others.
  *  photo_url / photo_blurred_url are attached separately when those columns exist. */
 export const PROFILE_WRITE_FIELDS = [
@@ -32,6 +34,11 @@ export function emptyProfileForm(): ProfileWritePayload {
 
 export type ProfileFieldKind = "text" | "select" | "textarea";
 
+export type ProfileFieldOptionGroup = {
+  heading: string;
+  options: string[];
+};
+
 export const PROFILE_FORM_FIELDS: {
   key: ProfileWriteField;
   label: string;
@@ -40,6 +47,7 @@ export const PROFILE_FORM_FIELDS: {
   required?: boolean;
   kind: ProfileFieldKind;
   options?: string[];
+  optionGroups?: ProfileFieldOptionGroup[];
 }[] = [
   {
     key: "full_name",
@@ -72,8 +80,11 @@ export const PROFILE_FORM_FIELDS: {
   {
     key: "visa_status",
     label: "VISA STATUS",
-    placeholder: "Citizen, H1B, Green Card…",
-    kind: "text",
+    placeholder: "Select visa status",
+    hint: "Grouped by country. Choose the status that fits.",
+    kind: "select",
+    optionGroups: VISA_STATUS_GROUPS,
+    options: [...VISA_STATUS_UNGROUPED],
   },
   {
     key: "education",

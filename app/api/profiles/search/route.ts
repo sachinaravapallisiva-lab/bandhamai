@@ -26,6 +26,7 @@ import {
   parseSearchQuery,
   pickShortlist,
   safeOrValue,
+  visaKeywordVariants,
   type SearchCriteria,
 } from "../../../../lib/profile-search";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
@@ -228,13 +229,17 @@ export async function GET(request: Request) {
     if (flags.diet) keywordColumns.push("diet");
 
     for (const keyword of criteria.keywords) {
-      const safe = safeOrValue(keyword);
-      if (!safe) continue;
-      const pattern = ilikeContains(safe);
+      const terms = visaKeywordVariants(keyword)
+        .map(safeOrValue)
+        .filter(Boolean);
+      if (!terms.length) continue;
       q = q.or(
-        keywordColumns
-          .map(function (col) {
-            return col + ".ilike." + pattern;
+        terms
+          .flatMap(function (term) {
+            const pattern = ilikeContains(term);
+            return keywordColumns.map(function (col) {
+              return col + ".ilike." + pattern;
+            });
           })
           .join(",")
       );

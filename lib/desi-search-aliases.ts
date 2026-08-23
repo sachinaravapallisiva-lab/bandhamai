@@ -1,3 +1,5 @@
+import { VISA_STATUS_ALIASES } from "./visa-status";
+
 /**
  * Optional synonym pack on top of ordinary English Browse parse.
  * Expands Indian shorthand when the user said it (Hyd → Hyderabad).
@@ -198,28 +200,13 @@ export const KEYWORD_ALIASES: Record<string, string> = {
   "no dowry": "no dowry",
   "dowry free": "no dowry",
   "against dowry": "no dowry",
-  h1b: "h1b",
-  "h-1b": "h1b",
-  "h 1b": "h1b",
-  "green card": "green card",
-  greencard: "green card",
-  gc: "green card",
-  "gc holder": "green card",
-  "us citizen": "citizen",
   citizen: "citizen",
   oci: "oci",
   pio: "pio",
-  f1: "f1",
-  "f-1": "f1",
-  opt: "opt",
-  "stem opt": "opt",
-  l1: "l1",
-  "l-1": "l1",
   h4: "h4",
   "h-4": "h4",
   ead: "ead",
-  "indian citizen": "indian citizen",
-  "indian passport": "indian citizen",
+  ...VISA_STATUS_ALIASES,
 };
 
 const CANONICAL_CITIES = new Set(

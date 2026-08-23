@@ -90,7 +90,7 @@ assertHas(vizag.keywords, "engineer", "Vizag engineer");
 const dietVisa = parseSearchQuery("eggetarian H1B Reddy in Jersey");
 assertEq(dietVisa.city, "New Jersey", "Jersey → New Jersey");
 assertHas(dietVisa.keywords, "eggetarian", "eggetarian");
-assertHas(dietVisa.keywords, "h1b", "H1B");
+assertHas(dietVisa.keywords, "H-1B", "H1B → stored H-1B label");
 assertHas(dietVisa.keywords, "reddy", "Reddy community keyword");
 
 const nonveg = parseSearchQuery("nonveg Malayalam in Kochi");
@@ -108,8 +108,16 @@ assertEq(teluguNotCity.city, null, "Telugu is a language keyword, not a city");
 assertHas(teluguNotCity.keywords, "telugu", "Telugu leftover");
 
 const greenCard = parseSearchQuery("green card doctor");
-assertHas(greenCard.keywords, "green card", "green card phrase");
+assertHas(greenCard.keywords, "Green Card (LPR)", "green card → stored Green Card (LPR)");
 assertHas(greenCard.keywords, "doctor", "green card doctor");
+
+const f1 = parseSearchQuery("f1 in Dallas");
+assertEq(f1.city, "Dallas", "F1 city");
+assertHas(f1.keywords, "F-1 / OPT / STEM OPT", "f1 → stored F-1 / OPT / STEM OPT");
+
+const ilr = parseSearchQuery("ILR skilled worker");
+assertHas(ilr.keywords, "ILR / Settled status", "ilr → stored ILR / Settled status");
+assertHas(ilr.keywords, "Skilled Worker", "skilled worker → stored Skilled Worker");
 
 assert(cityMatchValues("Hyderabad").includes("Hyderabad"), "city match includes canonical");
 assert(
@@ -165,8 +173,15 @@ const missScore = scoreBrowseRow({ ...live, city: "Chicago", mother_tongue: "Hin
 assert(hydRowScore > missScore, "Hyd search should rank a Hyd/Telugu doctor above a miss");
 
 const vegScore = scoreBrowseRow(live, nri);
-const nonVegScore = scoreBrowseRow({ ...live, diet: "Non-vegetarian", visa_status: "H1B", about: "" }, nri);
+const nonVegScore = scoreBrowseRow({ ...live, diet: "Non-vegetarian", visa_status: "H-1B", about: "" }, nri);
 assert(vegScore > nonVegScore, "vegetarian keyword should not reward non-veg diet");
+
+const h1bQuery = parseSearchQuery("h1b");
+const h1bStored = scoreBrowseRow({ ...live, visa_status: "H-1B", about: "" }, h1bQuery);
+const h1bLegacy = scoreBrowseRow({ ...live, visa_status: "H1B", about: "" }, h1bQuery);
+const noVisa = scoreBrowseRow({ ...live, visa_status: "", about: "" }, h1bQuery);
+assert(h1bStored > noVisa, "stored H-1B should score for an h1b prompt");
+assert(h1bLegacy > noVisa, "legacy H1B free text should still score for an h1b prompt");
 
 const withPhotos = toBrowseProfile({
   id: "live-2",
