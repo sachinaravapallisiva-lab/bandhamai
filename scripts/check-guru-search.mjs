@@ -4,6 +4,7 @@ import {
   GURU_ORB_LABEL,
   GURU_PATH,
   GURU_PLACEHOLDER,
+  GURU_STARTERS,
   GURU_TITLE,
   SEARCH_HINT,
   SEARCH_PLACEHOLDER,
@@ -29,6 +30,14 @@ assert(GURU_INTRO.toLowerCase().includes("bandham assistant"), "guru intro names
 assert(!/love guru/i.test([GURU_TITLE, GURU_ORB_LABEL, GURU_INTRO, SEARCH_HINT].join("\n")), "user-facing guru copy must not say love guru");
 assert(GURU_INTRO.toLowerCase().includes("search box above"), "guru intro soft-handoffs to search");
 assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old search-shaped guru intro is gone");
+assert(!/talking to parents|talk to her parents/i.test(GURU_INTRO), "intro must not offer parent-talk coaching");
+assert(/suggestion|guidance|advice/i.test(GURU_INTRO), "intro names suggestions or guidance");
+
+const starterCopy = GURU_STARTERS.map(function (s) {
+  return s.id + " " + s.label + " " + s.text;
+}).join("\n");
+assert(!/talk to her parents|how do i talk to her/i.test(starterCopy), "starters must not offer parent-talk or chat scripts");
+assert(!/pickup/i.test(starterCopy), "starters must not offer pickup lines");
 assert(GURU_PLACEHOLDER.toLowerCase().includes("advice"), "guru placeholder is advice, not search");
 assert(SEARCH_PLACEHOLDER !== GURU_PLACEHOLDER, "placeholders must differ");
 assert(GURU_PATH === "/api/guru", "guru path lock");
@@ -61,9 +70,14 @@ assert(prompt.includes("search box above"), "prompt may soft-handoff only");
 assert(prompt.includes("verifyai"), "prompt forbids invented VerifyAI");
 assert(prompt.includes("match percentage"), "prompt forbids match %");
 assert(prompt.includes("paste") || prompt.includes("sendable") || prompt.includes("ghostwritten"), "prompt forbids ghostwritten chat");
+assert(prompt.includes("pickup"), "prompt forbids pickup lines");
+assert(prompt.includes("chat script") || prompt.includes("talk to her in chat"), "prompt forbids chat scripts");
+assert(prompt.includes("send this"), "prompt still forbids send-this drafts");
 assert(prompt.includes("auto-reply") || prompt.includes("auto-replies"), "prompt forbids auto-replies");
 assert(prompt.includes("rate") || prompt.includes("judge"), "prompt forbids rating the other person");
-assert(prompt.includes("parents"), "prompt covers talking to parents");
+assert(!guruLib.includes("Help someone talk to her parents"), "old parent-talk coaching is gone");
+assert(prompt.includes("conversation script"), "prompt forbids parent conversation scripts");
+assert(prompt.includes("not silly") || prompt.includes("not dating-app"), "prompt stays adult, not dating-app");
 assert(!/\bmost people\b|\blimited time\b|\bact now\b/.test(prompt), "no marketing in the guru prompt");
 
 console.log("guru / search split ok", {

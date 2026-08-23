@@ -13,7 +13,7 @@ import {
 
 /* ------------------------------------------------------------------ *
    Bandham AI — Bandham assistant (mic chip)
-   Coaching only. Never searches profiles.
+   Serious suggestions and guidance only. Never searches profiles.
    Voice goes STT → /api/guru. Search lives in the box above.
  * ------------------------------------------------------------------ */
 
