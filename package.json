@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:billing": "node --experimental-strip-types scripts/check-billing.mjs",
     "check:speed-match": "node --experimental-strip-types scripts/check-speed-match.mjs",
+    "check:guru-search": "node --experimental-strip-types scripts/check-guru-search.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
