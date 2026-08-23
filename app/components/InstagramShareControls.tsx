@@ -82,7 +82,11 @@ export default function InstagramShareControls({
     setNote("");
     authJsonHeaders()
       .then(function (headers) {
-        if (!headers) return { ok: false, error: "Sign in to continue." };
+        if (!headers) {
+          setBusy(false);
+          setNote("Sign in to continue.");
+          return null;
+        }
         return fetch(INSTAGRAM_SHARE_PATH, {
           method,
           headers,
@@ -90,20 +94,19 @@ export default function InstagramShareControls({
             profile_id: peerProfile || null,
             user_id: peerUser || null,
           }),
-        }).then(function (r) {
-          return r.json().then(function (data) {
-            return { ok: r.ok, error: typeof data.error === "string" ? data.error : "", data };
-          });
         });
       })
-      .then(function (result) {
-        setBusy(false);
-        if (!result || !result.ok) {
-          setNote((result && result.error) || "Could not update Instagram sharing.");
-          return;
-        }
-        setState(function (prev) {
-          return { ...prev, shared: method === "POST" };
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setBusy(false);
+          if (!res.ok) {
+            setNote((typeof data.error === "string" && data.error) || "Could not update Instagram sharing.");
+            return;
+          }
+          setState(function (prev) {
+            return { ...prev, shared: method === "POST" };
+          });
         });
       })
       .catch(function () {
