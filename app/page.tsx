@@ -7,10 +7,11 @@ import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
-import { ProfilePhoto } from "./components/ProfilePhoto";
+import DiscoverCard from "./components/DiscoverCard";
 import VerifyBadge from "./components/VerifyBadge";
 import SafetyActions from "./components/SafetyActions";
 import { supabase } from "../lib/supabase";
+import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
 import { homeTabFromSearch, loginHref } from "../lib/next-path";
 import {
@@ -37,15 +38,8 @@ import {
    Bandham AI — main app
    Browse (profile search only) / Matches / Chat
    Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
-   Never opens the love guru from this path. Guru is the violet orb.
+   Never opens the love guru from this path. Guru is the mic chip.
  * ------------------------------------------------------------------ */
-
-const VIOLET = "#6D28D9";
-const VIOLET_DEEP = "#4C1D95";
-const INK = "#1E1B36";
-const MUTED = "#7B77A8";
-const LINE = "#E6E3F5";
-const WASH = "#FAF9FE";
 
 const THREAD = [
   { who: "them", text: "Hey! How are you doing?", at: "10:30 AM" },
@@ -60,6 +54,7 @@ export default function Home() {
   const [micState, setMicState] = useState("idle"); // idle | listening | thinking
   const [note, setNote] = useState("");
   const [liked, setLiked] = useState<BrowseProfile[]>([]);
+  const [saved, setSaved] = useState<BrowseProfile[]>([]);
   const [speedPartner, setSpeedPartner] = useState<BrowseProfile | null>(null);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
@@ -284,8 +279,17 @@ export default function Home() {
     else if (micState === "idle") startListening();
   }
 
-  function toggleLike(profile: BrowseProfile) {
+  function markInterested(profile: BrowseProfile) {
     setLiked(function (prev) {
+      return prev.some(function (p) { return p.id === profile.id; })
+        ? prev
+        : prev.concat(profile);
+    });
+    passProfile(profile.id);
+  }
+
+  function toggleSave(profile: BrowseProfile) {
+    setSaved(function (prev) {
       return prev.some(function (p) { return p.id === profile.id; })
         ? prev.filter(function (p) { return p.id !== profile.id; })
         : prev.concat(profile);
@@ -351,30 +355,17 @@ export default function Home() {
     });
   }
 
-  function profileRows(p: BrowseProfile) {
-    return [
-      ["CITY", p.city],
-      ["WORK", p.work],
-      ["EDU", p.education],
-      ["DIET", p.diet],
-      ["SPEAKS", p.langs],
-      ["VISA", p.visa],
-      ["GENDER", p.gender],
-    ].filter(function (row) {
-      return !!row[1];
-    });
-  }
-
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
+  const current = profiles[0] || null;
 
   return (
     <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
-      <style>{css}</style>
+      <style>{BM_CSS}</style>
 
-      {/* masthead */}
-      <header style={{ background: "#FFFFFF", borderBottom: "1px solid " + LINE }}>
+      {/* masthead — keep the existing Bandhamai wordmark */}
+      <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
@@ -496,7 +487,7 @@ export default function Home() {
               <section
                 className="bm-card"
                 style={{
-                  background: "#FFFFFF",
+                  background: CREAM,
                   border: "1px solid " + LINE,
                   borderRadius: 14,
                   padding: "18px",
@@ -532,7 +523,7 @@ export default function Home() {
               <section
                 className="bm-card"
                 style={{
-                  background: "#FFFFFF",
+                  background: CREAM,
                   border: "1px solid " + LINE,
                   borderRadius: 14,
                   padding: "16px 18px",
@@ -547,17 +538,17 @@ export default function Home() {
 
             <section
               style={{
-                background: "#FFFFFF",
+                background: CREAM,
                 border: "1px solid " + LINE,
                 borderRadius: 14,
-                padding: "20px 18px",
-                marginBottom: 26,
+                padding: "14px 14px 12px",
+                marginBottom: 18,
               }}
             >
-              <p className="bm-sans" style={{ margin: "0 0 6px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
+              <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
                 {SEARCH_LABEL}
               </p>
-              <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
+              <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 12, color: MUTED }}>
                 {SEARCH_HINT}
               </p>
 
@@ -575,10 +566,10 @@ export default function Home() {
                 className="bm-sans bm-input bm-focus"
                 style={{
                   width: "100%",
-                  padding: "13px 15px",
+                  padding: "11px 13px",
                   border: "1px solid " + LINE,
                   borderRadius: 10,
-                  fontSize: 14.5,
+                  fontSize: 14,
                   color: INK,
                   background: WASH,
                   outline: "none",
@@ -586,26 +577,7 @@ export default function Home() {
                 }}
               />
 
-              {/* waveform */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, height: 20, margin: "15px 0 13px" }}>
-                {amps.map(function (a, i) {
-                  return (
-                    <span
-                      key={i}
-                      style={{
-                        width: 2,
-                        height: 18,
-                        background: live ? VIOLET : LINE,
-                        transformOrigin: "center",
-                        transform: "scaleY(" + (live ? a : 0.16) + ")",
-                        transition: "transform .12s ease",
-                      }}
-                    />
-                  );
-                })}
-              </div>
-
-              <div style={{ display: "flex", gap: 9 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                 <button
                   type="button"
                   onClick={toggleMic}
@@ -613,18 +585,24 @@ export default function Home() {
                   aria-label="Search profiles by voice"
                   className="bm-sans bm-talk bm-focus"
                   style={{
-                    flex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
                     background: live ? VIOLET_DEEP : VIOLET,
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: 999,
-                    padding: "13px",
-                    fontSize: 14.5,
+                    padding: "8px 12px",
+                    fontSize: 12.5,
                     fontWeight: 600,
                     cursor: busy ? "default" : "pointer",
                     opacity: busy ? 0.55 : 1,
                   }}
                 >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="9" y="3.5" width="6" height="10" rx="3" stroke="#FFFFFF" strokeWidth="1.7" />
+                    <path d="M7 11.5a5 5 0 0 0 10 0M12 16.5v3.2" stroke="#FFFFFF" strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
                   {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
@@ -636,8 +614,8 @@ export default function Home() {
                     color: VIOLET,
                     border: "1px solid " + LINE,
                     borderRadius: 999,
-                    padding: "13px 22px",
-                    fontSize: 14,
+                    padding: "8px 14px",
+                    fontSize: 12.5,
                     fontWeight: 600,
                     cursor: searching ? "default" : "pointer",
                     opacity: searching ? 0.55 : 1,
@@ -645,6 +623,25 @@ export default function Home() {
                 >
                   Search
                 </button>
+                {live ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 2, height: 16, marginLeft: 2 }}>
+                    {amps.slice(0, 8).map(function (a, i) {
+                      return (
+                        <span
+                          key={i}
+                          style={{
+                            width: 2,
+                            height: 14,
+                            background: VIOLET,
+                            transformOrigin: "center",
+                            transform: "scaleY(" + a + ")",
+                            transition: "transform .12s ease",
+                          }}
+                        />
+                      );
+                    })}
+                  </span>
+                ) : null}
               </div>
 
               <div className="bm-sans" style={{ minHeight: 18, marginTop: 11, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
@@ -667,107 +664,38 @@ export default function Home() {
               {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
 
-            {!searching && profiles.length === 0 ? (
-              <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
+            {!searching && !current ? (
+              <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
                 <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>
-                  {emptyKind === "matches" ? "No matches for that yet." : "No live profiles yet."}
+                  {emptyKind === "inventory" ? "No live profiles yet." : "No matches for that yet."}
                 </p>
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                  {emptyKind === "matches"
-                    ? "Try another city, profession, or a shorter ask."
-                    : "Submitted profiles stay under review until they are set live."}
+                  {emptyKind === "inventory"
+                    ? "Submitted profiles stay under review until they are set live."
+                    : "Try another city, profession, or a shorter ask."}
                 </p>
               </div>
-            ) : (
-            <div style={{ display: "grid", gap: 14 }}>
-              {profiles.map(function (p) {
-                const isLiked = liked.some(function (x) { return x.id === p.id; });
-                const rows = profileRows(p);
-                return (
-                  <article
-                    key={p.id}
-                    className="bm-card"
-                    style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "20px 18px" }}
-                  >
-                    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 13 }}>
-                      {p.photoUrl ? (
-                        <ProfilePhoto src={p.photoUrl} alt={p.name + " profile photo"} size={72} />
-                      ) : null}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                          <h2 className="bm-serif" style={{ margin: 0, fontSize: 23, fontWeight: 400 }}>
-                            {p.name}
-                            <VerifyBadge verified={p.verified} />
-                          </h2>
-                        </div>
-                      </div>
-                    </div>
-
-                    {rows.length ? (
-                      <div style={{ display: "grid", gap: 6, marginBottom: 13 }}>
-                        {rows.map(function (row) {
-                          return (
-                            <div key={row[0]} style={{ display: "flex", gap: 11, alignItems: "baseline" }}>
-                              <span className="bm-sans" style={{ fontSize: 9.5, letterSpacing: ".14em", color: MUTED, width: 54, flexShrink: 0 }}>{row[0]}</span>
-                              <span className="bm-sans" style={{ fontSize: 13.5, lineHeight: 1.45 }}>{row[1]}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-
-                    {p.note ? (
-                      <p className="bm-serif" style={{ margin: "0 0 15px", paddingTop: 12, borderTop: "1px solid " + LINE, fontSize: 14, fontStyle: "italic", color: MUTED }}>
-                        {p.note}
-                      </p>
-                    ) : (
-                      <div style={{ height: 15 }} />
-                    )}
-
-                    <div style={{ display: "flex", gap: 9 }}>
-                      <button
-                        onClick={function () { passProfile(p.id); }}
-                        className="bm-sans bm-ghost bm-focus"
-                        style={{ flex: 1, background: "transparent", color: MUTED, border: "1px solid " + LINE, borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-                      >
-                        Pass
-                      </button>
-                      <button
-                        onClick={function () { toggleLike(p); }}
-                        className="bm-sans bm-talk bm-focus"
-                        style={{
-                          flex: 1,
-                          background: isLiked ? VIOLET_DEEP : VIOLET,
-                          color: "#FFFFFF",
-                          border: "none",
-                          borderRadius: 999,
-                          padding: "11px",
-                          fontSize: 13.5,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {isLiked ? "Liked" : "Like"}
-                      </button>
-                    </div>
-                    <SafetyActions
-                      profileId={p.id}
-                      name={p.name}
-                      surface="profile"
-                      signedIn={signedIn}
-                      nextPath="/"
-                      onBlocked={function () {
-                        passProfile(p.id);
-                        setLiked(function (prev) {
-                          return prev.filter(function (x) { return x.id !== p.id; });
-                        });
-                      }}
-                    />
-                  </article>
-                );
-              })}
-            </div>
-            )}
+            ) : current ? (
+              <DiscoverCard
+                key={current.id}
+                profile={current}
+                saved={saved.some(function (x) { return x.id === current.id; })}
+                signedIn={signedIn}
+                onInterested={function () { markInterested(current); }}
+                onPass={function () { passProfile(current.id); }}
+                onSave={function () { toggleSave(current); }}
+                onBlocked={function () {
+                  const blockedId = current.id;
+                  passProfile(blockedId);
+                  setLiked(function (prev) {
+                    return prev.filter(function (x) { return x.id !== blockedId; });
+                  });
+                  setSaved(function (prev) {
+                    return prev.filter(function (x) { return x.id !== blockedId; });
+                  });
+                }}
+              />
+            ) : null}
           </>
         )}
 
@@ -781,17 +709,17 @@ export default function Home() {
                 onClose={function () { setSpeedPartner(null); }}
               />
             ) : matches.length === 0 ? (
-              <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
+              <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
                 <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>No one yet.</p>
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                  Like someone on Browse and they will appear here. Speed Match starts from that liked profile.
+                  Mark someone Interested on Browse and they will appear here. Speed Match starts from that profile.
                 </p>
               </div>
             ) : (
               <div style={{ display: "grid", gap: 12 }}>
                 {matches.map(function (p) {
                   return (
-                    <article key={p.id} className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
+                    <article key={p.id} className="bm-card" style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
                         <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
                           {p.name}
@@ -799,7 +727,7 @@ export default function Home() {
                         </h2>
                       </div>
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
-                        {[p.work, p.city].filter(Boolean).join(" — ") || "Liked from Browse"}
+                        {[p.work, p.city].filter(Boolean).join(" — ") || "Interested from Browse"}
                       </p>
                       <div style={{ display: "flex", gap: 9 }}>
                         <button
@@ -848,7 +776,7 @@ export default function Home() {
 
         {/* ---------------- CHAT ---------------- */}
         {tab === "chat" && (
-          <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, overflow: "hidden" }}>
             <div style={{ padding: "12px 17px", borderBottom: "1px solid " + LINE, background: WASH }}>
               <p className="bm-sans" style={{ margin: 0, fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
                 This tab is a layout preview, not a live person. Block or report someone from their Browse or Matches card, or from a live conversation at{" "}
@@ -963,25 +891,8 @@ export default function Home() {
         )}
       </main>
 
-      <SiteFooter extraBottom={88} />
+      <SiteFooter extraBottom={56} />
       <VoiceAssistant />
     </div>
   );
 }
-
-const css =
-  "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
-  ".bm-serif{font-family:'Newsreader',Georgia,serif}" +
-  ".bm-sans{font-family:'Schibsted Grotesk',system-ui,sans-serif}" +
-  "body{margin:0}" +
-  ".bm-card{transition:border-color .2s ease,box-shadow .2s ease}" +
-  ".bm-card:hover{border-color:#D6D0F0;box-shadow:0 6px 22px rgba(30,27,54,.06)}" +
-  ".bm-tab{transition:color .18s ease}" +
-  ".bm-talk{transition:transform .16s ease,background .2s ease}" +
-  ".bm-talk:active{transform:scale(.985)}" +
-  ".bm-ghost{transition:background .18s ease,border-color .18s ease}" +
-  ".bm-ghost:hover{background:#F3F0FD;border-color:#D6D0F0}" +
-  ".bm-input::placeholder{color:#A9A5C8}" +
-  ".bm-input:focus{border-color:#6D28D9;background:#FFFFFF}" +
-  ".bm-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +
-  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab{transition:none!important}}";

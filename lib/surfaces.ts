@@ -1,12 +1,12 @@
 /**
- * Hard split: Browse search finds people. The violet orb is the love guru.
+ * Hard split: Browse search finds people. The mic chip is the love guru.
  * These strings are the product copy that makes that split obvious.
  */
 
 export const SEARCH_LABEL = "PROFILE SEARCH";
 
 export const SEARCH_HINT =
-  "Search for people. Type or tap to speak. Advice is in the violet orb.";
+  "Search for people. Type or tap to speak. Advice is in the mic chip.";
 
 export const SEARCH_PLACEHOLDER =
   "Search profiles: a doctor in Hyderabad, vegetarian...";

@@ -19,7 +19,7 @@ const guruLib = readFileSync(new URL("../lib/guru.ts", import.meta.url), "utf8")
 
 assert(SEARCH_PLACEHOLDER.toLowerCase().includes("search profiles"), "search placeholder names the job");
 assert(SEARCH_HINT.toLowerCase().includes("search for people"), "search hint names people search");
-assert(SEARCH_HINT.toLowerCase().includes("violet orb"), "search hint points at the orb for advice");
+assert(SEARCH_HINT.toLowerCase().includes("mic chip"), "search hint points at the mic chip for advice");
 assert(GURU_INTRO.toLowerCase().includes("love guru"), "guru intro names the guru");
 assert(GURU_INTRO.toLowerCase().includes("search box above"), "guru intro soft-handoffs to search");
 assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old search-shaped guru intro is gone");
@@ -30,6 +30,10 @@ assert(GURU_PATH === "/api/guru", "guru path lock");
 assert(page.includes("/api/profiles/search"), "Browse search hits /api/profiles/search");
 assert(page.includes("/api/transcribe"), "Browse mic uses STT");
 assert(page.includes("SEARCH_PLACEHOLDER"), "Browse uses shared search placeholder");
+assert(page.includes("DiscoverCard"), "Browse uses the photo-forward discover card");
+assert(page.includes("Interested"), "Browse primary action is Interested");
+assert(!page.includes("{isLiked ? \"Liked\" : \"Like\"}"), "Like button is gone");
+assert(!/94\s*%|match percent/i.test(page), "Browse must not show match percentage theater");
 assert(!/fetch\(\s*["']\/api\/(chat|guru)/.test(page), "Browse must never open guru chat");
 assert(!page.includes("Tell me who you're hoping to meet"), "Browse must not reuse guru search-shaped copy");
 

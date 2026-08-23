@@ -5,6 +5,8 @@ import {
   pickShortlist,
   scoreBrowseRow,
   toBrowseProfile,
+  browseFactChips,
+  browseMetaLine,
 } from "../lib/profile-search.ts";
 
 function assert(cond, message) {
@@ -196,6 +198,28 @@ assert(toBrowseProfile({ id: "v2", full_name: "A", verifyai_status: "pending" })
 assert(toBrowseProfile({ id: "v3", full_name: "A", verifyai_status: "unverified" })?.verified === false, "unverified is not a badge");
 assert(toBrowseProfile({ id: "v4", full_name: "A", verifyai_status: "failed" })?.verified === false, "failed is not a badge");
 assert(toBrowseProfile({ id: "v5", full_name: "A", verifyai_status: "revoked" })?.verified === false, "revoked is not a badge");
+
+const aboutCard = toBrowseProfile({
+  id: "about-1",
+  full_name: "Priya S",
+  city: "Hyderabad",
+  profession: "Paediatrician",
+  mother_tongue: "Telugu",
+  education: "MD",
+  diet: "Vegetarian",
+  about: "I like hiking and live music.",
+  wants: "Someone kind.",
+});
+assert(aboutCard, "about card maps");
+assertEq(aboutCard?.promptLabel, "About", "prompt uses About when present");
+assertEq(aboutCard?.note, "I like hiking and live music.", "prompt body is existing about text");
+assertEq(browseMetaLine(aboutCard), "Hyderabad · Paediatrician", "meta line is city · profession, no invented age");
+const chips = browseFactChips(aboutCard);
+assertEq(chips.length, 3, "three fact chips from existing fields");
+assertEq(chips[0].label, "Telugu", "language chip");
+assertEq(chips[1].label, "MD", "education chip");
+assertEq(chips[2].label, "Vegetarian", "third chip falls back to diet");
+assert(toBrowseProfile({ id: "wants-1", wants: "Near family." })?.promptLabel === "Wants", "prompt falls back to Wants");
 
 console.log("browse search parser ok", {
   doctor,

@@ -34,10 +34,47 @@ export type BrowseProfile = {
   visa: string;
   gender: string;
   note: string;
+  /** Existing field label for the Hinge-style prompt — About or Wants. */
+  promptLabel: string;
   photoUrl: string;
   /** True only when profiles.verifyai_status is exactly `verified`. */
   verified: boolean;
 };
+
+export type BrowseFactChip = {
+  key: string;
+  label: string;
+  icon: "lang" | "edu" | "home";
+};
+
+/** Age is not a stored profile field — do not invent one. */
+export function browseMetaLine(profile: BrowseProfile) {
+  return [profile.city, profile.work].filter(Boolean).join(" · ");
+}
+
+/**
+ * Up to three chips from existing fields: language, education,
+ * then family-like visa/diet text if present, else diet or visa.
+ */
+export function browseFactChips(profile: BrowseProfile): BrowseFactChip[] {
+  const chips: BrowseFactChip[] = [];
+  if (profile.langs) chips.push({ key: "lang", label: profile.langs, icon: "lang" });
+  if (profile.education) chips.push({ key: "edu", label: profile.education, icon: "edu" });
+
+  const familyHay = [profile.visa, profile.diet].filter(Boolean);
+  const family = familyHay.find(function (value) {
+    return /nuclear|joint/i.test(value);
+  });
+  if (family) {
+    chips.push({ key: "family", label: family, icon: "home" });
+  } else if (profile.diet) {
+    chips.push({ key: "diet", label: profile.diet, icon: "home" });
+  } else if (profile.visa) {
+    chips.push({ key: "visa", label: profile.visa, icon: "home" });
+  }
+
+  return chips.slice(0, 3);
+}
 
 const STOPWORDS = new Set([
   "a",
@@ -371,6 +408,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     visa: asText(row.visa_status),
     gender: asText(row.gender),
     note: about || wants,
+    promptLabel: about ? "About" : wants ? "Wants" : "",
     photoUrl: asText(row.photo_url),
     verified: asText(row.verifyai_status).toLowerCase() === "verified",
   };

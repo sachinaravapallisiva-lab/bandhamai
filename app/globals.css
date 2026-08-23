@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fdf8f1;
   --foreground: #1e1b36;
   color-scheme: light;
 }
@@ -14,13 +14,13 @@
 }
 
 /*
-  Product UI is white / violet. Keep the shell light on iPhone Dark Mode so
+  Product UI is cream / violet. Keep the shell light on iPhone Dark Mode so
   Safari and the Capacitor WebView match the live website instead of inverting
   the leftover create-next-app dark palette.
 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #ffffff;
+    --background: #fdf8f1;
     --foreground: #1e1b36;
     color-scheme: light;
   }
