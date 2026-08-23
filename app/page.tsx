@@ -130,12 +130,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const fromQuery = homeTabFromSearch(params.get("tab"));
-    const path = window.location.pathname;
-    const fromPath = path === "/matches" ? "matches" : path === "/chat" ? "chat" : null;
-    const nextTab = fromPath || fromQuery;
-    if (nextTab) setTab(nextTab);
+    const fromQuery = homeTabFromSearch(new URLSearchParams(window.location.search).get("tab"));
+    if (fromQuery && fromQuery !== "browse") {
+      // URL is the source for /login?next=/matches → /?tab=matches.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTab(fromQuery);
+    }
     if (searchRef.current) searchRef.current("");
   }, []);
 
@@ -687,10 +687,13 @@ export default function Home() {
                         signedIn={signedIn}
                         nextPath="/matches"
                         onBlocked={function () {
+                          const blockedId = p.id;
                           setLiked(function (prev) {
-                            return prev.filter(function (x) { return x.id !== p.id; });
+                            return prev.filter(function (x) { return x.id !== blockedId; });
                           });
-                          if (speedPartner && speedPartner.id === p.id) setSpeedPartner(null);
+                          setSpeedPartner(function (current) {
+                            return current && current.id === blockedId ? null : current;
+                          });
                         }}
                       />
                     </article>

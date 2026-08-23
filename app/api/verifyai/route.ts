@@ -73,12 +73,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const status = data ? (data as Record<string, unknown>)[VERIFYAI_STATUS_COLUMN] : null;
+    const row = data as unknown as { id?: unknown; verifyai_status?: unknown } | null;
+    const status = row ? row.verifyai_status : null;
     return NextResponse.json({
       verified: isVerifyaiVerified(status),
       status: typeof status === "string" ? status : null,
       configured: true,
-      profile_id: data ? asId((data as { id?: unknown }).id) || null : null,
+      profile_id: row ? asId(row.id) || null : null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong.";
@@ -170,7 +171,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const next = data ? (data as Record<string, unknown>)[VERIFYAI_STATUS_COLUMN] : status;
+    const updated = data as unknown as { verifyai_status?: unknown } | null;
+    const next = updated ? updated.verifyai_status : status;
     return NextResponse.json({
       ok: true,
       profile_id: targetId,

@@ -15,7 +15,10 @@ export default function LoginPage() {
   const [nextPassword, setNextPassword] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(function () {
+    if (typeof window === "undefined") return "signin";
+    return new URLSearchParams(window.location.search).get("mode") === "reset" ? "reset" : "signin";
+  });
 
   function nextTarget() {
     return safeNextPath(new URLSearchParams(window.location.search).get("next"));
@@ -23,10 +26,10 @@ export default function LoginPage() {
 
   useEffect(function () {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("mode") === "reset") setMode("reset");
+    const resetting = params.get("mode") === "reset";
 
     supabase.auth.getSession().then(function (result) {
-      if (result.data.session && mode !== "reset" && params.get("mode") !== "reset") {
+      if (result.data.session && !resetting) {
         window.location.replace(safeNextPath(params.get("next")));
       }
     });
