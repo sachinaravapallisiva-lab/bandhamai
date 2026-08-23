@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
@@ -38,6 +39,7 @@ const THREAD = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [tab, setTab] = useState("browse");
   const [query, setQuery] = useState("");
   const [micState, setMicState] = useState("idle"); // idle | listening | thinking
@@ -154,26 +156,31 @@ export default function Home() {
     const sessionId = params.get("session_id") || "";
     if (!billing) return;
 
-    setTab("chat");
-    if (billing === "cancel") {
-      setBillingNote("Checkout was canceled. Browse stays free.");
-      return;
-    }
-    if (billing === "success") {
-      setBillingNote(BILLING_COPY.returning);
-      if (sessionId) {
-        confirmCheckoutSession(sessionId).then(function (next) {
-          setEntitlement(next);
-          if (next.canMessage) {
-            setBillingNote("Subscription is active. You can send messages.");
-          }
-        });
-      } else {
-        fetchEntitlement().then(function (next) {
-          setEntitlement(next);
-        });
+    const id = window.setTimeout(function () {
+      setTab("chat");
+      if (billing === "cancel") {
+        setBillingNote("Checkout was canceled. Browse stays free.");
+        return;
       }
-    }
+      if (billing === "success") {
+        setBillingNote(BILLING_COPY.returning);
+        if (sessionId) {
+          confirmCheckoutSession(sessionId).then(function (next) {
+            setEntitlement(next);
+            if (next.canMessage) {
+              setBillingNote("Subscription is active. You can send messages.");
+            }
+          });
+        } else {
+          fetchEntitlement().then(function (next) {
+            setEntitlement(next);
+          });
+        }
+      }
+    }, 0);
+    return function () {
+      window.clearTimeout(id);
+    };
   }, []);
 
   /* waveform */
@@ -264,7 +271,7 @@ export default function Home() {
   }
 
   function goLoginForChat() {
-    window.location.assign("/login?next=/");
+    router.push("/login?next=/");
   }
 
   function beginCheckout() {

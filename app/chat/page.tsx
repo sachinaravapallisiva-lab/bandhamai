@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { BILLING_COPY, emptyEntitlement } from "../../lib/billing";
 import {
@@ -14,11 +15,19 @@ import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import MessagePaywall from "../components/MessagePaywall";
 
+type ChatMessage = {
+  id?: string;
+  sender_id?: string;
+  recipient_id?: string;
+  body?: string;
+};
+
 export default function ChatPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [recipientId, setRecipientId] = useState("");
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState("");
   const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
@@ -27,11 +36,11 @@ export default function ChatPage() {
   const recipientRef = useRef("");
 
   useEffect(function () {
-    supabase.auth.getSession().then(function (result: any) {
+    supabase.auth.getSession().then(function (result) {
       const session = result.data.session;
       if (session) {
         setUserId(session.user.id);
-        setUserEmail(session.user.email);
+        setUserEmail(session.user.email || "");
         fetchEntitlement().then(function (next) {
           setEntitlement(next);
         });
@@ -65,11 +74,11 @@ export default function ChatPage() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
-        function (payload: any) {
-          const row = payload.new;
+        function (payload) {
+          const row = payload.new as ChatMessage;
           const other = recipientRef.current;
           if (row.sender_id === other || row.recipient_id === other) {
-            setMessages(function (prev: any[]) {
+            setMessages(function (prev) {
               return prev.concat(row);
             });
           }
@@ -103,18 +112,18 @@ export default function ChatPage() {
           ")"
       )
       .order("created_at", { ascending: true })
-      .then(function (result: any) {
+      .then(function (result) {
         if (result.error) {
           setStatus("Error: " + result.error.message);
         } else {
-          setMessages(result.data);
+          setMessages((result.data || []) as ChatMessage[]);
           setStatus("");
         }
       });
   }
 
   function goLogin() {
-    window.location.assign("/login?next=/chat");
+    router.push("/login?next=/chat");
   }
 
   function beginCheckout() {
@@ -251,7 +260,7 @@ export default function ChatPage() {
           marginBottom: 12,
         }}
       >
-        {messages.map(function (m: any) {
+        {messages.map(function (m) {
           const mine = m.sender_id === userId;
           return (
             <div key={m.id} style={{ textAlign: mine ? "right" : "left", marginBottom: 8 }}>
