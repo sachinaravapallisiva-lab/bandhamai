@@ -10,6 +10,7 @@ import MessagePaywall from "./components/MessagePaywall";
 import DiscoverCard from "./components/DiscoverCard";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
+import AccountDrawer from "./components/AccountDrawer";
 import { supabase } from "../lib/supabase";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -376,13 +377,16 @@ export default function Home() {
       <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div>
-              <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                Bandhamai
-              </h1>
-              <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
-                Find your vibe match?
-              </p>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
+              <AccountDrawer />
+              <div>
+                <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                  Bandhamai
+                </h1>
+                <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
+                  Find your vibe match?
+                </p>
+              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
               {signedIn ? (
