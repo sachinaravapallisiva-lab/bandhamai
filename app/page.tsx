@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
+import SpeedMatch from "./components/SpeedMatch";
 import { ProfilePhoto } from "./components/ProfilePhoto";
 import { supabase } from "../lib/supabase";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -34,6 +35,7 @@ export default function Home() {
   const [micState, setMicState] = useState("idle"); // idle | listening | thinking
   const [note, setNote] = useState("");
   const [liked, setLiked] = useState<BrowseProfile[]>([]);
+  const [speedPartner, setSpeedPartner] = useState<BrowseProfile | null>(null);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
   const [searching, setSearching] = useState(true);
@@ -321,7 +323,10 @@ export default function Home() {
               return (
                 <button
                   key={t[0]}
-                  onClick={function () { setTab(t[0]); }}
+                  onClick={function () {
+                    setTab(t[0]);
+                    if (t[0] !== "matches") setSpeedPartner(null);
+                  }}
                   className="bm-tab bm-focus"
                   style={{
                     background: "none",
@@ -610,11 +615,17 @@ export default function Home() {
         {/* ---------------- MATCHES ---------------- */}
         {tab === "matches" && (
           <div>
-            {matches.length === 0 ? (
+            {speedPartner ? (
+              <SpeedMatch
+                partner={speedPartner}
+                signedIn={signedIn}
+                onClose={function () { setSpeedPartner(null); }}
+              />
+            ) : matches.length === 0 ? (
               <div style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
                 <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>No one yet.</p>
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                  Like someone on Browse and they'll appear here.
+                  Like someone on Browse and they will appear here. Speed Match starts from that liked profile.
                 </p>
               </div>
             ) : (
@@ -631,7 +642,7 @@ export default function Home() {
                         {[p.work, p.city].filter(Boolean).join(" — ") || "Liked from Browse"}
                       </p>
                       <button
-                        onClick={function () { setTab("chat"); }}
+                        onClick={function () { setSpeedPartner(p); }}
                         className="bm-sans bm-talk bm-focus"
                         style={{ width: "100%", background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
                       >

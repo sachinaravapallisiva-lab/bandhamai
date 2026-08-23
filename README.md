@@ -65,7 +65,7 @@ Public bucket URLs are convenient, not privacy. Real hide-until-matched access c
 
 The iOS target is a Capacitor wrapper around the **hosted** Next.js app. It loads `https://bandhamai.vercel.app` in a WKWebView so the iPhone app matches the website without a static-export rewrite.
 
-That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/chat`, `/api/profiles`, `/api/photos`), Supabase, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
+That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`), Supabase, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
 
 ### What this repo already has
 
@@ -125,7 +125,7 @@ Browse and the floating assistant call `getUserMedia`. iOS will prompt using `NS
 
 ### Out of scope for this shell
 
-- **Speed Match** (locked Tier 2: 10 questions / 15 seconds) is not a v1 feature. Do not build that flow here.
+- **Speed Match** is live from Matches after Like: 10 Indian / desi matrimony dealbreaker questions, 15 seconds each. It is not a swipe deck and does not invent a match score. Persist needs [`supabase/speed_match.sql`](supabase/speed_match.sql).
 - **VerifyAI** may appear later as a quiet badge on the existing cards. Do not redesign the site for it.
 - Android is not added yet.
 - Placeholder icons in `public/icons/` should be replaced before TestFlight.

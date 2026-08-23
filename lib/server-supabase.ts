@@ -59,6 +59,26 @@ export function hasBearerToken(request: Request) {
   return header.toLowerCase().startsWith("bearer ") && header.slice(7).trim().length > 0;
 }
 
+/** PostgREST / schema-cache miss when a table has not been created yet. */
+export async function tableExists(
+  supabase: SupabaseClient,
+  table: string
+): Promise<boolean> {
+  const { error } = await supabase.from(table).select("*").limit(0);
+  if (!error) return true;
+  const code = "code" in error ? String(error.code) : "";
+  const message = (error.message || "").toLowerCase();
+  if (code === "42P01" || code === "PGRST205") return false;
+  if (
+    message.includes("does not exist") ||
+    message.includes("could not find") ||
+    message.includes("schema cache")
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** PostgREST returns 42703 when a column is not on the table. */
 export async function tableHasColumn(
   supabase: SupabaseClient,
