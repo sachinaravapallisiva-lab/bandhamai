@@ -3,21 +3,60 @@
 import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
+import {
+  PROFILE_ACTION_MIN,
+  PROFILE_BODY_PAD,
+  PROFILE_CARD_RADIUS,
+  PROFILE_PHOTO_BG,
+  PROFILE_PHOTO_FALLBACK,
+  PROFILE_PHOTO_HEIGHT,
+  profileInitials,
+} from "../../lib/profile-card";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
-import { CREAM, GOLD, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
+import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
+import ProfileFactChips from "./ProfileFactChips";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "";
-  const first = parts[0][0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] || "" : "";
-  return (first + last).toUpperCase();
+function ClockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="7.2" stroke="#FFFFFF" strokeWidth="1.7" />
+      <path d="M12 8.6v3.6l2.4 1.5" stroke="#FFFFFF" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
+
+function MessageIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5.4 6.4h13.2c.7 0 1.2.5 1.2 1.2v8.2c0 .7-.5 1.2-1.2 1.2H9.2L5 19.8V7.6c0-.7.5-1.2 1.2-1.2Z"
+        stroke={VIOLET}
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const actionBase = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  flex: 1,
+  minHeight: PROFILE_ACTION_MIN,
+  minWidth: PROFILE_ACTION_MIN,
+  borderRadius: 999,
+  padding: "10px 14px",
+  fontSize: 13.5,
+  fontWeight: 600,
+  cursor: "pointer" as const,
+};
 
 export default function MatchCard({
   profile,
@@ -34,6 +73,7 @@ export default function MatchCard({
 }) {
   const meta = browseMetaLine(profile);
   const chips = browseFactChips(profile);
+  const prompt = profile.note.trim();
 
   return (
     <article
@@ -41,166 +81,144 @@ export default function MatchCard({
       style={{
         background: CREAM,
         border: "1px solid " + LINE,
-        borderRadius: 22,
         overflow: "hidden",
+        borderRadius: PROFILE_CARD_RADIUS,
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          height: 3,
-          background: "linear-gradient(90deg, transparent, " + GOLD + ", transparent)",
-          opacity: 0.55,
-        }}
-      />
-      <div style={{ padding: "16px 16px 14px", display: "flex", gap: 14, alignItems: "center" }}>
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          {profile.photoUrl ? (
-            // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.photoUrl}
-              alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
-              style={{
-                width: 88,
-                height: 88,
-                objectFit: "cover",
-                borderRadius: 16,
-                display: "block",
-                background: "#EDE4D4",
-              }}
-            />
-          ) : (
-            <div
-              aria-hidden={profile.name ? undefined : true}
-              style={{
-                width: 88,
-                height: 88,
-                borderRadius: 16,
-                background: "linear-gradient(160deg, #EFE4D2 0%, #D9C8EC 58%, #5B21B6 130%)",
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <span className="bm-serif" style={{ fontSize: 26, color: CREAM, letterSpacing: "-.02em" }}>
-                {initials(profile.name)}
-              </span>
-            </div>
-          )}
-          {profile.online ? (
-            <span
-              aria-hidden="true"
-              title="Online"
-              style={{
-                position: "absolute",
-                right: 6,
-                bottom: 6,
-                width: 14,
-                height: 14,
-                borderRadius: 999,
-                background: PRESENCE_ONLINE_COLOR,
-                border: "2px solid " + CREAM,
-                boxSizing: "border-box",
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <h2
-              className="bm-serif"
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 400,
-                color: VIOLET_DEEP,
-                letterSpacing: "-.015em",
-              }}
-            >
-              {profile.name || "Profile"}
-            </h2>
-            <VerifyBadge verified={profile.verified} />
-            <PresenceMark online={profile.online} compact />
-          </div>
-          {meta ? (
-            <p className="bm-sans" style={{ margin: "5px 0 0", fontSize: 13, color: MUTED }}>
-              {meta}
-            </p>
-          ) : (
-            <p className="bm-sans" style={{ margin: "5px 0 0", fontSize: 13, color: MUTED }}>
-              Interested from Browse
-            </p>
-          )}
-          {chips.length ? (
-            <p
-              className="bm-sans"
-              style={{
-                margin: "8px 0 0",
-                fontSize: 12,
-                color: MUTED,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {chips.map(function (chip) { return chip.label; }).join(" · ")}
-            </p>
-          ) : null}
-          <InstagramShareControls
-            profileId={profile.id}
-            signedIn={signedIn}
-            initialHandle={profile.instagram}
-          />
-          {canShowOtherBiodataDownload({ signedIn, biodataShare: profile.biodataShare }) ? (
-            <div style={{ marginTop: 10 }}>
-              <DownloadBiodata profileId={profile.id} compact />
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {profile.note.trim() ? (
-        <div style={{ padding: "0 18px 4px" }}>
-          <p className="bm-sans" style={{ margin: 0, fontSize: 12, color: VIOLET, fontWeight: 500 }}>
-            {profile.promptLabel}
-          </p>
-          <p
-            className="bm-serif"
+      <div style={{ position: "relative" }}>
+        {profile.photoUrl ? (
+          // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.photoUrl}
+            alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
             style={{
-              margin: "4px 0 0",
-              fontSize: 16,
-              lineHeight: 1.4,
-              color: INK,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
+              width: "100%",
+              height: PROFILE_PHOTO_HEIGHT,
+              objectFit: "cover",
+              display: "block",
+              background: PROFILE_PHOTO_BG,
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden={profile.name ? undefined : true}
+            style={{
+              height: PROFILE_PHOTO_HEIGHT,
+              background: PROFILE_PHOTO_FALLBACK,
+              display: "grid",
+              placeItems: "center",
             }}
           >
-            {profile.note.trim()}
-          </p>
-        </div>
-      ) : null}
+            <span className="bm-serif" style={{ fontSize: 52, color: CREAM, letterSpacing: "-.02em" }}>
+              {profileInitials(profile.name)}
+            </span>
+          </div>
+        )}
+        {profile.online ? (
+          <span
+            aria-hidden="true"
+            title="Online"
+            style={{
+              position: "absolute",
+              right: 14,
+              bottom: 14,
+              width: 16,
+              height: 16,
+              borderRadius: 999,
+              background: PRESENCE_ONLINE_COLOR,
+              border: "2px solid " + CREAM,
+              boxSizing: "border-box",
+            }}
+          />
+        ) : null}
+      </div>
 
-      <div style={{ padding: "14px 16px 16px" }}>
-        <div style={{ display: "flex", gap: 9 }}>
+      <div style={{ padding: PROFILE_BODY_PAD }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <h2
+            className="bm-serif"
+            style={{
+              margin: 0,
+              fontSize: 26,
+              fontWeight: 400,
+              color: VIOLET_DEEP,
+              letterSpacing: "-.015em",
+            }}
+          >
+            {profile.name || "Profile"}
+          </h2>
+          <VerifyBadge verified={profile.verified} />
+          <PresenceMark online={profile.online} compact />
+        </div>
+        {meta ? (
+          <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED, letterSpacing: ".01em" }}>
+            {meta}
+          </p>
+        ) : (
+          <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED, letterSpacing: ".01em" }}>
+            Interested from Browse
+          </p>
+        )}
+
+        {canShowOtherBiodataDownload({ signedIn, biodataShare: profile.biodataShare }) ? (
+          <div style={{ marginTop: 12 }}>
+            <DownloadBiodata profileId={profile.id} compact />
+          </div>
+        ) : null}
+
+        <InstagramShareControls
+          profileId={profile.id}
+          signedIn={signedIn}
+          initialHandle={profile.instagram}
+        />
+
+        <ProfileFactChips chips={chips} />
+
+        {prompt ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: "12px 14px",
+              background: WASH,
+              border: "1px solid " + LINE,
+              borderRadius: 14,
+            }}
+          >
+            <p className="bm-sans" style={{ margin: 0, fontSize: 12, color: MUTED, fontWeight: 500, letterSpacing: ".02em" }}>
+              {profile.promptLabel}
+            </p>
+            <p
+              className="bm-serif"
+              style={{
+                margin: "6px 0 0",
+                fontSize: 17,
+                lineHeight: 1.45,
+                color: INK,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {prompt}
+            </p>
+          </div>
+        ) : null}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={onSpeedMatch}
             className="bm-sans bm-talk bm-focus"
             style={{
-              flex: 1,
+              ...actionBase,
               background: VIOLET,
               color: "#FFFFFF",
               border: "none",
-              borderRadius: 999,
-              padding: "11px",
-              fontSize: 13.5,
-              fontWeight: 600,
-              cursor: "pointer",
             }}
           >
+            <ClockIcon />
             Start Speed Match
           </button>
           <button
@@ -208,17 +226,13 @@ export default function MatchCard({
             onClick={onMessage}
             className="bm-sans bm-ghost bm-focus"
             style={{
-              flex: 1,
-              background: "transparent",
+              ...actionBase,
+              background: CREAM,
               color: VIOLET,
               border: "1px solid " + LINE,
-              borderRadius: 999,
-              padding: "11px",
-              fontSize: 13.5,
-              fontWeight: 600,
-              cursor: "pointer",
             }}
           >
+            <MessageIcon />
             Message
           </button>
         </div>
