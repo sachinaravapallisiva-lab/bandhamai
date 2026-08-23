@@ -4,7 +4,8 @@
  * Auth: listing approved (`status = live`) cards is public — Browse is the
  * landing surface. Own-profile GET /api/profiles stays signed-in. Pending
  * rows never leave this handler. An optional Bearer token is used only to
- * hide the viewer's own row when `user_id` exists.
+ * hide the viewer's own row when `user_id` exists. Instagram handles
+ * are omitted unless the owner granted this viewer a share.
  */
 import { NextResponse } from "next/server";
 import {
@@ -32,6 +33,11 @@ import {
 import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
 import { INSTAGRAM_COLUMN } from "../../../../lib/instagram";
+import { applyInstagramVisibility } from "../../../../lib/instagram-shares";
+import {
+  instagramSharesReady,
+  loadInstagramGrantedOwnerIds,
+} from "../../../../lib/instagram-shares-server";
 import { VERIFYAI_STATUS_COLUMN } from "../../../../lib/verifyai";
 
 export const runtime = "nodejs";
@@ -163,13 +169,14 @@ export async function GET(request: Request) {
       });
     }
 
-    const [photo_url, diet, user_id, created_at, verifyai_status, instagram, inventory] = await Promise.all([
+    const [photo_url, diet, user_id, created_at, verifyai_status, instagram, sharesReady, inventory] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
       tableHasColumn(supabase, "profiles", "diet"),
       tableHasColumn(supabase, "profiles", "user_id"),
       tableHasColumn(supabase, "profiles", "created_at"),
       tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN),
       tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN),
+      instagramSharesReady(supabase),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", LIVE_PROFILE_STATUS),
     ]);
     const flags = { photo_url, diet, user_id, created_at, verifyai_status, instagram };
@@ -206,7 +213,11 @@ export async function GET(request: Request) {
       viewerId = user?.id || null;
     }
 
-    const select = browseSelectColumns(flags);
+    const selectFlags = {
+      ...flags,
+      instagram: !!(flags.instagram && flags.user_id && viewerId && sharesReady),
+    };
+    const select = browseSelectColumns(selectFlags);
     let q = supabase.from("profiles").select(select).eq("status", LIVE_PROFILE_STATUS);
 
     if (viewerId) q = q.neq("user_id", viewerId);
@@ -281,6 +292,19 @@ export async function GET(request: Request) {
       rows = rows.map(function (row) {
         return attachLastSeen(row, presenceByUser);
       });
+    }
+
+    if (selectFlags.instagram && viewerId) {
+      const granted = await loadInstagramGrantedOwnerIds(
+        supabase,
+        viewerId,
+        rows.map(function (row) {
+          return typeof row.user_id === "string" ? row.user_id : "";
+        })
+      );
+      rows = applyInstagramVisibility(rows, viewerId, granted);
+    } else {
+      rows = applyInstagramVisibility(rows, null, []);
     }
 
     const profiles = pickShortlist(rows, criteria);

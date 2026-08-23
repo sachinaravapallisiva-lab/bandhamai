@@ -4,7 +4,7 @@ import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import { CREAM, GOLD, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
-import InstagramChip from "./InstagramChip";
+import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
@@ -145,11 +145,11 @@ export default function MatchCard({
               {chips.map(function (chip) { return chip.label; }).join(" · ")}
             </p>
           ) : null}
-          {profile.instagram ? (
-            <div style={{ marginTop: 8 }}>
-              <InstagramChip handle={profile.instagram} />
-            </div>
-          ) : null}
+          <InstagramShareControls
+            profileId={profile.id}
+            signedIn={signedIn}
+            initialHandle={profile.instagram}
+          />
         </div>
       </div>
 

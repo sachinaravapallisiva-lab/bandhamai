@@ -4,7 +4,7 @@ import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
-import InstagramChip from "./InstagramChip";
+import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
@@ -173,11 +173,11 @@ export default function DiscoverCard({
           </p>
         ) : null}
 
-        {profile.instagram ? (
-          <div style={{ marginTop: 10 }}>
-            <InstagramChip handle={profile.instagram} />
-          </div>
-        ) : null}
+        <InstagramShareControls
+          profileId={profile.id}
+          signedIn={signedIn}
+          initialHandle={profile.instagram}
+        />
 
         {chips.length ? (
           <div

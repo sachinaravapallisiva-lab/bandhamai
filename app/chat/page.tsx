@@ -16,6 +16,7 @@ import { PRESENCE_HEARTBEAT_MS, PRESENCE_LOOKUP_PATH } from "../../lib/presence"
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import MessagePaywall from "../components/MessagePaywall";
+import InstagramShareControls from "../components/InstagramShareControls";
 import PresenceMark from "../components/PresenceMark";
 import SafetyActions from "../components/SafetyActions";
 
@@ -266,9 +267,16 @@ export default function ChatPage() {
             marginBottom: 16,
           }}
         >
-          <span className="bm-serif" style={{ fontSize: 18 }}>
-            Conversation
-          </span>
+          <div>
+            <span className="bm-serif" style={{ fontSize: 18 }}>
+              Conversation
+            </span>
+            <InstagramShareControls
+              userId={recipientId}
+              signedIn={!!userId}
+              initialHandle=""
+            />
+          </div>
           <PresenceMark online={partnerOnline} compact />
         </div>
       ) : null}

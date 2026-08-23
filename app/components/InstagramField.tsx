@@ -1,5 +1,6 @@
 "use client";
 
+import { INSTAGRAM_HIDDEN_DISCLAIMER } from "../../lib/instagram-shares";
 import { INK, LINE, MUTED, WASH } from "../../lib/theme";
 
 export default function InstagramField({
@@ -57,7 +58,10 @@ export default function InstagramField({
         }}
       />
       <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.45 }}>
-        Optional. Paste a username or Instagram profile URL. Instagram only — not Facebook, LinkedIn, X, or TikTok.
+        {INSTAGRAM_HIDDEN_DISCLAIMER}
+      </p>
+      <p className="bm-sans" style={{ margin: "4px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.45 }}>
+        Paste a username or Instagram profile URL. Instagram only — not Facebook, LinkedIn, X, or TikTok.
       </p>
     </div>
   );

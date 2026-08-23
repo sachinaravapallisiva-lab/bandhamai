@@ -10,7 +10,8 @@
 -- The app:
 --   - Accepts @handle or an instagram.com profile URL
 --   - Rejects Facebook, LinkedIn, X, TikTok, and other social URLs
---   - Shows a Browse / Matches chip that opens https://instagram.com/{handle}
+--   - Stores the handle only. Browse does not show it publicly.
+--   - After supabase/instagram_shares.sql, the owner chooses who sees the chip
 --   - Does not post to Instagram and does not use Instagram OAuth
 --
 -- Until this runs, profile submit still works; the handle is omitted.

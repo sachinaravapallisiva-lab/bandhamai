@@ -52,25 +52,44 @@ If the bucket is missing, the API returns **503** and asks you to run that SQL (
 
 ## Connect socials (Instagram only)
 
-Profile create and edit can take an optional Instagram username or `instagram.com` profile URL. The app stores a clean handle (for example `ananya`) and Browse / Matches show a small chip that opens `https://instagram.com/{handle}` in a new tab.
+Profile create and account edit can take an optional Instagram username or `instagram.com` profile URL. The app stores a clean handle (for example `ananya`). Linking Instagram is optional. The handle stays hidden until the owner chooses to show it to a specific person.
 
-This is Instagram only. Facebook, LinkedIn, X, TikTok, and other networks are rejected. There is no Instagram OAuth and the app never posts to Instagram. Empty is fine — it is not required to submit a profile.
+This is Instagram only. Facebook, LinkedIn, X, TikTok, and other networks are rejected. There is no Instagram OAuth and the app never posts to Instagram. Empty is fine — it is not required to submit a profile. Like and match do not reveal Instagram.
+
+### Visibility
+
+- Public Browse never includes the handle in the list JSON.
+- Matches do not show the chip just because someone tapped Interested.
+- Owner A, while looking at person B (Browse card, Matches card, or `/chat`), taps **Show my Instagram to them**. Then B can see A’s Instagram chip / link.
+- A can tap **Hide Instagram from them** to revoke.
+- B never sees A’s handle until that grant exists. The share button does not reveal B’s handle.
 
 ### Supabase (Sai)
 
-In the SQL editor, run [`supabase/instagram.sql`](supabase/instagram.sql). That adds `public.profiles.instagram` (max 30 characters).
+1. Run [`supabase/instagram.sql`](supabase/instagram.sql) if you have not already. That adds `public.profiles.instagram` (max 30 characters).
+2. Run [`supabase/instagram_shares.sql`](supabase/instagram_shares.sql) after merge. That adds `public.instagram_shares` (owner → viewer) with RLS.
 
-Until that SQL is applied:
+Until `instagram.sql` is applied:
 
 - Profile create still works. The handle is omitted.
-- Saving Instagram on an existing profile (`PATCH /api/profiles`) returns **503** and asks you to run the file.
+- Saving Instagram (`PATCH /api/profiles`) returns **503** and asks you to run the file.
 
-### Test steps
+Until `instagram_shares.sql` is applied:
 
-1. Signed-in `/profile/new` shows **CONNECT SOCIALS / INSTAGRAM**. Leave it blank and submit name / gender / city — the profile still goes pending.
-2. Enter `@ananya` or `https://instagram.com/ananya` and submit (or **Save Instagram** on an already-submitted profile). After the SQL is applied, `profiles.instagram` should be `ananya`.
+- Browse never returns Instagram handles.
+- Share / hide returns **503** and asks you to run the file.
+
+### Test steps (two accounts)
+
+Use two signed-in accounts, A and B. Both should have live profiles. A has Instagram saved. B may or may not.
+
+1. Signed-in `/profile/new` and `/account` show **CONNECT SOCIALS / INSTAGRAM** and the line “Optional. Your Instagram stays hidden until you choose to show it to someone.” Leave it blank and submit name / gender / city — the profile still goes pending.
+2. As A, enter `@ananya` or `https://instagram.com/ananya` and submit (or **Save Instagram**). After `instagram.sql` is applied, `profiles.instagram` should be `ananya`.
 3. Enter a Facebook, LinkedIn, X, or TikTok URL — the form should refuse and the row should not store that URL.
-4. After a reviewer sets the row `live`, Browse (and Matches, after Like) should show an Instagram chip that opens `https://instagram.com/ananya` in a new tab. No verified badge and no match % from this field.
+4. Signed out (or as B, before any share): Browse A’s card. There is no Instagram chip and the search JSON for A has no `instagram` handle. Like / match still does not show it.
+5. As A, open B’s Browse or Matches card (or `/chat` with B’s user id). Tap **Show my Instagram to them**. As B, reload Browse (or the conversation). B now sees A’s Instagram chip, which opens `https://instagram.com/ananya` in a new tab.
+6. As A, tap **Hide Instagram from them**. As B, reload — the chip is gone again.
+7. No verified badge and no match % from this field. WhatsApp / presence behavior is unchanged.
 
 ## Messaging subscription (Stripe)
 
