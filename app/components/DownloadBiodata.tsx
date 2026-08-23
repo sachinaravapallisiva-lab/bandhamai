@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  BIODATA_API_PATH,
   BIODATA_DOWNLOAD_LABEL,
   BIODATA_FAILED_ERROR,
   BIODATA_NO_PROFILE_ERROR,
@@ -10,6 +9,7 @@ import {
   BIODATA_SHARE_TITLE,
   BIODATA_SIGNED_IN_ERROR,
 } from "../../lib/biodata";
+import { biodataDownloadPath } from "../../lib/biodata-share";
 import { authFormHeaders } from "../../lib/client-auth";
 import { LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 
@@ -36,9 +36,13 @@ function saveBlob(blob: Blob, filename: string) {
 export default function DownloadBiodata({
   hasProfile = true,
   variant = "ghost",
+  profileId,
+  compact = false,
 }: {
   hasProfile?: boolean;
   variant?: "ghost" | "solid";
+  profileId?: string;
+  compact?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -57,7 +61,7 @@ export default function DownloadBiodata({
           setNote(BIODATA_SIGNED_IN_ERROR);
           return null;
         }
-        return fetch(BIODATA_API_PATH, { headers });
+        return fetch(biodataDownloadPath(profileId), { headers });
       })
       .then(function (res) {
         if (!res) return;
@@ -99,6 +103,8 @@ export default function DownloadBiodata({
   }
 
   const solid = variant === "solid";
+  const pad = compact ? "8px 12px" : solid ? "12px 22px" : "10px 16px";
+  const size = compact ? 12.5 : solid ? 14.5 : 13.5;
 
   return (
     <div>
@@ -113,8 +119,8 @@ export default function DownloadBiodata({
           color: solid ? "#FFFFFF" : VIOLET,
           border: solid ? "none" : "1px solid " + LINE,
           borderRadius: 999,
-          padding: solid ? "12px 22px" : "10px 16px",
-          fontSize: solid ? 14.5 : 13.5,
+          padding: pad,
+          fontSize: size,
           fontWeight: 600,
           cursor: busy || !hasProfile ? "default" : "pointer",
           opacity: busy || !hasProfile ? 0.7 : 1,

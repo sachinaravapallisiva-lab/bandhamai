@@ -5,9 +5,15 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { DELETE_CONFIRM_WORD } from "../../lib/safety";
+import {
+  BIODATA_SHARE_SAVE_LABEL,
+  BIODATA_SHARE_SAVING_LABEL,
+  parseBiodataShare,
+} from "../../lib/biodata-share";
 import { parseInstagramInput } from "../../lib/instagram";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
+import BiodataShareField from "../components/BiodataShareField";
 import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
@@ -32,6 +38,9 @@ export default function AccountPage() {
   const [hasProfile, setHasProfile] = useState(false);
   const [savingSocial, setSavingSocial] = useState(false);
   const [socialNote, setSocialNote] = useState("");
+  const [biodataShare, setBiodataShare] = useState(false);
+  const [savingShare, setSavingShare] = useState(false);
+  const [shareNote, setShareNote] = useState("");
 
   function loadProfile() {
     authJsonHeaders().then(function (headers) {
@@ -47,6 +56,7 @@ export default function AccountPage() {
               : "";
           setInstagram(handle);
           setHasProfile(!!(data && data.profile && data.profile.id));
+          setBiodataShare(parseBiodataShare(data && data.profile && data.profile.biodata_share));
         })
         .catch(function () {
           /* account page still works without Instagram */
@@ -177,6 +187,46 @@ export default function AccountPage() {
       .catch(function () {
         setSavingSocial(false);
         setSocialNote("Network trouble. Try again?");
+      });
+  }
+
+  function saveBiodataShare() {
+    if (!hasProfile) {
+      setShareNote("Create a profile first.");
+      return;
+    }
+
+    setSavingShare(true);
+    setShareNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingShare(false);
+          setShareNote("Sign in to save this choice.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ biodata_share: biodataShare }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingShare(false);
+          if (!res.ok) {
+            setShareNote(data.error || "Could not save this choice.");
+            return;
+          }
+          const next = parseBiodataShare(data.profile?.biodata_share);
+          setBiodataShare(next);
+          setShareNote(next ? "Others can download your biodata." : "Others cannot download your biodata.");
+        });
+      })
+      .catch(function () {
+        setSavingShare(false);
+        setShareNote("Network trouble. Try again?");
       });
   }
 
@@ -344,6 +394,42 @@ export default function AccountPage() {
                 {hasProfile
                   ? socialNote
                   : "Create a profile first. Instagram is optional and stays hidden until you show it to someone."}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <BiodataShareField
+              id="account-biodata-share"
+              checked={biodataShare}
+              onChange={function (next) {
+                setBiodataShare(next);
+                if (shareNote) setShareNote("");
+              }}
+              disabled={savingShare || !hasProfile}
+            />
+            <button
+              type="button"
+              disabled={savingShare || !hasProfile}
+              onClick={saveBiodataShare}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingShare ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingShare || !hasProfile ? "default" : "pointer",
+              }}
+            >
+              {savingShare ? BIODATA_SHARE_SAVING_LABEL : BIODATA_SHARE_SAVE_LABEL}
+            </button>
+            {!hasProfile || shareNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                {hasProfile ? shareNote : "Create a profile first. This stays off until you turn it on."}
               </p>
             ) : null}
           </section>

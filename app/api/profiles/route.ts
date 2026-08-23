@@ -16,6 +16,11 @@ import {
   normalizeProfileGender,
   type ProfileWriteField,
 } from "../../../lib/profile-fields";
+import {
+  BIODATA_SHARE_COLUMN,
+  BIODATA_SHARE_SQL_HINT,
+  parseBiodataShare,
+} from "../../../lib/biodata-share";
 import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
 
@@ -152,7 +157,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const insertRow: Record<string, string | null> = {
+    const insertRow: Record<string, string | boolean | null> = {
       ...fields,
       // Manual approval: never go live from this endpoint.
       status: "pending",
@@ -163,6 +168,9 @@ export async function POST(request: Request) {
     if (linked) insertRow.user_id = user.id;
     if (await tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN)) {
       insertRow.instagram = instagram.handle;
+    }
+    if (await tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN)) {
+      insertRow[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
     }
 
     const photoUrl = asString(body.photo_url);
@@ -200,7 +208,7 @@ export async function POST(request: Request) {
   }
 }
 
-/** Own-profile edit. v1 only writes Instagram — not a full re-review of other fields. */
+/** Own-profile edit. v1 writes Instagram and biodata_share — not a full re-review. */
 export async function PATCH(request: Request) {
   try {
     if (!hasBearerToken(request)) {
@@ -214,9 +222,19 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Send a JSON profile." }, { status: 400 });
     }
 
-    const instagram = parseInstagramInput(body.instagram);
-    if (instagram.error) {
-      return NextResponse.json({ error: instagram.error }, { status: 400 });
+    const hasInstagram = Object.prototype.hasOwnProperty.call(body, "instagram");
+    const hasShare = Object.prototype.hasOwnProperty.call(body, "biodata_share");
+    if (!hasInstagram && !hasShare) {
+      return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+    }
+
+    let instagramHandle: string | null | undefined;
+    if (hasInstagram) {
+      const instagram = parseInstagramInput(body.instagram);
+      if (instagram.error) {
+        return NextResponse.json({ error: instagram.error }, { status: 400 });
+      }
+      instagramHandle = instagram.handle;
     }
 
     const verifier = dataClient();
@@ -235,8 +253,11 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (!(await tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN))) {
+    if (hasInstagram && !(await tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN))) {
       return NextResponse.json({ error: INSTAGRAM_SQL_HINT }, { status: 503 });
+    }
+    if (hasShare && !(await tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN))) {
+      return NextResponse.json({ error: BIODATA_SHARE_SQL_HINT }, { status: 503 });
     }
 
     const linked = await tableHasColumn(supabase, "profiles", "user_id");
@@ -258,9 +279,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Create a profile first." }, { status: 404 });
     }
 
+    const patch: Record<string, string | boolean | null> = {};
+    if (hasInstagram) patch.instagram = instagramHandle ?? null;
+    if (hasShare) patch[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
+
     const updated = await supabase
       .from("profiles")
-      .update({ instagram: instagram.handle })
+      .update(patch)
       .eq("id", existing.data.id)
       .select()
       .maybeSingle();

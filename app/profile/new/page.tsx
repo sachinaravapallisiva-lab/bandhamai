@@ -14,10 +14,16 @@ import {
   selectOptionValue,
   type ProfileWritePayload,
 } from "../../../lib/profile-fields";
+import {
+  BIODATA_SHARE_SAVE_LABEL,
+  BIODATA_SHARE_SAVING_LABEL,
+  parseBiodataShare,
+} from "../../../lib/biodata-share";
 import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
+import BiodataShareField from "../../components/BiodataShareField";
 import DownloadBiodata from "../../components/DownloadBiodata";
 import InstagramField from "../../components/InstagramField";
 import PhotoUpload from "../../components/PhotoUpload";
@@ -33,6 +39,7 @@ type Mine = {
     photo_url?: string | null;
     photo_blurred_url?: string | null;
     instagram?: string | null;
+    biodata_share?: boolean | null;
   } | null;
   linked: boolean;
 } | null;
@@ -49,6 +56,9 @@ export default function NewProfilePage() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [savingSocial, setSavingSocial] = useState(false);
   const [socialNote, setSocialNote] = useState("");
+  const [biodataShare, setBiodataShare] = useState(false);
+  const [savingShare, setSavingShare] = useState(false);
+  const [shareNote, setShareNote] = useState("");
 
   useEffect(function () {
     let cancelled = false;
@@ -93,6 +103,7 @@ export default function NewProfilePage() {
                   setForm(function (prev) {
                     return { ...prev, instagram: data.profile.instagram || "" };
                   });
+                  setBiodataShare(parseBiodataShare(data.profile.biodata_share));
                   setPhotos({
                     photo_url: data.profile.photo_url || "",
                     photo_blurred_url: data.profile.photo_blurred_url || "",
@@ -179,6 +190,50 @@ export default function NewProfilePage() {
       });
   }
 
+  function saveBiodataShare() {
+    setSavingShare(true);
+    setShareNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingShare(false);
+          setSignedIn(false);
+          setShareNote("Sign in to save this choice.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ biodata_share: biodataShare }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingShare(false);
+          if (!res.ok) {
+            setShareNote(data.error || "Could not save this choice.");
+            if (res.status === 401) setSignedIn(false);
+            return;
+          }
+          const next = parseBiodataShare(data.profile?.biodata_share);
+          setBiodataShare(next);
+          setMine(function (prev) {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              profile: { ...(prev.profile || {}), biodata_share: next },
+            };
+          });
+          setShareNote(next ? "Others can download your biodata." : "Others cannot download your biodata.");
+        });
+      })
+      .catch(function () {
+        setSavingShare(false);
+        setShareNote("Network trouble. Try again?");
+      });
+  }
+
   function submit() {
     for (const key of REQUIRED_PROFILE_FIELDS) {
       if (!form[key].trim()) {
@@ -217,6 +272,7 @@ export default function NewProfilePage() {
             ...form,
             photo_url: photos.photo_url || undefined,
             photo_blurred_url: photos.photo_blurred_url || undefined,
+            biodata_share: biodataShare,
           }),
         });
       })
@@ -238,6 +294,7 @@ export default function NewProfilePage() {
               full_name: form.full_name,
               city: form.city,
               profession: form.profession,
+              biodata_share: biodataShare,
             },
             linked: !!data.linked,
           });
@@ -350,6 +407,41 @@ export default function NewProfilePage() {
                 Optional. You can add or clear Instagram after submit. Empty is fine.
               </p>
             )}
+          </div>
+          <div style={{ textAlign: "left", margin: "0 0 22px" }}>
+            <BiodataShareField
+              checked={biodataShare}
+              onChange={function (next) {
+                setBiodataShare(next);
+                if (shareNote) setShareNote("");
+              }}
+              disabled={savingShare}
+            />
+            <button
+              type="button"
+              disabled={savingShare}
+              onClick={saveBiodataShare}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingShare ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingShare ? "default" : "pointer",
+                opacity: savingShare ? 0.7 : 1,
+              }}
+            >
+              {savingShare ? BIODATA_SHARE_SAVING_LABEL : BIODATA_SHARE_SAVE_LABEL}
+            </button>
+            {shareNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
+                {shareNote}
+              </p>
+            ) : null}
           </div>
           <div style={{ display: "flex", justifyContent: "center", margin: "0 0 16px" }}>
             <DownloadBiodata hasProfile variant="solid" />
@@ -504,6 +596,11 @@ export default function NewProfilePage() {
                 onChange={function (value) {
                   setField("instagram", value);
                 }}
+                disabled={saving}
+              />
+              <BiodataShareField
+                checked={biodataShare}
+                onChange={setBiodataShare}
                 disabled={saving}
               />
             </div>

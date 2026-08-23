@@ -229,6 +229,17 @@ assert(
 );
 assertEq(toBrowseProfile({ id: "ig1", full_name: "A", instagram: "@ananya" })?.instagram, "ananya", "instagram handle is mapped");
 assertEq(toBrowseProfile({ id: "ig2", full_name: "A" })?.instagram, "", "missing instagram is empty, not invented");
+assertEq(toBrowseProfile({ id: "bd1", full_name: "A", biodata_share: true })?.biodataShare, true, "opt-in maps on");
+assertEq(toBrowseProfile({ id: "bd2", full_name: "A" })?.biodataShare, false, "missing opt-in stays off");
+assertEq(toBrowseProfile({ id: "bd3", full_name: "A", biodata_share: "false" })?.biodataShare, false, "string false stays off");
+assert(
+  !browseSelectColumns({ photo_url: false, diet: false }).includes("biodata_share"),
+  "browse select omits biodata_share until the column exists"
+);
+assert(
+  browseSelectColumns({ photo_url: false, diet: false, biodata_share: true }).includes("biodata_share"),
+  "browse select includes biodata_share when the column exists"
+);
 assert(
   !browseSelectColumns({ photo_url: false, diet: false }).includes("instagram"),
   "browse select omits instagram until the column exists"

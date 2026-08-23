@@ -128,7 +128,7 @@ function pushRow(rows: BiodataRow[], label: string, value: string) {
 }
 
 /**
- * Own-profile biodata. Instagram uses the existing reveal rule: the owner
+ * Biodata rows for a PDF. Instagram uses the existing reveal rule: the owner
  * sees their handle, other people only see it after a share row.
  */
 export function profileToBiodataModel(

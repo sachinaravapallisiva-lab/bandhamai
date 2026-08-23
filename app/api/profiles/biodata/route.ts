@@ -12,6 +12,14 @@ import {
   profileToBiodataModel,
 } from "../../../../lib/biodata";
 import {
+  BIODATA_OTHER_SIGNED_IN_ERROR,
+  BIODATA_SHARE_COLUMN,
+  BIODATA_UNAVAILABLE_ERROR,
+  decideBiodataAccess,
+  readBiodataTargetId,
+} from "../../../../lib/biodata-share";
+import { findInstagramShare, instagramSharesReady } from "../../../../lib/instagram-shares-server";
+import {
   getAnonSupabase,
   getRequestUser,
   getServiceSupabase,
@@ -49,23 +57,26 @@ async function loadPhotoJpeg(url: string) {
 
 export async function GET(request: Request) {
   try {
+    const targetId = readBiodataTargetId(new URL(request.url).searchParams);
+    const signedInError = targetId ? BIODATA_OTHER_SIGNED_IN_ERROR : BIODATA_SIGNED_IN_ERROR;
     if (!hasBearerToken(request)) {
-      return unauthorizedResponse(BIODATA_SIGNED_IN_ERROR);
+      return unauthorizedResponse(signedInError);
     }
 
     const supabase = dataClient();
     if (!supabase) return missingConfigResponse();
 
     const { user, error: authError } = await getRequestUser(request, supabase);
-    if (!user) return unauthorizedResponse(authError || BIODATA_SIGNED_IN_ERROR);
+    if (!user) return unauthorizedResponse(authError || signedInError);
 
     const linked = await tableHasColumn(supabase, "profiles", "user_id");
     if (!linked) {
       return NextResponse.json({ error: BIODATA_NO_PROFILE_ERROR }, { status: 404 });
     }
 
+    const extraColumns = ["status", BIODATA_SHARE_COLUMN] as const;
     const optional = await Promise.all(
-      BIODATA_OPTIONAL_COLUMNS.map(async function (column) {
+      (BIODATA_OPTIONAL_COLUMNS as readonly string[]).concat(extraColumns).map(async function (column) {
         return {
           column,
           present: await tableHasColumn(supabase, "profiles", column),
@@ -85,19 +96,47 @@ export async function GET(request: Request) {
       .join(",");
 
     const hasCreatedAt = await tableHasColumn(supabase, "profiles", "created_at");
-    let query = supabase.from("profiles").select(select).eq("user_id", user.id);
-    if (hasCreatedAt) query = query.order("created_at", { ascending: false });
+    let query = supabase.from("profiles").select(select);
+    if (targetId) {
+      query = query.eq("id", targetId);
+    } else {
+      query = query.eq("user_id", user.id);
+      if (hasCreatedAt) query = query.order("created_at", { ascending: false });
+    }
     const { data, error } = await query.limit(1).maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     if (!data) {
-      return NextResponse.json({ error: BIODATA_NO_PROFILE_ERROR }, { status: 404 });
+      return NextResponse.json(
+        { error: targetId ? BIODATA_UNAVAILABLE_ERROR : BIODATA_NO_PROFILE_ERROR },
+        { status: 404 }
+      );
     }
 
     const row = data as unknown as Record<string, unknown>;
-    const model = profileToBiodataModel(row, { viewerUserId: user.id });
+    const ownerUserId = typeof row.user_id === "string" ? row.user_id : "";
+    const access = decideBiodataAccess({
+      viewerUserId: user.id,
+      targetUserId: ownerUserId,
+      targetStatus: typeof row.status === "string" ? row.status : "",
+      biodataShare: row[BIODATA_SHARE_COLUMN],
+      isOwnLookup: !targetId,
+    });
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+
+    let granted = false;
+    if (access.kind === "other" && ownerUserId && (await instagramSharesReady(supabase))) {
+      granted = !!(await findInstagramShare(supabase, ownerUserId, user.id));
+    }
+
+    const model = profileToBiodataModel(row, {
+      viewerUserId: user.id,
+      granted,
+    });
     const photoJpeg = await loadPhotoJpeg(model.photoUrl);
     const bytes = await buildBiodataPdf(model, photoJpeg);
     const filename = biodataFilename(model.name);
