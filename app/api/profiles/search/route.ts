@@ -169,7 +169,7 @@ export async function GET(request: Request) {
     }
 
     let viewerId: string | null = null;
-    if (flags.user_id && hasBearerToken(request)) {
+    if (hasBearerToken(request)) {
       const { user } = await getRequestUser(request, supabase);
       viewerId = user?.id || null;
     }

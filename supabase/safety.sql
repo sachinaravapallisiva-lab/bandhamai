@@ -151,6 +151,18 @@ as $$
       from public.blocks
       where (blocker_id = a and blocked_user_id = b)
          or (blocker_id = b and blocked_user_id = a)
+         or (
+           blocker_id = a
+           and blocked_profile_id in (
+             select p.id::text from public.profiles p where p.user_id = b
+           )
+         )
+         or (
+           blocker_id = b
+           and blocked_profile_id in (
+             select p.id::text from public.profiles p where p.user_id = a
+           )
+         )
     );
 $$;
 

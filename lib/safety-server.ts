@@ -61,7 +61,9 @@ export async function loadBlockedSet(
   const empty = emptyBlockedSet();
   if (!(await tableExists(supabase, BLOCKS_TABLE))) return empty;
 
-  const [mine, against] = await Promise.all([
+  const myProfileId = await resolveUserProfileId(supabase, viewerId);
+
+  const queries = [
     supabase
       .from(BLOCKS_TABLE)
       .select("blocked_profile_id, blocked_user_id")
@@ -70,8 +72,17 @@ export async function loadBlockedSet(
       .from(BLOCKS_TABLE)
       .select("blocker_id, blocked_profile_id")
       .eq("blocked_user_id", viewerId),
-  ]);
+  ];
+  if (myProfileId) {
+    queries.push(
+      supabase
+        .from(BLOCKS_TABLE)
+        .select("blocker_id, blocked_profile_id")
+        .eq("blocked_profile_id", myProfileId)
+    );
+  }
 
+  const [mine, againstUser, againstProfile] = await Promise.all(queries);
   const out = emptyBlockedSet();
 
   if (Array.isArray(mine.data)) {
@@ -83,23 +94,24 @@ export async function loadBlockedSet(
     });
   }
 
-  if (Array.isArray(against.data)) {
-    const blockerIds: string[] = [];
-    against.data.forEach(function (row: { blocker_id?: unknown; blocked_profile_id?: unknown }) {
-      const blockerId = asId(row.blocker_id);
-      if (blockerId) {
-        out.userIds.add(blockerId);
-        blockerIds.push(blockerId);
-      }
-    });
-    if (blockerIds.length) {
-      const profiles = await supabase.from("profiles").select("id, user_id").in("user_id", blockerIds);
-      if (Array.isArray(profiles.data)) {
-        profiles.data.forEach(function (row: { id?: unknown }) {
-          const id = asId(row.id);
-          if (id) out.profileIds.add(id);
-        });
-      }
+  const blockerIds: string[] = [];
+  function addBlocker(row: { blocker_id?: unknown }) {
+    const blockerId = asId(row.blocker_id);
+    if (blockerId && blockerId !== viewerId) {
+      out.userIds.add(blockerId);
+      blockerIds.push(blockerId);
+    }
+  }
+  if (Array.isArray(againstUser.data)) againstUser.data.forEach(addBlocker);
+  if (againstProfile && Array.isArray(againstProfile.data)) againstProfile.data.forEach(addBlocker);
+
+  if (blockerIds.length) {
+    const profiles = await supabase.from("profiles").select("id, user_id").in("user_id", blockerIds);
+    if (Array.isArray(profiles.data)) {
+      profiles.data.forEach(function (row: { id?: unknown }) {
+        const id = asId(row.id);
+        if (id) out.profileIds.add(id);
+      });
     }
   }
 
