@@ -16,6 +16,7 @@ import {
   hasPaidVerifyai,
   loadVerifyaiState,
   rememberVerifyaiExternalId,
+  verifyaiPhotoRequiredBody,
 } from "../../../../lib/verifyai-checkout";
 import { appOrigin } from "../../../../lib/stripe";
 
@@ -34,6 +35,9 @@ export async function GET(request: Request) {
     const state = await loadVerifyaiState(supabase, user.id);
     if (state.verified) {
       return NextResponse.json({ verified: true, url: null, message: VERIFYAI_COPY.already });
+    }
+    if (!state.hasPhoto) {
+      return NextResponse.json({ ...verifyaiPhotoRequiredBody(), paid: state.paid, url: null }, { status: 409 });
     }
     if (!(await hasPaidVerifyai(supabase, user.id, state.profileId))) {
       return NextResponse.json(

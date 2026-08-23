@@ -20,7 +20,7 @@ import {
   VERIFYAI_SQL_FILE,
   isOneTimeVerifyaiPrice,
 } from "../../../../lib/verifyai";
-import { loadVerifyaiState } from "../../../../lib/verifyai-checkout";
+import { loadVerifyaiState, verifyaiPhotoRequiredBody } from "../../../../lib/verifyai-checkout";
 import { appOrigin, getStripe, stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
 
 export const runtime = "nodejs";
@@ -56,6 +56,9 @@ export async function POST(request: Request) {
     const state = await loadVerifyaiState(supabase, user.id);
     if (state.verified) {
       return NextResponse.json({ error: VERIFYAI_COPY.already, verified: true }, { status: 409 });
+    }
+    if (!state.hasPhoto) {
+      return NextResponse.json(verifyaiPhotoRequiredBody(), { status: 409 });
     }
 
     const stripe = getStripe();

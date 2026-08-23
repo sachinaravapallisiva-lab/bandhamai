@@ -8,22 +8,34 @@ import {
   VERIFYAI_SQL_FILE,
   VERIFYAI_STATUS_COLUMN,
   VERIFYAI_UPDATED_AT_COLUMN,
+  VERIFYAI_COPY,
   isVerifyaiVerified,
   type VerifyaiStatus,
 } from "./verifyai";
 import { tableExists, tableHasColumn } from "./server-supabase";
 import { asId, resolveUserProfileId } from "./safety-server";
 import { stripeSecretKey, stripeVerifyaiPriceId } from "./stripe";
+import { hasProfilePhotoUrl } from "./profile-photos";
 
 export type VerifyaiPaymentState = {
   paid: boolean;
   verified: boolean;
   status: string | null;
   profileId: string | null;
+  hasPhoto: boolean;
   startUrl: string | null;
   startConfigured: boolean;
   checkoutConfigured: boolean;
 };
+
+export function verifyaiPhotoRequiredBody() {
+  return {
+    error: VERIFYAI_COPY.photoRequired,
+    code: "photo_required",
+    verified: false,
+    hasPhoto: false,
+  };
+}
 
 export function verifyaiStartConfigured() {
   return !!(verifyaiHostedStartUrl() || (verifyaiApiUrl() && verifyaiApiKey()));
@@ -39,6 +51,22 @@ export function verifyaiApiUrl() {
 
 export function verifyaiApiKey() {
   return (process.env.VERIFYAI_API_KEY || "").trim();
+}
+
+export async function profileHasRequiredPhoto(
+  supabase: SupabaseClient,
+  profileId?: string | null
+) {
+  if (!profileId) return false;
+  if (!(await tableHasColumn(supabase, "profiles", "photo_url"))) return false;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photo_url")
+    .eq("id", profileId)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return false;
+  return hasProfilePhotoUrl((data as { photo_url?: unknown }).photo_url);
 }
 
 export async function hasPaidVerifyai(
@@ -159,6 +187,10 @@ export async function markVerifyaiSessionResult(
     externalId?: string | null;
   }
 ) {
+  if (isVerifyaiVerified(input.status) && !(await profileHasRequiredPhoto(supabase, input.profileId))) {
+    return { error: VERIFYAI_COPY.photoRequired };
+  }
+
   const now = new Date().toISOString();
   const patch: Record<string, string | null> = {
     [VERIFYAI_STATUS_COLUMN]: input.status,
@@ -252,13 +284,23 @@ export async function loadVerifyaiState(
 ): Promise<VerifyaiPaymentState> {
   const profileId = await resolveUserProfileId(supabase, userId);
   let status: string | null = null;
-  if (profileId && (await tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN))) {
-    const row = await supabase
-      .from("profiles")
-      .select(VERIFYAI_STATUS_COLUMN)
-      .eq("id", profileId)
-      .maybeSingle();
-    status = row.data ? asId((row.data as Record<string, unknown>)[VERIFYAI_STATUS_COLUMN]) || null : null;
+  let hasPhoto = false;
+  if (profileId) {
+    const cols: string[] = [];
+    if (await tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN)) {
+      cols.push(VERIFYAI_STATUS_COLUMN);
+    }
+    if (await tableHasColumn(supabase, "profiles", "photo_url")) {
+      cols.push("photo_url");
+    }
+    if (cols.length) {
+      const row = await supabase.from("profiles").select(cols.join(", ")).eq("id", profileId).maybeSingle();
+      const data = row.data as Record<string, unknown> | null;
+      if (data) {
+        status = asId(data[VERIFYAI_STATUS_COLUMN]) || null;
+        hasPhoto = hasProfilePhotoUrl(data.photo_url);
+      }
+    }
   }
   const paid = await hasPaidVerifyai(supabase, userId, profileId);
   return {
@@ -266,6 +308,7 @@ export async function loadVerifyaiState(
     verified: isVerifyaiVerified(status),
     status,
     profileId,
+    hasPhoto,
     startUrl: null,
     startConfigured: verifyaiStartConfigured(),
     checkoutConfigured: !!(stripeSecretKey() && stripeVerifyaiPriceId()),

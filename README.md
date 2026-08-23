@@ -120,7 +120,7 @@ Public bucket URLs are convenient, not privacy. Real hide-until-matched access c
 
 1. Signed-out `/profile/new` still sends you to login. Photo upload without a Bearer token is `401`.
 2. Sign in, open `/profile/new`, pick a small photo with **AI enhance** checked. You should see a local preview, a progress bar, then a card preview with the stored URL.
-3. Submit name / gender / city. The success screen should show the photo when a URL is present.
+3. Submit without a photo — the button stays disabled and `POST /api/profiles` returns 400. After a real upload, submit name / gender / city / photo. Status stays pending.
 4. In Supabase Storage → `profile-photos` you should see `{user-id}/{uuid}.webp` and `{uuid}-blur.webp`.
 5. If you ran the SQL, the `profiles` row should have `photo_url` and `photo_blurred_url`. If those columns are absent, files still land in Storage and the UI still previews the returned URLs.
 6. A missing bucket should show a clear “run supabase/profile_photos.sql” error, not a blank failure.
@@ -158,10 +158,11 @@ VerifyAI ([verifyai.llc](https://verifyai.llc)) is the verification layer for Ba
 
 Flow:
 
-1. Member pays **$4.99 one-time** via real Stripe Checkout (`mode: payment`, `STRIPE_VERIFYAI_PRICE_ID`). Separate from the $9.99/mo messaging Price.
-2. Payment is stored. `verifyai_status` becomes `pending` if it was not already `verified`. **Paying does not show the badge.**
-3. The member is sent into the VerifyAI flow (`VERIFYAI_START_URL` hosted link, or `VERIFYAI_API_URL` + `VERIFYAI_API_KEY` session create).
-4. VerifyAI calls `POST /api/verifyai/webhook` on success. The badge appears only when `verifyai_status = 'verified'` **and** a paid $4.99 row exists. Operator `POST /api/verifyai` cannot skip payment.
+1. The linked profile must already have a `photo_url`. Checkout and start return **409** without one. Paying still does not set verified.
+2. Member pays **$4.99 one-time** via real Stripe Checkout (`mode: payment`, `STRIPE_VERIFYAI_PRICE_ID`). Separate from the $9.99/mo messaging Price.
+3. Payment is stored. `verifyai_status` becomes `pending` if it was not already `verified`. **Paying does not show the badge.**
+4. The member is sent into the VerifyAI flow (`VERIFYAI_START_URL` hosted link, or `VERIFYAI_API_URL` + `VERIFYAI_API_KEY` session create).
+5. VerifyAI calls `POST /api/verifyai/webhook` on success. The badge appears only when `verifyai_status = 'verified'`, a paid $4.99 row exists, **and** the profile has a photo. Operator `POST /api/verifyai` cannot skip payment or the photo.
 
 verifyai.llc does not publish a public API in this repo (biometric link product, contact@verifyai.llc). The start URL / API env is the handoff.
 
@@ -196,11 +197,12 @@ Do not commit secrets.
 ### Test steps
 
 1. No SQL / no status → no badge.
-2. Pay $4.99 (or confirm a Checkout session) → `verifyai_payments` is `paid`, profile `pending`, **no badge**.
-3. Continue to VerifyAI (or set `VERIFYAI_START_URL`). Return without a success webhook → still no badge.
-4. Signed webhook with `status=verified` **and** a paid row → quiet VERIFYAI on Browse / Matches.
-5. Webhook `verified` without a paid row → **409**, badge stays off.
-6. Messaging $9.99/mo checkout is unchanged.
+2. Profile without `photo_url` → pay / start CTAs stay off; checkout and start return **409**.
+3. Pay $4.99 (or confirm a Checkout session) → `verifyai_payments` is `paid`, profile `pending`, **no badge**.
+4. Continue to VerifyAI (or set `VERIFYAI_START_URL`). Return without a success webhook → still no badge.
+5. Signed webhook with `status=verified` **and** a paid row **and** a photo → quiet VERIFYAI on Browse / Matches.
+6. Webhook `verified` without a paid row, or without a photo → **409**, badge stays off.
+7. Messaging $9.99/mo checkout is unchanged.
 
 ## Online / offline (presence)
 

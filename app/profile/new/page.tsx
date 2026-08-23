@@ -10,7 +10,7 @@ import {
   REQUIRED_PROFILE_FIELDS,
   type ProfileWritePayload,
 } from "../../../lib/profile-fields";
-import { emptyPhotoUrls, type ProfilePhotoUrls } from "../../../lib/profile-photos";
+import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
 import PhotoUpload from "../../components/PhotoUpload";
@@ -119,6 +119,10 @@ export default function NewProfilePage() {
         setError("Please fill in your name, gender, and city.");
         return;
       }
+    }
+    if (!photos.photo_url) {
+      setError(PROFILE_PHOTO_REQUIRED_ERROR);
+      return;
     }
 
     setSaving(true);
@@ -277,12 +281,16 @@ export default function NewProfilePage() {
             <div style={{ display: "grid", gap: 16 }}>
               <PhotoUpload
                 value={photos}
-                onChange={setPhotos}
+                onChange={function (next) {
+                  setPhotos(next);
+                  if (error) setError("");
+                }}
                 onBusyChange={setPhotoBusy}
                 name={form.full_name}
                 city={form.city}
                 profession={form.profession}
                 disabled={saving}
+                required
               />
               {PROFILE_FORM_FIELDS.map(function (field) {
                 const value = form[field.key];
@@ -383,14 +391,14 @@ export default function NewProfilePage() {
                 </p>
               ) : (
                 <p className="bm-sans" style={{ margin: 0, fontSize: 12.5, color: MUTED }}>
-                  Name, gender, and city are required. Status will be pending, not live.
+                  Name, gender, city, and a profile photo are required. Status will be pending, not live.
                 </p>
               )}
             </div>
 
             <button
               type="submit"
-              disabled={saving || photoBusy}
+              disabled={saving || photoBusy || !photos.photo_url}
               className="bm-sans bm-talk bm-focus"
               style={{
                 width: "100%",
@@ -401,8 +409,8 @@ export default function NewProfilePage() {
                 padding: "13px",
                 fontSize: 14.5,
                 fontWeight: 600,
-                cursor: saving ? "default" : "pointer",
-                opacity: saving ? 0.7 : 1,
+                cursor: saving || photoBusy || !photos.photo_url ? "default" : "pointer",
+                opacity: saving || photoBusy || !photos.photo_url ? 0.7 : 1,
               }}
             >
               {saving ? "Submitting…" : "Submit for review"}

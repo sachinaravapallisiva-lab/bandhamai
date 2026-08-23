@@ -28,6 +28,13 @@ export function emptyPhotoUrls(): ProfilePhotoUrls {
   return { photo_url: "", photo_blurred_url: "" };
 }
 
+export const PROFILE_PHOTO_REQUIRED_ERROR = "Add a profile photo before you submit.";
+
+/** True when the profile row has a non-empty stored photo_url. */
+export function hasProfilePhotoUrl(url: unknown) {
+  return typeof url === "string" && url.trim().length > 0;
+}
+
 /** Accept only URLs this user just stored under profile-photos/{userId}/. */
 export function isOwnStoredPhotoUrl(url: string, userId: string) {
   if (!url || !userId) return false;

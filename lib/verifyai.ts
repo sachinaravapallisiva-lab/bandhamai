@@ -18,6 +18,7 @@ export const VERIFYAI_COPY = {
   startMissing:
     "Payment is on file, but the VerifyAI start URL is not configured. Set VERIFYAI_START_URL or VERIFYAI_API_URL. The badge stays off until VerifyAI succeeds.",
   already: "This profile is already verified.",
+  photoRequired: "Add a profile photo before VerifyAI.",
 } as const;
 
 export const VERIFYAI_STATUSES = ["unverified", "pending", "verified", "failed", "revoked"] as const;

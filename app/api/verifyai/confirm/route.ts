@@ -77,6 +77,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: recorded.error, sql: "sql" in recorded ? recorded.sql : undefined }, { status: 400 });
     }
 
+    const state = await loadVerifyaiState(supabase, user.id);
+    if (!state.hasPhoto) {
+      return NextResponse.json({
+        paid: true,
+        verified: false,
+        status: state.status,
+        hasPhoto: false,
+        start_url: null,
+        start_configured: state.startConfigured,
+        error: VERIFYAI_COPY.photoRequired,
+        message: VERIFYAI_COPY.photoRequired,
+      });
+    }
+
     const start = await buildVerifyaiStartUrl({
       origin: appOrigin(request),
       userId: user.id,
@@ -92,11 +106,11 @@ export async function POST(request: Request) {
       });
     }
 
-    const state = await loadVerifyaiState(supabase, user.id);
     return NextResponse.json({
       paid: true,
       verified: isVerifyaiVerified(state.status),
       status: state.status,
+      hasPhoto: true,
       start_url: start.url,
       start_configured: !!start.url,
       message: start.url ? VERIFYAI_COPY.paid : VERIFYAI_COPY.startMissing,

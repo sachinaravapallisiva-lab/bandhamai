@@ -14,6 +14,7 @@ export default function PhotoUpload({
   profession,
   disabled,
   onBusyChange,
+  required,
 }: {
   value: ProfilePhotoUrls;
   onChange: (next: ProfilePhotoUrls) => void;
@@ -22,6 +23,7 @@ export default function PhotoUpload({
   profession?: string;
   disabled?: boolean;
   onBusyChange?: (busy: boolean) => void;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [enhance, setEnhance] = useState(true);
@@ -123,10 +125,11 @@ export default function PhotoUpload({
   return (
     <div>
       <label className="bm-sans" style={{ display: "block", fontSize: 9.5, letterSpacing: ".14em", color: MUTED, marginBottom: 6 }}>
-        PHOTO
+        PHOTO{required ? " *" : ""}
       </label>
       <p className="bm-sans" style={{ margin: "0 0 12px", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-        Optional. AI enhance is a clarity / resolution pass only — it upscales and sharpens. It does not apply makeup or rewrite a face.
+        {required ? "Required. " : "Optional. "}
+        AI enhance is a clarity / resolution pass only — it upscales and sharpens. It does not apply makeup or rewrite a face.
       </p>
 
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
