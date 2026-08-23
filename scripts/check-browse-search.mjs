@@ -4,6 +4,7 @@ import {
   parseSearchQuery,
   pickShortlist,
   scoreBrowseRow,
+  browseSelectColumns,
   toBrowseProfile,
   browseFactChips,
   browseMetaLine,
@@ -219,6 +220,16 @@ assert(
     verifyai_status: "pending",
   })?.verified === false,
   "online is not a VerifyAI badge"
+);
+assertEq(toBrowseProfile({ id: "ig1", full_name: "A", instagram: "@ananya" })?.instagram, "ananya", "instagram handle is mapped");
+assertEq(toBrowseProfile({ id: "ig2", full_name: "A" })?.instagram, "", "missing instagram is empty, not invented");
+assert(
+  !browseSelectColumns({ photo_url: false, diet: false }).includes("instagram"),
+  "browse select omits instagram until the column exists"
+);
+assert(
+  browseSelectColumns({ photo_url: false, diet: false, instagram: true }).includes("instagram"),
+  "browse select includes instagram when the column exists"
 );
 
 const aboutCard = toBrowseProfile({

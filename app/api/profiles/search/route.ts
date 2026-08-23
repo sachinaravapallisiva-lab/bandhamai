@@ -31,6 +31,7 @@ import {
 } from "../../../../lib/profile-search";
 import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
+import { INSTAGRAM_COLUMN } from "../../../../lib/instagram";
 import { VERIFYAI_STATUS_COLUMN } from "../../../../lib/verifyai";
 
 export const runtime = "nodejs";
@@ -162,15 +163,16 @@ export async function GET(request: Request) {
       });
     }
 
-    const [photo_url, diet, user_id, created_at, verifyai_status, inventory] = await Promise.all([
+    const [photo_url, diet, user_id, created_at, verifyai_status, instagram, inventory] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
       tableHasColumn(supabase, "profiles", "diet"),
       tableHasColumn(supabase, "profiles", "user_id"),
       tableHasColumn(supabase, "profiles", "created_at"),
       tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN),
+      tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", LIVE_PROFILE_STATUS),
     ]);
-    const flags = { photo_url, diet, user_id, created_at, verifyai_status };
+    const flags = { photo_url, diet, user_id, created_at, verifyai_status, instagram };
 
     let criteria = parsed;
     let usedLlm = false;

@@ -50,6 +50,28 @@ No third-party face/beauty APIs. No new secrets — Storage uses the existing `S
 
 If the bucket is missing, the API returns **503** and asks you to run that SQL (or create a bucket named `profile-photos`). The app does not invent extra database columns at runtime — it probes with the same `tableHasColumn` helper as `user_id`.
 
+## Connect socials (Instagram only)
+
+Profile create and edit can take an optional Instagram username or `instagram.com` profile URL. The app stores a clean handle (for example `ananya`) and Browse / Matches show a small chip that opens `https://instagram.com/{handle}` in a new tab.
+
+This is Instagram only. Facebook, LinkedIn, X, TikTok, and other networks are rejected. There is no Instagram OAuth and the app never posts to Instagram. Empty is fine — it is not required to submit a profile.
+
+### Supabase (Sai)
+
+In the SQL editor, run [`supabase/instagram.sql`](supabase/instagram.sql). That adds `public.profiles.instagram` (max 30 characters).
+
+Until that SQL is applied:
+
+- Profile create still works. The handle is omitted.
+- Saving Instagram on an existing profile (`PATCH /api/profiles`) returns **503** and asks you to run the file.
+
+### Test steps
+
+1. Signed-in `/profile/new` shows **CONNECT SOCIALS / INSTAGRAM**. Leave it blank and submit name / gender / city — the profile still goes pending.
+2. Enter `@ananya` or `https://instagram.com/ananya` and submit (or **Save Instagram** on an already-submitted profile). After the SQL is applied, `profiles.instagram` should be `ananya`.
+3. Enter a Facebook, LinkedIn, X, or TikTok URL — the form should refuse and the row should not store that URL.
+4. After a reviewer sets the row `live`, Browse (and Matches, after Like) should show an Instagram chip that opens `https://instagram.com/ananya` in a new tab. No verified badge and no match % from this field.
+
 ## Messaging subscription (Stripe)
 
 Browse, search, Speed Match, and profile create stay **free**. **Sending a message** needs an active **$9.99/month** Stripe subscription. The paywall copy is honest: messaging access only — not a match guarantee. There is no fake checkout, no countdown, and no “most people upgrade” line.

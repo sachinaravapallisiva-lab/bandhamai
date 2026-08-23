@@ -197,24 +197,42 @@ export default function AccountPage() {
             <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 15, color: INK }}>
               {email || "Signed in"}
             </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={signOut}
-              className="bm-sans bm-ghost bm-focus"
-              style={{
-                background: "transparent",
-                color: VIOLET,
-                border: "1px solid " + LINE,
-                borderRadius: 999,
-                padding: "10px 16px",
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: busy ? "default" : "pointer",
-              }}
-            >
-              Sign out
-            </button>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              <Link
+                href="/profile/new"
+                className="bm-sans bm-ghost bm-focus"
+                style={{
+                  background: "transparent",
+                  color: VIOLET,
+                  border: "1px solid " + LINE,
+                  borderRadius: 999,
+                  padding: "10px 16px",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                Your profile
+              </Link>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={signOut}
+                className="bm-sans bm-ghost bm-focus"
+                style={{
+                  background: "transparent",
+                  color: VIOLET,
+                  border: "1px solid " + LINE,
+                  borderRadius: 999,
+                  padding: "10px 16px",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: busy ? "default" : "pointer",
+                }}
+              >
+                Sign out
+              </button>
+            </div>
           </section>
 
           <VerifyOffer signedIn={signedIn} nextPath="/account" />

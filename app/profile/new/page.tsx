@@ -10,9 +10,11 @@ import {
   REQUIRED_PROFILE_FIELDS,
   type ProfileWritePayload,
 } from "../../../lib/profile-fields";
+import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
+import InstagramField from "../../components/InstagramField";
 import PhotoUpload from "../../components/PhotoUpload";
 import VerifyOffer from "../../components/VerifyOffer";
 
@@ -25,6 +27,7 @@ type Mine = {
     profession?: string | null;
     photo_url?: string | null;
     photo_blurred_url?: string | null;
+    instagram?: string | null;
   } | null;
   linked: boolean;
 } | null;
@@ -39,6 +42,8 @@ export default function NewProfilePage() {
   const [mine, setMine] = useState<Mine>(null);
   const [photos, setPhotos] = useState<ProfilePhotoUrls>(() => emptyPhotoUrls());
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [socialNote, setSocialNote] = useState("");
 
   useEffect(function () {
     let cancelled = false;
@@ -80,6 +85,9 @@ export default function NewProfilePage() {
                 setMine({ profile: data.profile || null, linked: !!data.linked });
                 if (data.profile) {
                   setDone(true);
+                  setForm(function (prev) {
+                    return { ...prev, instagram: data.profile.instagram || "" };
+                  });
                   setPhotos({
                     photo_url: data.profile.photo_url || "",
                     photo_blurred_url: data.profile.photo_blurred_url || "",
@@ -111,6 +119,59 @@ export default function NewProfilePage() {
       return { ...prev, [key]: value };
     });
     if (error) setError("");
+    if (socialNote) setSocialNote("");
+  }
+
+  function saveInstagram() {
+    const parsed = parseInstagramInput(form.instagram);
+    if (parsed.error) {
+      setSocialNote(parsed.error);
+      return;
+    }
+
+    setSavingSocial(true);
+    setSocialNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingSocial(false);
+          setSignedIn(false);
+          setSocialNote("Sign in to save Instagram.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ instagram: form.instagram }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingSocial(false);
+          if (!res.ok) {
+            setSocialNote(data.error || "Could not save Instagram.");
+            if (res.status === 401) setSignedIn(false);
+            return;
+          }
+          const handle = data.profile?.instagram || parsed.handle || "";
+          setForm(function (prev) {
+            return { ...prev, instagram: handle };
+          });
+          setMine(function (prev) {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              profile: { ...(prev.profile || {}), instagram: handle || null },
+            };
+          });
+          setSocialNote(handle ? "Instagram saved." : "Instagram removed.");
+        });
+      })
+      .catch(function () {
+        setSavingSocial(false);
+        setSocialNote("Network trouble. Try again?");
+      });
   }
 
   function submit() {
@@ -122,6 +183,11 @@ export default function NewProfilePage() {
     }
     if (!photos.photo_url) {
       setError(PROFILE_PHOTO_REQUIRED_ERROR);
+      return;
+    }
+    const instagram = parseInstagramInput(form.instagram);
+    if (instagram.error) {
+      setError(instagram.error);
       return;
     }
 
@@ -237,6 +303,44 @@ export default function NewProfilePage() {
               city={mine?.profile?.city || form.city}
               profession={mine?.profile?.profession || form.profession}
             />
+          </div>
+          <div style={{ textAlign: "left", margin: "0 0 22px" }}>
+            <InstagramField
+              value={form.instagram}
+              onChange={function (value) {
+                setField("instagram", value);
+              }}
+              disabled={savingSocial}
+            />
+            <button
+              type="button"
+              disabled={savingSocial}
+              onClick={saveInstagram}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingSocial ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingSocial ? "default" : "pointer",
+                opacity: savingSocial ? 0.7 : 1,
+              }}
+            >
+              {savingSocial ? "Saving…" : "Save Instagram"}
+            </button>
+            {socialNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
+                {socialNote}
+              </p>
+            ) : (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+                Optional. You can add or clear Instagram after submit. Empty is fine.
+              </p>
+            )}
           </div>
           <Link
             href="/"
@@ -382,6 +486,13 @@ export default function NewProfilePage() {
                   </div>
                 );
               })}
+              <InstagramField
+                value={form.instagram}
+                onChange={function (value) {
+                  setField("instagram", value);
+                }}
+                disabled={saving}
+              />
             </div>
 
             <div style={{ minHeight: 20, margin: "16px 0 14px" }}>
