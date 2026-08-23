@@ -12,9 +12,11 @@ import {
   sendPaidMessage,
   startCheckout,
 } from "../../lib/client-billing";
+import { PRESENCE_HEARTBEAT_MS, PRESENCE_LOOKUP_PATH } from "../../lib/presence";
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import MessagePaywall from "../components/MessagePaywall";
+import PresenceMark from "../components/PresenceMark";
 import SafetyActions from "../components/SafetyActions";
 
 type ChatMessage = {
@@ -35,7 +37,9 @@ export default function ChatPage() {
   const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingNote, setBillingNote] = useState("");
+  const [partnerPresence, setPartnerPresence] = useState<{ id: string; online: boolean } | null>(null);
   const recipientRef = useRef("");
+  const partnerOnline = !!(partnerPresence && partnerPresence.id === recipientId && partnerPresence.online);
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
@@ -67,6 +71,41 @@ export default function ChatPage() {
   useEffect(function () {
     recipientRef.current = recipientId;
   }, [recipientId]);
+
+  useEffect(function () {
+    if (!userId || !recipientId) return;
+
+    let cancelled = false;
+    const lookingUp = recipientId;
+
+    function loadPartner() {
+      authJsonHeaders()
+        .then(function (headers) {
+          if (!headers) return { online: false };
+          return fetch(PRESENCE_LOOKUP_PATH + "?user_id=" + encodeURIComponent(lookingUp), { headers })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              return { online: !!data.online };
+            })
+            .catch(function () {
+              return { online: false };
+            });
+        })
+        .then(function (result) {
+          if (cancelled) return;
+          setPartnerPresence({ id: lookingUp, online: !!(result && result.online) });
+        });
+    }
+
+    loadPartner();
+    const id = window.setInterval(loadPartner, PRESENCE_HEARTBEAT_MS);
+    return function () {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [userId, recipientId]);
 
   useEffect(function () {
     if (!userId) return;
@@ -212,6 +251,27 @@ export default function ChatPage() {
       <p className="bm-sans" style={{ margin: "0 0 18px", fontSize: 13.5, color: MUTED }}>
         You: {userEmail || "signed out"}
       </p>
+
+      {recipientId ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            background: "#FFFFFF",
+            border: "1px solid " + LINE,
+            borderRadius: 14,
+            padding: "12px 16px",
+            marginBottom: 16,
+          }}
+        >
+          <span className="bm-serif" style={{ fontSize: 18 }}>
+            Conversation
+          </span>
+          <PresenceMark online={partnerOnline} compact />
+        </div>
+      ) : null}
 
       {!entitlement.canMessage ? (
         <MessagePaywall

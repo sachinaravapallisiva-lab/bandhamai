@@ -8,6 +8,7 @@ import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
 import DiscoverCard from "./components/DiscoverCard";
+import PresenceMark from "./components/PresenceMark";
 import VerifyBadge from "./components/VerifyBadge";
 import SafetyActions from "./components/SafetyActions";
 import { supabase } from "../lib/supabase";
@@ -720,11 +721,12 @@ export default function Home() {
                 {matches.map(function (p) {
                   return (
                     <article key={p.id} className="bm-card" style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7, gap: 10 }}>
                         <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
                           {p.name}
                           <VerifyBadge verified={p.verified} />
                         </h2>
+                        <PresenceMark online={p.online} compact />
                       </div>
                       <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
                         {[p.work, p.city].filter(Boolean).join(" — ") || "Interested from Browse"}

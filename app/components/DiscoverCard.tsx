@@ -3,6 +3,8 @@
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
+import PresenceMark from "./PresenceMark";
+import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
 
@@ -106,35 +108,54 @@ export default function DiscoverCard({
         overflow: "hidden",
       }}
     >
-      {profile.photoUrl ? (
-        // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={profile.photoUrl}
-          alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
-          style={{
-            width: "100%",
-            height: 300,
-            objectFit: "cover",
-            display: "block",
-            background: "#EDE4D4",
-          }}
-        />
-      ) : (
-        <div
-          aria-hidden={profile.name ? undefined : true}
-          style={{
-            height: 300,
-            background: "linear-gradient(160deg, #EFE4D2 0%, #D9C8EC 58%, #5B21B6 130%)",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <span className="bm-serif" style={{ fontSize: 52, color: CREAM, letterSpacing: "-.02em" }}>
-            {initials(profile.name)}
-          </span>
-        </div>
-      )}
+      <div style={{ position: "relative" }}>
+        {profile.photoUrl ? (
+          // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.photoUrl}
+            alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
+            style={{
+              width: "100%",
+              height: 300,
+              objectFit: "cover",
+              display: "block",
+              background: "#EDE4D4",
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden={profile.name ? undefined : true}
+            style={{
+              height: 300,
+              background: "linear-gradient(160deg, #EFE4D2 0%, #D9C8EC 58%, #5B21B6 130%)",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <span className="bm-serif" style={{ fontSize: 52, color: CREAM, letterSpacing: "-.02em" }}>
+              {initials(profile.name)}
+            </span>
+          </div>
+        )}
+        {profile.online ? (
+          <span
+            aria-hidden="true"
+            title="Online"
+            style={{
+              position: "absolute",
+              right: 14,
+              bottom: 14,
+              width: 16,
+              height: 16,
+              borderRadius: 999,
+              background: PRESENCE_ONLINE_COLOR,
+              border: "2px solid " + CREAM,
+              boxSizing: "border-box",
+            }}
+          />
+        ) : null}
+      </div>
 
       <div style={{ padding: "18px 18px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -142,6 +163,7 @@ export default function DiscoverCard({
             {profile.name || "Profile"}
           </h2>
           <VerifyBadge verified={profile.verified} />
+          <PresenceMark online={profile.online} compact />
         </div>
 
         {meta ? (
