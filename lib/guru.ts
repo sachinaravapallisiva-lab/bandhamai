@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const GURU_MODEL = "grok-4.6";
 
-export const GURU_SYSTEM_PROMPT = `You are the Bandham AI love guru on Bandham AI, a matrimony app.
+export const GURU_SYSTEM_PROMPT = `You are the Bandham assistant on Bandham AI, a matrimony app.
 
 You only coach. You never search, list, rank, or invent people.
 

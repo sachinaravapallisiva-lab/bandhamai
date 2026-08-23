@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import {
   GURU_INTRO,
+  GURU_ORB_LABEL,
   GURU_PATH,
   GURU_PLACEHOLDER,
+  GURU_TITLE,
   SEARCH_HINT,
   SEARCH_PLACEHOLDER,
 } from "../lib/surfaces.ts";
@@ -20,7 +22,11 @@ const guruLib = readFileSync(new URL("../lib/guru.ts", import.meta.url), "utf8")
 assert(SEARCH_PLACEHOLDER.toLowerCase().includes("search profiles"), "search placeholder names the job");
 assert(SEARCH_HINT.toLowerCase().includes("search for people"), "search hint names people search");
 assert(SEARCH_HINT.toLowerCase().includes("mic chip"), "search hint points at the mic chip for advice");
-assert(GURU_INTRO.toLowerCase().includes("love guru"), "guru intro names the guru");
+assert(SEARCH_HINT.toLowerCase().includes("bandham assistant"), "search hint names the assistant");
+assert(GURU_TITLE === "Bandham assistant", "chip title is Bandham assistant");
+assert(GURU_ORB_LABEL === "Open Bandham assistant", "chip aria-label is Open Bandham assistant");
+assert(GURU_INTRO.toLowerCase().includes("bandham assistant"), "guru intro names the assistant");
+assert(!/love guru/i.test([GURU_TITLE, GURU_ORB_LABEL, GURU_INTRO, SEARCH_HINT].join("\n")), "user-facing guru copy must not say love guru");
 assert(GURU_INTRO.toLowerCase().includes("search box above"), "guru intro soft-handoffs to search");
 assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old search-shaped guru intro is gone");
 assert(GURU_PLACEHOLDER.toLowerCase().includes("advice"), "guru placeholder is advice, not search");
@@ -49,7 +55,7 @@ assert(!guruLib.includes("profile-search"), "guru handler must not import profil
 assert(!guruLib.includes("/api/profiles/search"), "guru handler must not call profile search");
 
 const prompt = guruLib.toLowerCase();
-assert(prompt.includes("love guru"), "prompt names the guru");
+assert(prompt.includes("bandham assistant"), "prompt names the assistant");
 assert(prompt.includes("never search") || prompt.includes("you never search"), "prompt forbids search");
 assert(prompt.includes("search box above"), "prompt may soft-handoff only");
 assert(prompt.includes("verifyai"), "prompt forbids invented VerifyAI");
