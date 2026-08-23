@@ -175,6 +175,12 @@ const hydRowScore = scoreBrowseRow({ ...live, city: "Hyd" }, hyd);
 const missScore = scoreBrowseRow({ ...live, city: "Chicago", mother_tongue: "Hindi", profession: "Teacher" }, hyd);
 assert(hydRowScore > missScore, "Hyd search should rank a Hyd/Telugu doctor above a miss");
 
+const womanF = scoreBrowseRow({ ...live, gender: "F" }, woman);
+const womanM = scoreBrowseRow({ ...live, gender: "M" }, woman);
+const womanFemale = scoreBrowseRow({ ...live, gender: "Female" }, woman);
+assert(womanF > womanM, "stored F should score for a woman prompt");
+assert(womanF === womanFemale, "Female label and F code should score the same");
+
 const vegScore = scoreBrowseRow(live, nri);
 const nonVegScore = scoreBrowseRow({ ...live, diet: "Non-vegetarian", visa_status: "H-1B", about: "" }, nri);
 assert(vegScore > nonVegScore, "vegetarian keyword should not reward non-veg diet");

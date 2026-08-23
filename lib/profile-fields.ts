@@ -40,10 +40,47 @@ export function emptyProfileForm(): ProfileWritePayload {
 
 export type ProfileFieldKind = "text" | "select" | "textarea";
 
+export type ProfileSelectOption = {
+  value: string;
+  label: string;
+};
+
+export type ProfileFieldOption = string | ProfileSelectOption;
+
 export type ProfileFieldOptionGroup = {
   heading: string;
   options: string[];
 };
+
+/** Stored values for public.profiles.gender (`CHECK (gender = ANY (ARRAY['M','F']))`). */
+export const PROFILE_GENDER_CODES = ["M", "F"] as const;
+
+export type ProfileGenderCode = (typeof PROFILE_GENDER_CODES)[number];
+
+/** Form values are M/F; labels stay human-readable. Other is not a stored gender. */
+export const PROFILE_GENDER_OPTIONS: ProfileSelectOption[] = [
+  { value: "F", label: "Female" },
+  { value: "M", label: "Male" },
+];
+
+export const PROFILE_GENDER_ERROR = "Please choose Male or Female.";
+
+export function selectOptionValue(option: ProfileFieldOption) {
+  return typeof option === "string" ? option : option.value;
+}
+
+export function selectOptionLabel(option: ProfileFieldOption) {
+  return typeof option === "string" ? option : option.label;
+}
+
+/** Map common UI/API inputs to the stored M/F code. Other and unknown values are invalid. */
+export function normalizeProfileGender(value: unknown): ProfileGenderCode | null {
+  if (typeof value !== "string") return null;
+  const key = value.trim().toLowerCase();
+  if (key === "m" || key === "male") return "M";
+  if (key === "f" || key === "female") return "F";
+  return null;
+}
 
 export const PROFILE_FORM_FIELDS: {
   key: ProfileWriteField;
@@ -52,7 +89,7 @@ export const PROFILE_FORM_FIELDS: {
   placeholder: string;
   required?: boolean;
   kind: ProfileFieldKind;
-  options?: string[];
+  options?: ProfileFieldOption[];
   optionGroups?: ProfileFieldOptionGroup[];
 }[] = [
   {
@@ -68,7 +105,7 @@ export const PROFILE_FORM_FIELDS: {
     placeholder: "Select",
     required: true,
     kind: "select",
-    options: ["Female", "Male", "Other"],
+    options: PROFILE_GENDER_OPTIONS,
   },
   {
     key: "city",

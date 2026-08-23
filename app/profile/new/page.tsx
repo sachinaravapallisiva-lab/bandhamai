@@ -7,7 +7,11 @@ import { authJsonHeaders } from "../../../lib/client-auth";
 import {
   emptyProfileForm,
   PROFILE_FORM_FIELDS,
+  PROFILE_GENDER_ERROR,
   REQUIRED_PROFILE_FIELDS,
+  normalizeProfileGender,
+  selectOptionLabel,
+  selectOptionValue,
   type ProfileWritePayload,
 } from "../../../lib/profile-fields";
 import { parseInstagramInput } from "../../../lib/instagram";
@@ -181,6 +185,10 @@ export default function NewProfilePage() {
         setError("Please fill in your name, gender, and city.");
         return;
       }
+    }
+    if (!normalizeProfileGender(form.gender)) {
+      setError(PROFILE_GENDER_ERROR);
+      return;
     }
     if (!photos.photo_url) {
       setError(PROFILE_PHOTO_REQUIRED_ERROR);
@@ -455,9 +463,10 @@ export default function NewProfilePage() {
                           );
                         })}
                         {(field.options || []).map(function (opt) {
+                          const value = selectOptionValue(opt);
                           return (
-                            <option key={opt} value={opt}>
-                              {opt}
+                            <option key={value} value={value}>
+                              {selectOptionLabel(opt)}
                             </option>
                           );
                         })}
