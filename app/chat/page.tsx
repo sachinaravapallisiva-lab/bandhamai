@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { authJsonHeaders } from '../../lib/client-auth';
+import SafetyActions from '../components/SafetyActions';
 
 export default function ChatPage() {
   const [userId, setUserId] = useState('');
@@ -76,13 +78,27 @@ export default function ChatPage() {
     if (!draft || !recipientId) return;
     const text = draft;
     setDraft('');
-    supabase
-      .from('messages')
-      .insert({ sender_id: userId, recipient_id: recipientId, body: text })
-      .then(function (result: any) {
-        if (result.error) {
-          setStatus('Send failed: ' + result.error.message);
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) return { blocked: false };
+        return fetch('/api/blocks?user_id=' + encodeURIComponent(recipientId), { headers })
+          .then(function (r) { return r.json(); })
+          .then(function (data) { return { blocked: !!data.blocked }; })
+          .catch(function () { return { blocked: false }; });
+      })
+      .then(function (gate: { blocked: boolean }) {
+        if (gate.blocked) {
+          setStatus('You cannot message this person. One of you blocked the other.');
+          return;
         }
+        supabase
+          .from('messages')
+          .insert({ sender_id: userId, recipient_id: recipientId, body: text })
+          .then(function (result: any) {
+            if (result.error) {
+              setStatus('Send failed: ' + result.error.message);
+            }
+          });
       });
   }
 
@@ -103,6 +119,17 @@ export default function ChatPage() {
       >
         Load conversation
       </button>
+
+      {recipientId ? (
+        <SafetyActions
+          userId={recipientId}
+          surface="chat"
+          signedIn={!!userId}
+          nextPath="/chat"
+        />
+      ) : (
+        <p className="text-xs text-gray-500 mb-4">Enter a recipient to block or report this conversation.</p>
+      )}
 
       <div className="border border-gray-200 rounded p-3 mb-3 min-h-40">
         {messages.map(function (m: any) {

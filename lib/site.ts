@@ -1,10 +1,11 @@
-export const LEGAL_UPDATED = "22 August 2026";
+export const LEGAL_UPDATED = "23 August 2026";
 
 export const FOOTER_LINKS = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/safety", label: "Safety" },
   { href: "/contact", label: "Contact" },
+  { href: "/account", label: "Account" },
 ] as const;
 
 /**

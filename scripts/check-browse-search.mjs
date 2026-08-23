@@ -40,6 +40,9 @@ const withPhotos = toBrowseProfile({
   photo_blurred_url: "https://example.com/blur.webp",
 });
 assert(withPhotos?.photoUrl === "https://example.com/full.webp", "Browse must use photo_url, not the blur derivative");
-assert(withPhotos && !("verified" in withPhotos), "do not invent VerifyAI on Browse cards");
+assert(withPhotos?.verified === false, "no VerifyAI badge without verifyai_status=verified");
+assert(toBrowseProfile({ id: "v1", full_name: "A", verifyai_status: "verified" })?.verified === true, "badge only when verified");
+assert(toBrowseProfile({ id: "v2", full_name: "A", verifyai_status: "pending" })?.verified === false, "pending is not a badge");
+assert(toBrowseProfile({ id: "v3", full_name: "A", verifyai_status: "unverified" })?.verified === false, "unverified is not a badge");
 
 console.log("browse search parser ok", { doctor, woman, shortlist: cards.map((c) => c.name) });

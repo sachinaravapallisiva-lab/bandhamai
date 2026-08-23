@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import LegalArticle, { LegalList, LegalSection } from "../components/LegalArticle";
+import { VIOLET } from "../../lib/theme";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -59,7 +61,7 @@ export default function TermsPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            VerifyAI is an optional, planned check. A quiet badge may appear on some profiles. It is not a background check, a visa check, or a promise that someone is who they say they are.
+            VerifyAI is an optional check on a Bandham profile. A quiet badge appears only when we have a stored verified status for that profile. It is not a background check, a visa check, or a promise that someone is who they say they are.
           </p>
         </LegalSection>
 
@@ -101,7 +103,11 @@ export default function TermsPage() {
 
         <LegalSection title="Ending use">
           <p style={{ margin: 0 }}>
-            You may stop using the service at any time. Self-serve account deletion is not in the app yet. Ask for removal on the Contact page and we will handle it by hand until that tool ships. We may end or limit access if you break these terms or if we shut a feature down.
+            You may stop using the service at any time. Signed-in members can delete an account on the{" "}
+            <Link href="/account" style={{ color: VIOLET }}>
+              Account
+            </Link>{" "}
+            page. That tries to remove the login and hide the profile. We may end or limit access if you break these terms or if we shut a feature down.
           </p>
         </LegalSection>
 

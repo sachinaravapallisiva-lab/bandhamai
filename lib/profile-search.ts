@@ -23,6 +23,8 @@ export type BrowseProfile = {
   gender: string;
   note: string;
   photoUrl: string;
+  /** True only when profiles.verifyai_status is exactly `verified`. */
+  verified: boolean;
 };
 
 const SEARCH_CITIES = [
@@ -273,10 +275,14 @@ export function safeOrValue(value: string) {
 export function browseSelectColumns(flags: {
   photo_url: boolean;
   diet: boolean;
+  user_id?: boolean;
+  verifyai_status?: boolean;
 }) {
   const cols: string[] = ["id", ...PROFILE_WRITE_FIELDS];
   if (flags.photo_url) cols.push("photo_url");
   if (flags.diet) cols.push("diet");
+  if (flags.user_id) cols.push("user_id");
+  if (flags.verifyai_status) cols.push("verifyai_status");
   return cols.join(",");
 }
 
@@ -329,6 +335,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     gender: asText(row.gender),
     note: about || wants,
     photoUrl: asText(row.photo_url),
+    verified: asText(row.verifyai_status).toLowerCase() === "verified",
   };
 }
 
