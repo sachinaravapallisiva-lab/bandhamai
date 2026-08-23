@@ -71,9 +71,12 @@ assert(mapper.includes("verifyai_status"), "VerifyAI stays a separate field");
 
 const page = read("app/page.tsx");
 assert(page.includes("DiscoverCard"), "Browse uses the Arjun cream card");
-assert(page.includes("PresenceMark"), "Matches show presence");
-assert(page.includes("online={p.online}"), "Matches pass online");
-assert(page.includes("<VerifyBadge"), "quiet VerifyAI badge stays");
+assert(page.includes("MatchCard"), "Matches use the cream card");
+
+const matchCard = read("app/components/MatchCard.tsx");
+assert(matchCard.includes("PresenceMark"), "Matches show presence");
+assert(matchCard.includes("online={profile.online}"), "Matches pass online");
+assert(matchCard.includes("<VerifyBadge"), "quiet VerifyAI badge stays on Matches");
 
 const card = read("app/components/DiscoverCard.tsx");
 assert(card.includes("PresenceMark"), "Browse cream card shows presence");

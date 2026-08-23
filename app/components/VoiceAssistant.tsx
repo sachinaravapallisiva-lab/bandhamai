@@ -6,12 +6,13 @@ import {
   GURU_ORB_LABEL,
   GURU_PATH,
   GURU_PLACEHOLDER,
+  GURU_SPEAKER,
   GURU_STARTERS,
   GURU_TITLE,
 } from "../../lib/surfaces";
 
 /* ------------------------------------------------------------------ *
-   Bandham AI — love guru (mic chip)
+   Bandham AI — Bandham assistant (mic chip)
    Coaching only. Never searches profiles.
    Voice goes STT → /api/guru. Search lives in the box above.
  * ------------------------------------------------------------------ */
@@ -301,7 +302,7 @@ export default function VoiceAssistant() {
                   className="ba-sans"
                   style={{ fontSize: 9, letterSpacing: ".16em", color: mine ? MUTED : VIOLET, marginBottom: 5 }}
                 >
-                  {mine ? "YOU" : "GURU"}
+                  {mine ? "YOU" : GURU_SPEAKER}
                 </div>
                 <p
                   className="ba-serif"

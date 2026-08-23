@@ -8,9 +8,8 @@ import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
 import DiscoverCard from "./components/DiscoverCard";
-import PresenceMark from "./components/PresenceMark";
-import VerifyBadge from "./components/VerifyBadge";
-import SafetyActions from "./components/SafetyActions";
+import EmptyState, { EmptyStateAction } from "./components/EmptyState";
+import MatchCard from "./components/MatchCard";
 import { supabase } from "../lib/supabase";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -24,6 +23,14 @@ import {
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import type { BrowseProfile } from "../lib/profile-search";
 import {
+  BROWSE_EMPTY_INVENTORY_BODY,
+  BROWSE_EMPTY_INVENTORY_TITLE,
+  BROWSE_EMPTY_RESULTS_BODY,
+  BROWSE_EMPTY_RESULTS_TITLE,
+  MATCHES_EMPTY_ACTION,
+  MATCHES_EMPTY_BODY,
+  MATCHES_EMPTY_TITLE,
+  MATCHES_LIST_LABEL,
   SEARCH_HEARING_STATUS,
   SEARCH_HINT,
   SEARCH_LABEL,
@@ -39,7 +46,7 @@ import {
    Bandham AI — main app
    Browse (profile search only) / Matches / Chat
    Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
-   Never opens the love guru from this path. Guru is the mic chip.
+   Never opens the Bandham assistant from this path. Assistant is the mic chip.
  * ------------------------------------------------------------------ */
 
 const THREAD = [
@@ -666,16 +673,11 @@ export default function Home() {
             </p>
 
             {!searching && !current ? (
-              <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
-                <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>
-                  {emptyKind === "inventory" ? "No live profiles yet." : "No matches for that yet."}
-                </p>
-                <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                  {emptyKind === "inventory"
-                    ? "Submitted profiles stay under review until they are set live."
-                    : "Try another city, profession, or a shorter ask."}
-                </p>
-              </div>
+              <EmptyState
+                eyebrow="BROWSE"
+                title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
+                body={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_BODY : BROWSE_EMPTY_RESULTS_BODY}
+              />
             ) : current ? (
               <DiscoverCard
                 key={current.id}
@@ -710,54 +712,39 @@ export default function Home() {
                 onClose={function () { setSpeedPartner(null); }}
               />
             ) : matches.length === 0 ? (
-              <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "44px 22px", textAlign: "center" }}>
-                <p className="bm-serif" style={{ margin: "0 0 7px", fontSize: 20 }}>No one yet.</p>
-                <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                  Mark someone Interested on Browse and they will appear here. Speed Match starts from that profile.
-                </p>
-              </div>
+              <EmptyState
+                eyebrow="MATCHES"
+                title={MATCHES_EMPTY_TITLE}
+                body={MATCHES_EMPTY_BODY}
+                action={
+                  <EmptyStateAction
+                    onClick={function () {
+                      setTab("browse");
+                    }}
+                  >
+                    {MATCHES_EMPTY_ACTION}
+                  </EmptyStateAction>
+                }
+              />
             ) : (
-              <div style={{ display: "grid", gap: 12 }}>
-                {matches.map(function (p) {
-                  return (
-                    <article key={p.id} className="bm-card" style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, padding: "18px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7, gap: 10 }}>
-                        <h2 className="bm-serif" style={{ margin: 0, fontSize: 21, fontWeight: 400 }}>
-                          {p.name}
-                          <VerifyBadge verified={p.verified} />
-                        </h2>
-                        <PresenceMark online={p.online} compact />
-                      </div>
-                      <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 13, color: MUTED }}>
-                        {[p.work, p.city].filter(Boolean).join(" — ") || "Interested from Browse"}
-                      </p>
-                      <div style={{ display: "flex", gap: 9 }}>
-                        <button
-                          onClick={function () { setSpeedPartner(p); }}
-                          className="bm-sans bm-talk bm-focus"
-                          style={{ flex: 1, background: VIOLET, color: "#FFFFFF", border: "none", borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Start Speed Match
-                        </button>
-                        <button
-                          onClick={function () {
-                            setTab("chat");
-                            if (!signedIn || !entitlement.canMessage) {
-                              setBillingNote(signedIn ? "" : BILLING_COPY.signIn);
-                            }
-                          }}
-                          className="bm-sans bm-ghost bm-focus"
-                          style={{ flex: 1, background: "transparent", color: VIOLET, border: "1px solid " + LINE, borderRadius: 999, padding: "11px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Message
-                        </button>
-                      </div>
-                      <SafetyActions
-                        profileId={p.id}
-                        name={p.name}
-                        surface="profile"
+              <div>
+                <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
+                  {MATCHES_LIST_LABEL}
+                </p>
+                <div style={{ display: "grid", gap: 14 }}>
+                  {matches.map(function (p) {
+                    return (
+                      <MatchCard
+                        key={p.id}
+                        profile={p}
                         signedIn={signedIn}
-                        nextPath="/matches"
+                        onSpeedMatch={function () { setSpeedPartner(p); }}
+                        onMessage={function () {
+                          setTab("chat");
+                          if (!signedIn || !entitlement.canMessage) {
+                            setBillingNote(signedIn ? "" : BILLING_COPY.signIn);
+                          }
+                        }}
                         onBlocked={function () {
                           const blockedId = p.id;
                           setLiked(function (prev) {
@@ -768,9 +755,9 @@ export default function Home() {
                           });
                         }}
                       />
-                    </article>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
