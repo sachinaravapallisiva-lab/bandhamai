@@ -414,7 +414,7 @@ export default function Home() {
   }
 
   const live = micState === "listening";
-  const busy = micState === "thinking" || searching;
+  const busy = micState === "thinking";
   const matches = liked;
   const current = profiles[0] || null;
 
@@ -684,7 +684,6 @@ export default function Home() {
                 </button>
                 <button
                   onClick={function () { submitBrowsePrompt(); }}
-                  disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     background: "transparent",
@@ -694,8 +693,7 @@ export default function Home() {
                     padding: "8px 14px",
                     fontSize: 12.5,
                     fontWeight: 600,
-                    cursor: searching ? "default" : "pointer",
-                    opacity: searching ? 0.55 : 1,
+                    cursor: "pointer",
                   }}
                 >
                   Search
