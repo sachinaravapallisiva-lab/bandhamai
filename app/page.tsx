@@ -7,6 +7,7 @@ import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
+import BrowseAsk from "./components/BrowseAsk";
 import DiscoverCard from "./components/DiscoverCard";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
@@ -22,6 +23,13 @@ import {
   startCheckout,
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
+import {
+  BROWSE_ASK_STATUS,
+  foldBrowseAskQuery,
+  questionsForBrowsePrompt,
+  type BrowseAskAnswer,
+  type BrowseAskQuestion,
+} from "../lib/browse-ask";
 import type { BrowseProfile } from "../lib/profile-search";
 import {
   BROWSE_EMPTY_INVENTORY_BODY,
@@ -46,8 +54,8 @@ import {
 /* ------------------------------------------------------------------ *
    Bandham AI — main app
    Browse (profile search only) / Matches / Chat
-   Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
-   Never opens the Bandham assistant from this path. Assistant is the mic chip.
+   Top box + Tap to speak: STT → 2 to 4 tap asks → /api/profiles/search.
+   Blank first paint still loads the default shortlist. Assistant is the mic chip.
  * ------------------------------------------------------------------ */
 
 const THREAD = [
@@ -67,6 +75,11 @@ export default function Home() {
   const [speedPartner, setSpeedPartner] = useState<BrowseProfile | null>(null);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
+  const [ask, setAsk] = useState<{
+    questions: BrowseAskQuestion[];
+    index: number;
+    answers: BrowseAskAnswer[];
+  } | null>(null);
   const [searching, setSearching] = useState(true);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
@@ -82,6 +95,9 @@ export default function Home() {
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const searchRef = useRef<((text?: string) => void) | null>(null);
+  const queryRef = useRef(query);
+
+  queryRef.current = query;
 
   function runSearch(text?: string) {
     const q = typeof text === "string" ? text : query;
@@ -121,6 +137,39 @@ export default function Home() {
   }
 
   searchRef.current = runSearch;
+
+  function submitBrowsePrompt(text?: string) {
+    const q = (typeof text === "string" ? text : query).trim();
+    setAsk(null);
+    if (!q) {
+      runSearch("");
+      return;
+    }
+    const questions = questionsForBrowsePrompt(q);
+    if (questions.length === 0) {
+      runSearch(q);
+      return;
+    }
+    setProfiles([]);
+    setEmptyKind(null);
+    setSearching(false);
+    setLoadedOnce(true);
+    setNote("");
+    setAsk({ questions: questions, index: 0, answers: [] });
+  }
+
+  function answerBrowseAsk(choiceId: string) {
+    if (!ask) return;
+    const question = ask.questions[ask.index];
+    if (!question) return;
+    const nextAnswers = ask.answers.concat({ questionId: question.id, choiceId: choiceId });
+    if (ask.index + 1 >= ask.questions.length) {
+      setAsk(null);
+      runSearch(foldBrowseAskQuery(queryRef.current, nextAnswers));
+      return;
+    }
+    setAsk({ questions: ask.questions, index: ask.index + 1, answers: nextAnswers });
+  }
 
   useEffect(() => {
     function applySession(session: { user?: { email?: string }; access_token?: string } | null) {
@@ -257,7 +306,7 @@ export default function Home() {
             if (data && data.text) {
               setQuery(function (prev) {
                 const next = (prev + " " + data.text).trim();
-                queueMicrotask(function () { runSearch(next); });
+                queueMicrotask(function () { submitBrowsePrompt(next); });
                 return next;
               });
               setNote("");
@@ -365,7 +414,7 @@ export default function Home() {
   }
 
   const live = micState === "listening";
-  const busy = micState === "thinking" || searching;
+  const busy = micState === "thinking";
   const matches = liked;
   const current = profiles[0] || null;
 
@@ -586,7 +635,7 @@ export default function Home() {
                 onKeyDown={function (e) {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    runSearch();
+                    submitBrowsePrompt();
                   }
                 }}
                 placeholder={SEARCH_PLACEHOLDER}
@@ -634,8 +683,7 @@ export default function Home() {
                   {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
-                  onClick={function () { runSearch(); }}
-                  disabled={searching}
+                  onClick={function () { submitBrowsePrompt(); }}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     background: "transparent",
@@ -645,8 +693,7 @@ export default function Home() {
                     padding: "8px 14px",
                     fontSize: 12.5,
                     fontWeight: 600,
-                    cursor: searching ? "default" : "pointer",
-                    opacity: searching ? 0.55 : 1,
+                    cursor: "pointer",
                   }}
                 >
                   Search
@@ -674,11 +721,11 @@ export default function Home() {
 
               <div className="bm-sans" style={{ minHeight: 18, marginTop: 11, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 12, color: busy ? VIOLET : MUTED }}>
-                  {live ? SEARCH_LISTEN_STATUS : micState === "thinking" ? SEARCH_HEARING_STATUS : searching ? SEARCH_LOOKING_STATUS : note}
+                  {live ? SEARCH_LISTEN_STATUS : micState === "thinking" ? SEARCH_HEARING_STATUS : searching ? SEARCH_LOOKING_STATUS : ask ? BROWSE_ASK_STATUS : note}
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); runSearch(""); }}
+                    onClick={function () { setQuery(""); setNote(""); setAsk(null); runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -688,37 +735,48 @@ export default function Home() {
               </div>
             </section>
 
-            <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
-              {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
-            </p>
+            {ask ? (
+              <BrowseAsk
+                question={ask.questions[ask.index]}
+                index={ask.index}
+                total={ask.questions.length}
+                onChoose={answerBrowseAsk}
+              />
+            ) : (
+              <>
+                <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
+                  {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
+                </p>
 
-            {!searching && !current ? (
-              <EmptyState
-                eyebrow="BROWSE"
-                title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
-                body={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_BODY : BROWSE_EMPTY_RESULTS_BODY}
-              />
-            ) : current ? (
-              <DiscoverCard
-                key={current.id}
-                profile={current}
-                saved={saved.some(function (x) { return x.id === current.id; })}
-                signedIn={signedIn}
-                onInterested={function () { markInterested(current); }}
-                onPass={function () { passProfile(current.id); }}
-                onSave={function () { toggleSave(current); }}
-                onBlocked={function () {
-                  const blockedId = current.id;
-                  passProfile(blockedId);
-                  setLiked(function (prev) {
-                    return prev.filter(function (x) { return x.id !== blockedId; });
-                  });
-                  setSaved(function (prev) {
-                    return prev.filter(function (x) { return x.id !== blockedId; });
-                  });
-                }}
-              />
-            ) : null}
+                {!searching && !current ? (
+                  <EmptyState
+                    eyebrow="BROWSE"
+                    title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
+                    body={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_BODY : BROWSE_EMPTY_RESULTS_BODY}
+                  />
+                ) : current ? (
+                  <DiscoverCard
+                    key={current.id}
+                    profile={current}
+                    saved={saved.some(function (x) { return x.id === current.id; })}
+                    signedIn={signedIn}
+                    onInterested={function () { markInterested(current); }}
+                    onPass={function () { passProfile(current.id); }}
+                    onSave={function () { toggleSave(current); }}
+                    onBlocked={function () {
+                      const blockedId = current.id;
+                      passProfile(blockedId);
+                      setLiked(function (prev) {
+                        return prev.filter(function (x) { return x.id !== blockedId; });
+                      });
+                      setSaved(function (prev) {
+                        return prev.filter(function (x) { return x.id !== blockedId; });
+                      });
+                    }}
+                  />
+                ) : null}
+              </>
+            )}
           </>
         )}
 
