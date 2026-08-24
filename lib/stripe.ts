@@ -25,6 +25,15 @@ export function stripeVerifyaiPriceId() {
   return (process.env.STRIPE_VERIFYAI_PRICE_ID || "").trim();
 }
 
+/** One time meetup event ticket. Separate from messaging and VerifyAI. Amount is unnamed. */
+export function stripeEventPriceId() {
+  return (process.env.STRIPE_EVENT_PRICE_ID || "").trim();
+}
+
+export function isEventTicketConfigured() {
+  return !!(stripeSecretKey() && stripeEventPriceId());
+}
+
 export function isStripeSignatureConfigured() {
   return !!(stripeSecretKey() && stripeWebhookSecret());
 }

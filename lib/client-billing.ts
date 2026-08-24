@@ -33,6 +33,69 @@ export async function fetchEntitlement(): Promise<Entitlement> {
   }
 }
 
+export async function startEventTicketCheckout() {
+  const headers = await authJsonHeaders();
+  if (!headers) {
+    return { url: "", error: "Sign in to get a ticket.", code: "signed_out", alreadyPaid: false };
+  }
+
+  try {
+    const res = await fetch("/api/meetup/checkout", { method: "POST", headers });
+    const data = await readJson(res);
+    if (data.alreadyPaid) {
+      return { url: "", error: "", code: "already_paid", alreadyPaid: true };
+    }
+    if (!res.ok || !data.url) {
+      return {
+        url: "",
+        error: data.error || "Could not start event ticket checkout.",
+        code: data.code || "",
+        alreadyPaid: false,
+      };
+    }
+    return { url: String(data.url), error: "", code: "", alreadyPaid: false };
+  } catch {
+    return { url: "", error: "Could not start event ticket checkout.", code: "network", alreadyPaid: false };
+  }
+}
+
+export async function confirmEventTicket(sessionId: string) {
+  const headers = await authJsonHeaders();
+  if (!headers || !sessionId) {
+    return { ok: false, rsvped: false, ticketPaid: false, error: "Sign in to confirm the ticket." };
+  }
+
+  try {
+    const res = await fetch("/api/meetup/confirm", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    const data = await readJson(res);
+    if (!res.ok) {
+      return {
+        ok: false,
+        rsvped: false,
+        ticketPaid: false,
+        error: data.error || "Could not confirm the event ticket.",
+      };
+    }
+    return {
+      ok: true,
+      rsvped: !!data.rsvped,
+      ticketPaid: !!data.ticketPaid,
+      error: "",
+    };
+  } catch {
+    return {
+      ok: false,
+      rsvped: false,
+      ticketPaid: false,
+      error: "Payment may have succeeded. Wait a moment, then refresh.",
+    };
+  }
+}
+
 export async function startCheckout() {
   const headers = await authJsonHeaders();
   if (!headers) {

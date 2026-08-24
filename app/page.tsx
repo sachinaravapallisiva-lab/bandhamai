@@ -11,6 +11,7 @@ import DiscoverCard from "./components/DiscoverCard";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
+import MeetupCard from "./components/MeetupCard";
 import { supabase } from "../lib/supabase";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -564,6 +565,8 @@ export default function Home() {
               </section>
             ) : null}
 
+            <MeetupCard />
+
             <section
               style={{
                 background: CREAM,
@@ -725,6 +728,7 @@ export default function Home() {
         {/* ---------------- MATCHES ---------------- */}
         {tab === "matches" && (
           <div>
+            {speedPartner ? null : <MeetupCard />}
             {speedPartner ? (
               <SpeedMatch
                 partner={speedPartner}

@@ -27,6 +27,8 @@ import {
 } from "../../../../lib/stripe";
 import { VERIFYAI_PURPOSE } from "../../../../lib/verifyai";
 import { recordVerifyaiPayment } from "../../../../lib/verifyai-checkout";
+import { EVENT_TICKET_PURPOSE } from "../../../../lib/meetup";
+import { recordEventTicket } from "../../../../lib/meetup-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,6 +98,29 @@ export async function POST(request: Request) {
           }
         }
         return NextResponse.json({ received: true, purpose: VERIFYAI_PURPOSE, verified: false });
+      }
+
+      if (session.mode === "payment" && purpose === EVENT_TICKET_PURPOSE) {
+        const userId =
+          userIdFromMetadata(session.metadata) ||
+          (typeof session.client_reference_id === "string" ? session.client_reference_id : "");
+        const meetupId = typeof session.metadata?.meetup_id === "string" ? session.metadata.meetup_id.trim() : "";
+        if (!userId || !meetupId) {
+          return NextResponse.json({ error: "Meetup ticket checkout is missing user_id or meetup_id." }, { status: 500 });
+        }
+        if (session.payment_status === "paid" || session.status === "complete") {
+          const recorded = await recordEventTicket(supabase, {
+            meetupId,
+            userId,
+            checkoutSessionId: session.id,
+            paymentIntentId: asStripeId(session.payment_intent),
+            amountCents: typeof session.amount_total === "number" ? session.amount_total : null,
+          });
+          if (recorded.error) {
+            return NextResponse.json({ error: recorded.error }, { status: 500 });
+          }
+        }
+        return NextResponse.json({ received: true, purpose: EVENT_TICKET_PURPOSE });
       }
 
       if (session.mode !== "subscription") {

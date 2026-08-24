@@ -60,6 +60,8 @@ export default function ChatPage() {
   useEffect(function () {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
+    const to = params.get("to") || "";
+    if (to) setRecipientId(to);
     const sessionId = params.get("session_id") || "";
     if (params.get("billing") === "success" && sessionId) {
       confirmCheckoutSession(sessionId).then(function (next) {

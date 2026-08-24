@@ -70,10 +70,13 @@ assert(!guruLib.includes("/api/profiles/search"), "guru handler must not call pr
 assert(guruLib.includes("propose_support_ticket"), "guru can propose a support ticket");
 assert(guruLib.includes("ticket_draft"), "guru returns a draft for confirm, not a silent create");
 assert(!guruLib.includes('.from("support_tickets")'), "guru handler must not write support_tickets");
+assert(!guruLib.includes("group_messages"), "guru handler must not write meetup group chat");
+assert(!guruLib.includes("event_tickets"), "guru handler must not write event tickets");
 assert(!guruLib.includes("emailFounderTicket"), "guru handler must not email the founder");
 
 const prompt = guruLib.toLowerCase();
 assert(prompt.includes("bandham assistant"), "prompt names the assistant");
+assert(prompt.includes("meetup group chat"), "prompt forbids meetup group posts");
 assert(prompt.includes("never search") || prompt.includes("you never search"), "prompt forbids search");
 assert(prompt.includes("search box above"), "prompt may soft-handoff only");
 assert(prompt.includes("verifyai"), "prompt forbids invented VerifyAI");

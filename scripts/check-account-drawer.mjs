@@ -64,6 +64,7 @@ assert(ACCOUNT_MENU_UPGRADE_HREF === "/chat", "upgrade uses existing messaging c
 assert(PREFERENCES_TITLE === "Preferences", "preferences page label");
 assert(PREFERENCES_PATH === "/preferences", "preferences path");
 assert(ALLOWED_NEXT_PATHS.includes(PREFERENCES_PATH), "preferences is a real next path");
+assert(ALLOWED_NEXT_PATHS.includes("/meetup"), "meetup is a real next path");
 
 const labels = ACCOUNT_MENU_ITEMS.map(function (item) {
   return item.label;
@@ -71,6 +72,7 @@ const labels = ACCOUNT_MENU_ITEMS.map(function (item) {
 assert(labels.includes("My profile"), "my profile item");
 assert(labels.includes("Preferences"), "preferences item");
 assert(labels.includes("Browse / Matches"), "browse / matches item");
+assert(labels.includes("Meetup this month"), "meetup item");
 assert(labels.includes("Messages"), "messages item");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
@@ -82,6 +84,7 @@ const hrefs = ACCOUNT_MENU_ITEMS.map(function (item) {
 assert(hrefs.includes("/profile/new"), "profile route");
 assert(hrefs.includes("/preferences"), "preferences route");
 assert(hrefs.includes("/"), "browse route");
+assert(hrefs.includes("/meetup"), "meetup route");
 assert(hrefs.includes("/chat"), "messages route");
 assert(hrefs.includes("/account#verify"), "verify anchor");
 assert(hrefs.includes("/contact"), "support route");

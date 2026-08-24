@@ -15,6 +15,7 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "profile", label: "My profile", href: "/profile/new" },
   { id: "preferences", label: "Preferences", hint: "Dealbreakers", href: "/preferences" },
   { id: "browse", label: "Browse / Matches", href: "/" },
+  { id: "meetup", label: "Meetup this month", href: "/meetup" },
   { id: "messages", label: "Messages", href: "/chat", note: ACCOUNT_MENU_MESSAGES_NOTE },
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "help", label: "Help / Support", href: "/contact" },

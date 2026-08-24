@@ -17,6 +17,7 @@ import BiodataShareField from "../components/BiodataShareField";
 import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
+import MeetupCard from "../components/MeetupCard";
 
 type BlockRow = {
   id: string;
@@ -287,6 +288,8 @@ export default function AccountPage() {
       <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
         Sign out, see who you blocked, or delete this account.
       </p>
+
+      <MeetupCard compact />
 
       {!ready ? (
         <p className="bm-sans" style={{ color: MUTED }}>One moment…</p>

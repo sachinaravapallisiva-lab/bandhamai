@@ -25,6 +25,7 @@ assert(STRIPE_ENV_KEYS.includes("STRIPE_SECRET_KEY"), "secret key env");
 assert(STRIPE_ENV_KEYS.includes("STRIPE_WEBHOOK_SECRET"), "webhook secret env");
 assert(STRIPE_ENV_KEYS.includes("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"), "publishable key env");
 assert(STRIPE_ENV_KEYS.includes("STRIPE_PRICE_ID"), "price id env");
+assert(!STRIPE_ENV_KEYS.includes("STRIPE_EVENT_PRICE_ID"), "event ticket is not required for messaging");
 assert(STRIPE_FOUNDING_PRICE_ENV === "STRIPE_FOUNDING_PRICE_ID", "optional founding env name");
 assert(!banned.test(copy), "no scarcity or fake-discount copy");
 assert(BILLING_COPY.headline.includes("$9.99/mo"), "honest headline");

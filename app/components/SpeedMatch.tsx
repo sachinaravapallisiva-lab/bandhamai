@@ -32,10 +32,24 @@ export default function SpeedMatch({
   partner,
   signedIn,
   onClose,
+  introTitle,
+  introBody,
+  beginLabel,
+  closeLabel,
+  doneCloseLabel,
+  onFinished,
+  hidePresence,
 }: {
   partner: BrowseProfile;
   signedIn: boolean;
   onClose: () => void;
+  introTitle?: string;
+  introBody?: string;
+  beginLabel?: string;
+  closeLabel?: string;
+  doneCloseLabel?: string;
+  onFinished?: () => void;
+  hidePresence?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [index, setIndex] = useState(0);
@@ -135,6 +149,7 @@ export default function SpeedMatch({
     if (index + 1 >= SPEED_MATCH_QUESTION_COUNT) {
       setPhase("done");
       persistRound(next);
+      if (onFinished) onFinished();
       return;
     }
     setIndex(index + 1);
@@ -176,11 +191,14 @@ export default function SpeedMatch({
             SPEED MATCH
           </p>
           <h2 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 23, fontWeight: 400 }}>
-            Ten questions with {partner.name || "this profile"}
-            <PresenceMark online={partner.online} compact />
+            {introTitle || ("Ten questions with " + (partner.name || "this profile"))}
+            {hidePresence ? null : <PresenceMark online={partner.online} compact />}
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
-            Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap {SPEED_MATCH_NO_ANSWER_LABEL} if you would rather skip. Time running out records the same choice.
+            {introBody ||
+              ("Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap " +
+                SPEED_MATCH_NO_ANSWER_LABEL +
+                " if you would rather skip. Time running out records the same choice.")}
           </p>
           <div style={{ display: "flex", gap: 9 }}>
             <button
@@ -199,7 +217,7 @@ export default function SpeedMatch({
                 cursor: "pointer",
               }}
             >
-              Back to Matches
+              {closeLabel || "Back to Matches"}
             </button>
             <button
               type="button"
@@ -222,7 +240,7 @@ export default function SpeedMatch({
                 cursor: "pointer",
               }}
             >
-              Begin
+              {beginLabel || "Begin"}
             </button>
           </div>
         </>
@@ -334,7 +352,7 @@ export default function SpeedMatch({
               cursor: "pointer",
             }}
           >
-            Back to Matches
+            {doneCloseLabel || closeLabel || "Back to Matches"}
           </button>
         </>
       ) : null}
