@@ -155,6 +155,48 @@ The app does not invent profile columns for this. Entitlement lives on `subscrip
 7. **Manage subscription** opens the Stripe Customer Portal. Cancel there; after the webhook, Send should paywall again.
 8. Speed Match, Browse search, and `/profile/new` stay usable without a subscription.
 
+## Meetup this month
+
+A virtual matrimony meetup for members in the US, Australia, the UK, the EU, and Ireland. The card sits on Browse, Matches, and Account. `/meetup` has Speed Match (the existing 10 questions), a side group chat, and a path into existing 1:1 Chat.
+
+### Event ticket (separate from $9.99/mo)
+
+RSVP and group chat unlock only after a **paid event ticket**. That ticket is **not** included in the $9.99/mo messaging subscription. One to one Chat still uses `MessagePaywall` and `POST /api/messages`.
+
+The dollar amount is **not named** in this repo. Checkout uses `STRIPE_EVENT_PRICE_ID` and **fails closed** if that env is missing. Do not invent a Price ID or an amount.
+
+### Stripe (Sai)
+
+1. Create a separate Product, e.g. **Bandham AI meetup ticket**.
+2. Add a **one time** Price. Copy the Price ID into `STRIPE_EVENT_PRICE_ID`.
+3. Do **not** point this env at `STRIPE_PRICE_ID` ($9.99/mo) or `STRIPE_VERIFYAI_PRICE_ID` ($4.99).
+4. The existing webhook URL (`/api/stripe/webhook`) records `metadata.purpose=meetup_event`.
+
+### Vercel env (Sai)
+
+Set `STRIPE_EVENT_PRICE_ID` on Production, Preview, and Development. Existing Stripe keys stay as they are.
+
+### Supabase (Sai / CoS)
+
+Run [`supabase/meetups.sql`](supabase/meetups.sql) in the SQL editor. That creates `meetups`, `event_tickets`, `rsvps`, and `group_messages`, plus the August 2026 seed row. Until that file is applied, the card still shows from locked copy, but ticket, RSVP, and group chat return **503**.
+
+Authenticated clients cannot insert a free RSVP. The service role writes the RSVP only after a paid ticket.
+
+### Test steps on bandhamai.vercel.app (after SQL)
+
+1. Browse, Matches, and Account show **Meetup this month**. Open `/meetup`.
+2. With `STRIPE_EVENT_PRICE_ID` **missing**: **Get a ticket** fails closed. No invented dollar amount. Group chat stays locked.
+3. Sign out: group chat asks you to sign in. No guest posting.
+4. After env + SQL: sign in → **Get a ticket** → Stripe Checkout (one time) → return `/meetup?ticket=paid`. You should be RSVPed.
+5. A second account with only the $9.99/mo messaging plan (no event ticket) cannot open group chat.
+6. After the ticket: **Begin Speed Match** is the existing 10 desi dealbreakers, 15 seconds, tap only, Don't want to answer. Then a shortlist of other RSVPs (up to three).
+7. From the group or shortlist, **Open Chat** goes to `/chat?to=…` and still hits the $9.99/mo paywall.
+8. Blocked people do not appear on the shortlist.
+9. The Bandham assistant never posts in the group.
+10. `npm run check:meetup`.
+
+Do not merge until Sai has applied the SQL and set the Price.
+
 Public bucket URLs are convenient, not privacy. Real hide-until-matched access control (authenticated bucket + signed URLs) is a follow-up.
 
 ### Test steps

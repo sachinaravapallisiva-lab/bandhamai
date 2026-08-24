@@ -29,6 +29,7 @@ type IconName =
   | "profile"
   | "preferences"
   | "browse"
+  | "meetup"
   | "messages"
   | "verifyai"
   | "biodata"
@@ -83,6 +84,14 @@ function MenuIcon({ name }: { name: IconName }) {
       <svg {...common}>
         <circle cx="11" cy="11" r="5.4" stroke={stroke} strokeWidth="1.7" />
         <path d="M15.4 15.4 19 19" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "meetup") {
+    return (
+      <svg {...common}>
+        <rect x="5" y="6.5" width="14" height="13" rx="2" stroke={stroke} strokeWidth="1.7" />
+        <path d="M8 5v3M16 5v3M5 10.5h14" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
       </svg>
     );
   }
@@ -159,6 +168,7 @@ function iconForItem(id: string): IconName {
   if (id === "profile") return "profile";
   if (id === "preferences") return "preferences";
   if (id === "browse") return "browse";
+  if (id === "meetup") return "meetup";
   if (id === "messages") return "messages";
   if (id === "verifyai") return "verifyai";
   if (id === "help") return "help";

@@ -7,6 +7,7 @@ export const ALLOWED_NEXT_PATHS = [
   "/profile/new",
   "/account",
   "/preferences",
+  "/meetup",
   "/safety",
   "/contact",
   "/login",

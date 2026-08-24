@@ -21,6 +21,7 @@
     "check:support-tickets": "node --experimental-strip-types scripts/check-support-tickets.mjs",
     "check:biodata": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-biodata.mjs",
     "check:account-drawer": "node --experimental-strip-types scripts/check-account-drawer.mjs",
+    "check:meetup": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-meetup.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
