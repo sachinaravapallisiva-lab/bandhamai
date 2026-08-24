@@ -11,6 +11,7 @@ import {
 } from "../lib/support.ts";
 import {
   VOICE_RESOLVED_STATUS,
+  VOICE_SPOKEN_INCLUDED_WHEN_ASKED,
   VOICE_SPOKEN_INTRO,
   VOICE_SPOKEN_NOT_FOUND,
   VOICE_SPOKEN_PRICES,
@@ -122,6 +123,7 @@ assert(spokenTicketRef(ownTicket.id) === "11111111", "spoken ref drops hyphens")
 const spoken = [
   VOICE_SPOKEN_INTRO,
   VOICE_SPOKEN_PRICES,
+  VOICE_SPOKEN_INCLUDED_WHEN_ASKED,
   VOICE_SPOKEN_SAFETY,
   VOICE_SPOKEN_REFUND,
   VOICE_SPOKEN_NOT_FOUND,
@@ -132,7 +134,10 @@ const spoken = [
 assert(!/[—–]/.test(spoken), "spoken copy avoids em dashes");
 assert(!/-/.test(spoken), "spoken copy avoids hyphens");
 assert(!/STRIPE_EVENT_PRICE_ID|\$5\.99|\$19/.test(spoken), "no invented prices in spoken copy");
-assert(VOICE_SPOKEN_PRICES.includes("9.99 a month"), "messaging price spoken");
+assert(VOICE_SPOKEN_PRICES.includes("Bandham AI subscription is 9.99 a month"), "product first spoken price");
+assert(VOICE_SPOKEN_PRICES.includes("9.99 a month"), "subscription price spoken");
+assert(!/^Messaging is /i.test(VOICE_SPOKEN_PRICES), "do not volunteer messaging as the default spoken line");
+assert(VOICE_SPOKEN_INCLUDED_WHEN_ASKED.toLowerCase().includes("messaging"), "asked only include line");
 assert(VOICE_SPOKEN_PRICES.includes("4.99 one time"), "VerifyAI price spoken");
 assert(VOICE_SPOKEN_PRICES.toLowerCase().includes("feature demo"), "meetup is a demo");
 
