@@ -494,6 +494,54 @@ Do not commit secrets. Redeploy after saving env vars.
 6. Ask to report a person / harassment. The assistant should point to Block and Report, not open this ticket.
 7. `npm run check:support-tickets` and `npm run check:guru-search`.
 
+## Phone support (Grok Voice Agent)
+
+This is **Bandham Support on the phone**. It is not the in-app Bandham assistant / love guru. The guru still never writes sendable dating text and never searches profiles.
+
+xAI Voice Agent Builder (or Speech-to-Speech SIP) calls a signed service API during the live call. Phone callers are **not** signed in. The existing `POST /api/support/tickets` route still requires a member Bearer token.
+
+### What the API does
+
+`POST /api/voice/support` (optional `?tool=`) accepts JSON and runs one of:
+
+| Tool | Job |
+| --- | --- |
+| `identify_member` | Look up the caller by the email or phone they speak. Returns found / first name only. Never lists other profiles. |
+| `create_ticket` | Open a `support_tickets` row (`source=voice`, categories bug / billing / account / other). Emails the founder the same way in-app tickets do. |
+| `get_ticket` | Read status for **that caller’s** ticket only. |
+| `resolve_ticket` | Mark **that caller’s** ticket resolved (`status=closed`) after the issue is actually cleared. |
+
+Auth is the shared secret header `X-Bandham-Voice-Support-Secret` (or `Authorization: Bearer` with the same value). If `BANDHAM_VOICE_SUPPORT_SECRET` is unset, the route **fails closed** (503). Wrong secret is 401. Do not invent a live secret in git.
+
+Paste-ready Voice Agent Builder instructions: [`docs/voice-support-prompt.md`](docs/voice-support-prompt.md). Spoken copy in that file has no hyphens or em dashes.
+
+### Supabase (Sai)
+
+1. Run [`supabase/support_tickets.sql`](supabase/support_tickets.sql) if you have not already.
+2. Then run [`supabase/voice_support.sql`](supabase/voice_support.sql). That adds `source=voice`, `caller_phone`, and allows a null `user_id` when the spoken email or phone does not match an account. Existing in-app tickets stay as they are.
+
+Until the voice SQL is applied, identify still works; create / get / resolve return **503**.
+
+### Vercel env (Sai)
+
+| Name | Purpose |
+| --- | --- |
+| `BANDHAM_VOICE_SUPPORT_SECRET` | Shared secret for the phone agent. Stub in `.env.example` only. Set the live value in Vercel. |
+
+Existing `RESEND_API_KEY` / `SUPPORT_INBOX_EMAIL` still send the founder email. Ticket rows still save if email fails.
+
+Messaging is **$9.99/mo**. VerifyAI is **$4.99** one-time. The phone agent must not invent other prices, must not refund Stripe, and must not treat Meetup this month as a real paid event.
+
+### Test steps
+
+1. Apply both SQL files. Confirm `caller_phone` exists and `source` accepts `voice`.
+2. With the secret **missing**: `POST /api/voice/support` returns 503. No ticket row.
+3. With a wrong secret: 401.
+4. With the live secret: identify by a known account email. Then create a billing ticket. A `source=voice` row appears. Sai’s inbox gets the notify if Resend is set.
+5. get_ticket / resolve_ticket with a **different** email or phone must not see or close that row.
+6. Signed-in in-app **Open ticket** still uses `/api/support/tickets` and `source=assistant`.
+7. `npm run check:voice-support`, `npm run check:support-tickets`, and `npm run check:guru-search`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
