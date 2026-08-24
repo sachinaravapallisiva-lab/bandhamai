@@ -2,15 +2,13 @@
 
 import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
-import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
+import { browseFactChips, browseMetaLine, browseVisaLabel } from "../../lib/profile-search";
 import {
   PROFILE_ACTION_MIN,
   PROFILE_BODY_PAD,
   PROFILE_CARD_RADIUS,
   PROFILE_PHOTO_BG,
-  PROFILE_PHOTO_FALLBACK,
   PROFILE_PHOTO_HEIGHT,
-  profileInitials,
 } from "../../lib/profile-card";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
@@ -18,6 +16,7 @@ import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
+import { ProfilePhotoSoon } from "./ProfilePhoto";
 import SafetyActions from "./SafetyActions";
 import VerifyBadge from "./VerifyBadge";
 
@@ -117,19 +116,7 @@ export default function DiscoverCard({
             }}
           />
         ) : (
-          <div
-            aria-hidden={profile.name ? undefined : true}
-            style={{
-              height: PROFILE_PHOTO_HEIGHT,
-              background: PROFILE_PHOTO_FALLBACK,
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <span className="bm-serif" style={{ fontSize: 52, color: CREAM, letterSpacing: "-.02em" }}>
-              {profileInitials(profile.name)}
-            </span>
-          </div>
+          <ProfilePhotoSoon name={profile.name} />
         )}
         {profile.online ? (
           <span
@@ -177,7 +164,7 @@ export default function DiscoverCard({
           initialHandle={profile.instagram}
         />
 
-        <ProfileFactChips chips={chips} />
+        <ProfileFactChips chips={chips} visa={browseVisaLabel(profile)} />
 
         {prompt ? (
           <div

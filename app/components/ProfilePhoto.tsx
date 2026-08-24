@@ -1,3 +1,4 @@
+import { PROFILE_PHOTO_FALLBACK, PROFILE_PHOTO_HEIGHT, PROFILE_PHOTO_SOON } from "../../lib/profile-card";
 import { INK, LINE, MUTED, WASH } from "../../lib/theme";
 
 export function ProfilePhoto({
@@ -27,6 +28,29 @@ export function ProfilePhoto({
         display: "block",
       }}
     />
+  );
+}
+
+/** Honest no-photo treatment. Cream only. Not an initial gradient that looks like a face. */
+export function ProfilePhotoSoon({ name }: { name: string }) {
+  const label = PROFILE_PHOTO_SOON;
+  return (
+    <div
+      role="img"
+      aria-label={name ? name + " " + label.toLowerCase() : label}
+      style={{
+        height: PROFILE_PHOTO_HEIGHT,
+        background: PROFILE_PHOTO_FALLBACK,
+        display: "grid",
+        placeItems: "center",
+        boxSizing: "border-box",
+        borderBottom: "1px solid " + LINE,
+      }}
+    >
+      <span className="bm-sans" style={{ fontSize: 13, color: MUTED, letterSpacing: ".01em" }}>
+        {label}
+      </span>
+    </div>
   );
 }
 

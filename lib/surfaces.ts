@@ -9,7 +9,7 @@ export const SEARCH_HINT =
   "Search for people. Type or tap to speak. Advice is in the Bandham assistant mic chip.";
 
 export const SEARCH_PLACEHOLDER =
-  "Search profiles: a doctor in Hyderabad, vegetarian...";
+  "Search profiles: a pediatrician in Austin, raised in the UK";
 
 export const SEARCH_SPEAK_IDLE = "Tap to speak";
 export const SEARCH_SPEAK_LIVE = "Tap to stop";
@@ -32,8 +32,15 @@ export const GURU_SUPPORT_NOTE =
 export const BROWSE_EMPTY_INVENTORY_TITLE = "No live profiles yet.";
 export const BROWSE_EMPTY_INVENTORY_BODY =
   "Submitted profiles stay under review until they are set live.";
-export const BROWSE_EMPTY_RESULTS_TITLE = "No matches for that yet.";
+export const BROWSE_EMPTY_RESULTS_TITLE = "No one fits these chips yet";
 export const BROWSE_EMPTY_RESULTS_BODY = "Try another city, profession, or a shorter ask.";
+export const BROWSE_SEE_MEETUP = "See the August meetup";
+
+/** Honest shortlist count. Uses the real match count from search. Never invent a daily quota. */
+export function browseMatchCountCopy(count: number) {
+  if (!Number.isFinite(count) || count <= 0) return BROWSE_EMPTY_RESULTS_TITLE;
+  return count + " people match this search";
+}
 
 export const MATCHES_EMPTY_TITLE = "No one yet.";
 export const MATCHES_EMPTY_BODY =

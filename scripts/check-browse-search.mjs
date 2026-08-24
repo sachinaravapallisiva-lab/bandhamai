@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import {
   cityMatchValues,
   needsLlmAssist,
@@ -8,6 +9,7 @@ import {
   toBrowseProfile,
   browseFactChips,
   browseMetaLine,
+  browseVisaLabel,
 } from "../lib/profile-search.ts";
 
 function assert(cond, message) {
@@ -269,7 +271,27 @@ assertEq(chips.length, 3, "three fact chips from existing fields");
 assertEq(chips[0].label, "Telugu", "language chip");
 assertEq(chips[1].label, "MD", "education chip");
 assertEq(chips[2].label, "Vegetarian", "third chip falls back to diet");
+assertEq(browseVisaLabel(aboutCard), "", "no invented visa on a row without visa_status");
+const visaCard = toBrowseProfile({
+  id: "visa-1",
+  full_name: "Priya S",
+  diet: "Vegetarian",
+  visa_status: "H-1B",
+});
+assert(visaCard, "visa card maps");
+assertEq(browseVisaLabel(visaCard), "H-1B", "visa chip uses the stored label");
+assert(
+  !browseFactChips(visaCard).some(function (chip) { return chip.key === "visa"; }),
+  "visa is a dedicated cream chip, not a fact-chip fallback"
+);
+const blankVisa = toBrowseProfile({ id: "visa-empty", visa_status: "   " });
+assert(blankVisa, "blank visa row maps");
+assertEq(browseVisaLabel(blankVisa), "", "blank visa is omitted");
 assert(toBrowseProfile({ id: "wants-1", wants: "Near family." })?.promptLabel === "Wants", "prompt falls back to Wants");
+
+const searchApi = readFileSync(new URL("../app/api/profiles/search/route.ts", import.meta.url), "utf8");
+assert(searchApi.includes("matchCount"), "search returns the real match count");
+assert(searchApi.includes('count: "exact"'), "match count is the filtered SQL count");
 
 console.log("browse search parser ok", {
   doctor,

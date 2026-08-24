@@ -8,6 +8,7 @@ import {
   GURU_TITLE,
   SEARCH_HINT,
   SEARCH_PLACEHOLDER,
+  browseMatchCountCopy,
 } from "../lib/surfaces.ts";
 
 function assert(cond, message) {
@@ -21,6 +22,12 @@ const chatRoute = readFileSync(new URL("../app/api/chat/route.ts", import.meta.u
 const guruLib = readFileSync(new URL("../lib/guru.ts", import.meta.url), "utf8");
 
 assert(SEARCH_PLACEHOLDER.toLowerCase().includes("search profiles"), "search placeholder names the job");
+assert(SEARCH_PLACEHOLDER === "Search profiles: a pediatrician in Austin, raised in the UK", "placeholder is NRI first");
+assert(!SEARCH_PLACEHOLDER.toLowerCase().includes("hyderabad"), "placeholder must not name Hyderabad");
+assert(!/[-–—]/.test(SEARCH_PLACEHOLDER), "placeholder has no hyphen or dash");
+assert(browseMatchCountCopy(3) === "3 people match this search", "count line uses the real N");
+assert(browseMatchCountCopy(0) === "No one fits these chips yet", "zero count is the honest empty");
+assert(!/million|daily quota|daily limit/i.test(browseMatchCountCopy(3)), "count must not invent scale");
 assert(SEARCH_HINT.toLowerCase().includes("search for people"), "search hint names people search");
 assert(SEARCH_HINT.toLowerCase().includes("mic chip"), "search hint points at the mic chip for advice");
 assert(SEARCH_HINT.toLowerCase().includes("bandham assistant"), "search hint names the assistant");

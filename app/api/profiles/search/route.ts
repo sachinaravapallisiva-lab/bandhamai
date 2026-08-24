@@ -164,6 +164,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         profiles: [],
         empty: "inventory",
+        matchCount: 0,
         criteria: parsed,
         source: "live",
         parse: "deterministic",
@@ -203,6 +204,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         profiles: [],
         empty: "inventory",
+        matchCount: 0,
         criteria,
         source: "live",
         parse: "deterministic",
@@ -221,7 +223,7 @@ export async function GET(request: Request) {
       instagram: !!(flags.instagram && flags.user_id && viewerId && sharesReady),
     };
     const select = browseSelectColumns(selectFlags);
-    let q = supabase.from("profiles").select(select).eq("status", LIVE_PROFILE_STATUS);
+    let q = supabase.from("profiles").select(select, { count: "exact" }).eq("status", LIVE_PROFILE_STATUS);
 
     if (viewerId) q = q.neq("user_id", viewerId);
     if (criteria.city) {
@@ -266,7 +268,7 @@ export async function GET(request: Request) {
     if (flags.created_at) q = q.order("created_at", { ascending: false });
     q = q.limit(Math.max(12, BROWSE_SHORTLIST_SIZE * 4));
 
-    const { data, error } = await q;
+    const { data, error, count } = await q;
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -313,10 +315,12 @@ export async function GET(request: Request) {
 
     const profiles = pickShortlist(rows, criteria);
     const empty = profiles.length === 0 ? (liveCount === 0 ? "inventory" : "matches") : null;
+    const matchCount = typeof count === "number" ? count : rows.length;
 
     return NextResponse.json({
       profiles,
       empty,
+      matchCount,
       criteria,
       source: "live",
       parse: "deterministic",
