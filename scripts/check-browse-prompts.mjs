@@ -4,6 +4,8 @@ import {
   BROWSE_PROMPTS_LABEL,
   BROWSE_PROMPTS_LIMIT,
   BROWSE_PROMPTS_MAX_LEN,
+  BROWSE_PROMPTS_MENU,
+  BROWSE_PROMPTS_NEW,
   BROWSE_PROMPTS_PATH,
   BROWSE_PROMPTS_RERUN,
   BROWSE_PROMPTS_SQL_FILE,
@@ -31,7 +33,7 @@ function read(rel) {
   return readFileSync(new URL("../" + rel, import.meta.url), "utf8");
 }
 
-const dating = /\b(flirt|party|hookup|swipe|streak|ask me anything|manasi)\b/i;
+const dating = /\b(flirt|party|hookup|swipe|streak|ask me anything|manasi|new chat|smart fast personalized)\b/i;
 const dash = /[-—–]/;
 
 assertEq(BROWSE_PROMPTS_TABLE, "browse_prompts", "table name");
@@ -39,6 +41,9 @@ assertEq(BROWSE_PROMPTS_SQL_FILE, "supabase/browse_prompts.sql", "sql file");
 assertEq(BROWSE_PROMPTS_PATH, "/api/browse/prompts", "api path");
 assertEq(BROWSE_PROMPTS_VIEW, "View results", "view label");
 assertEq(BROWSE_PROMPTS_RERUN, "Search again", "rerun label");
+assertEq(BROWSE_PROMPTS_NEW, "New search", "overflow new search, not New chat");
+assertEq(BROWSE_PROMPTS_MENU, "More on this search", "3-dot aria label");
+assertEq(BROWSE_PROMPTS_LABEL, "EARLIER SEARCHES", "section is Earlier searches, not History");
 assert(BROWSE_PROMPTS_HINT.toLowerCase().includes("bandham ai"), "hint names Bandham AI");
 assert(!/bandhan\b/i.test(BROWSE_PROMPTS_HINT), "product is Bandham, not Bandhan");
 assert(!/ask me anything/i.test(BROWSE_PROMPTS_HINT), "do not copy Manasi input copy");
@@ -115,13 +120,21 @@ assert(page.includes("BROWSE_PROMPTS_PATH") || page.includes("/api/browse/prompt
 assert(page.includes("rememberLocalBrowsePrompt"), "session-only fallback");
 assert(page.includes("viewRecent") || page.includes("onView"), "View results path");
 assert(ui.includes("BROWSE_PROMPTS_VIEW"), "card has View results");
-assert(ui.includes("BROWSE_PROMPTS_RERUN"), "card has Search again");
+assert(ui.includes("BROWSE_PROMPTS_RERUN"), "Search again stays on the card menu");
+assert(ui.includes("BROWSE_PROMPTS_NEW"), "overflow has New search");
+assert(ui.includes("BROWSE_PROMPTS_MENU"), "3-dot menu is labeled");
 assert(ui.includes("browsePromptWhen"), "card has a timestamp");
+assert(ui.includes("DotsIcon") || ui.includes("circle cx=\"12\""), "3-dot icon on the card");
 assert(ui.includes("PROFILE_ACTION_MIN") || ui.includes("minHeight: PROFILE_ACTION_MIN"), "44px taps");
 assert(ui.includes("CREAM") || ui.includes("FDF8F1"), "cream cards");
 assert(ui.includes("VIOLET") || ui.includes("6D28D9"), "violet actions");
 assert(!ui.includes("Ask me anything"), "no Manasi input copy");
+assert(!/new chat/i.test(ui), "overflow is New search, not New chat");
+assert(!/\bHistory\b/.test(ui), "no Manasi History label; section already says Earlier searches");
+assert(!/manasi|smart fast personalized|\bbeta\b/i.test(ui), "no Manasi brand, Beta, or tagline");
+assert(!/500 characters/i.test(ui) && !/500 characters/i.test(page), "no invented character count line");
 assert(!/swipe|streak/i.test(ui), "not swipe history or streaks");
+assert(page.includes("onNewSearch") || page.includes("newSearch"), "New search clears back to PROFILE SEARCH");
 assert(!orb.includes("browse-prompts") && !orb.includes("/api/browse/prompts"), "guru orb never stores or searches prompts");
 assert(!orb.includes("/api/profiles/search"), "guru orb never searches profiles");
 assert(surfaces.includes("Search profiles"), "existing Browse placeholder stays locked");

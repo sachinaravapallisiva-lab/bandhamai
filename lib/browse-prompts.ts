@@ -15,6 +15,8 @@ export const BROWSE_PROMPTS_LABEL = "EARLIER SEARCHES";
 export const BROWSE_PROMPTS_HINT = "Only you can see these on Bandham AI.";
 export const BROWSE_PROMPTS_VIEW = "View results";
 export const BROWSE_PROMPTS_RERUN = "Search again";
+export const BROWSE_PROMPTS_NEW = "New search";
+export const BROWSE_PROMPTS_MENU = "More on this search";
 export const BROWSE_PROMPTS_EMPTY = "";
 
 export type BrowsePromptItem = {
@@ -121,6 +123,8 @@ export function userFacingBrowsePromptCopy() {
     BROWSE_PROMPTS_HINT,
     BROWSE_PROMPTS_VIEW,
     BROWSE_PROMPTS_RERUN,
+    BROWSE_PROMPTS_NEW,
+    BROWSE_PROMPTS_MENU,
     browsePromptWhen(new Date().toISOString()),
     browsePromptWhen(new Date(Date.now() - 2 * 60 * 1000).toISOString()),
     browsePromptWhen(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()),

@@ -103,6 +103,7 @@ export default function Home() {
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const searchRef = useRef<((text?: string) => void) | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   function runSearch(text?: string) {
     const q = typeof text === "string" ? text : query;
@@ -239,6 +240,14 @@ export default function Home() {
   function rerunRecent(item: BrowsePromptItem) {
     setQuery(item.prompt);
     submitPrompt(item.prompt);
+  }
+
+  function newSearch() {
+    setQuery("");
+    setNote("");
+    clearAsk();
+    runSearch("");
+    if (searchInputRef.current) searchInputRef.current.focus();
   }
 
   searchRef.current = runSearch;
@@ -704,6 +713,7 @@ export default function Home() {
               </p>
 
               <input
+                ref={searchInputRef}
                 value={query}
                 onChange={function (e) { setQuery(e.target.value); }}
                 onKeyDown={function (e) {
@@ -815,6 +825,7 @@ export default function Home() {
               items={recentPrompts}
               onView={viewRecent}
               onRerun={rerunRecent}
+              onNewSearch={newSearch}
             />
 
             {askQueue[askIndex] ? (

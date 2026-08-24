@@ -160,6 +160,7 @@ assert(ui.includes("VIOLET") || ui.includes("6D28D9") || ui.includes("WASH"), "s
 assert(!speed.includes("browse-ask"), "Speed Match UI is unchanged by Browse ask");
 assert(speedLib.includes("SPEED_MATCH_QUESTION_COUNT = 10"), "Speed Match bank stays 10");
 assert(!page.includes("Ask me anything"), "do not copy Manasi input copy");
+assert(!/manasi\.ai|smart fast personalized/i.test(page), "Browse page has no Manasi brand copy");
 
 const askLib = read("lib/browse-ask.ts");
 assert(/not speed match/i.test(askLib), "lib names the split");

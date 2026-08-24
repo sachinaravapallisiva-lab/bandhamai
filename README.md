@@ -390,7 +390,7 @@ If someone asks the assistant to find people, it may say “use the search box a
 4. Type `Telugu vegetarian woman in Hyderabad`. Diet, city, gender, and mother tongue are skipped because the prompt already answered them. The other needed taps still appear.
 5. Tap **Don't want to answer** on a question. That filter is omitted from the search.
 6. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and opens the same ask widget, then searches. The chip still stays closed.
-7. After a search, **EARLIER SEARCHES** cards appear under the search field (session-only if signed out; signed-in rows persist after `supabase/browse_prompts.sql`). **View results** reopens that shortlist. **Search again** reruns the raw prompt through the ask widget.
+7. After a search, stacked cream **EARLIER SEARCHES** cards appear under the search field (session-only if signed out; signed-in rows persist after `supabase/browse_prompts.sql`). Each card shows the raw prompt, **View results**, a timestamp, and a 3-dot menu. **View results** reopens the folded search. The 3-dot menu has **New search** (clears back to PROFILE SEARCH) and **Search again** (reruns the raw prompt through the ask widget). It does not say History, New chat, or Ask me anything.
 8. Network tab: search path is `/api/transcribe` then `/api/profiles/search`. Signed-in save/list uses `/api/browse/prompts`. No `/api/guru` or `/api/chat` from the top box.
 
 **Bandham assistant (mic chip)**
