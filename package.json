@@ -19,6 +19,7 @@
     "check:presence": "node --experimental-strip-types scripts/check-presence.mjs",
     "check:instagram": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-instagram.mjs",
     "check:support-tickets": "node --experimental-strip-types scripts/check-support-tickets.mjs",
+    "check:voice-support": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-voice-support.mjs",
     "check:biodata": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-biodata.mjs",
     "check:account-drawer": "node --experimental-strip-types scripts/check-account-drawer.mjs",
     "check:meetup": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-meetup.mjs",
