@@ -24,7 +24,7 @@ export const GURU_ORB_LABEL = "Open Bandham assistant";
 export const GURU_SPEAKER = "ASSISTANT";
 
 export const GURU_INTRO =
-  "I'm the Bandham assistant. Serious suggestions and guidance: filters, honesty, and profile wording if you ask. I can also help open an app issue ticket. I don't look up people. Use the search box above for that.";
+  "I'm the Bandham assistant. Serious suggestions and guidance: filters, honesty, and profile wording if you ask. I can also help open an app issue ticket. If a stored Gun Milan report exists, I can explain that report in plain language. I don't look up people and I will not guess compatibility. Use the search box above to find people.";
 
 export const GURU_SUPPORT_NOTE =
   "Tickets are for app issues, not emergencies. If someone is harassing you, use Block or Report on their profile.";
@@ -48,4 +48,5 @@ export const GURU_STARTERS = [
   { id: "profile", label: "Profile wording", text: "Help me word my profile About section. Ask me what you need." },
   { id: "fit", label: "Evaluating fit", text: "How do I evaluate whether someone is a real fit?" },
   { id: "ticket", label: "Open a ticket", text: "I want to open a support ticket about an app issue. Ask me for a short summary." },
+  { id: "gunmilan", label: "Gun Milan", text: "Explain the stored Gun Milan report if we have one. If we do not, do not guess." },
 ] as const;

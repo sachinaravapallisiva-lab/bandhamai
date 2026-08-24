@@ -21,6 +21,11 @@ import {
   BIODATA_SHARE_SQL_HINT,
   parseBiodataShare,
 } from "../../../lib/biodata-share";
+import {
+  KUNDLI_SHARE_COLUMN,
+  KUNDLI_SHARE_SQL_HINT,
+  parseKundliShare,
+} from "../../../lib/kundli-share";
 import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
 
@@ -172,6 +177,9 @@ export async function POST(request: Request) {
     if (await tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN)) {
       insertRow[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
     }
+    if (await tableHasColumn(supabase, "profiles", KUNDLI_SHARE_COLUMN)) {
+      insertRow[KUNDLI_SHARE_COLUMN] = parseKundliShare(body.kundli_share);
+    }
 
     const photoUrl = asString(body.photo_url);
     const blurredUrl = asString(body.photo_blurred_url);
@@ -208,7 +216,7 @@ export async function POST(request: Request) {
   }
 }
 
-/** Own-profile edit. v1 writes Instagram and biodata_share — not a full re-review. */
+/** Own-profile edit. v1 writes Instagram, biodata_share, and kundli_share. */
 export async function PATCH(request: Request) {
   try {
     if (!hasBearerToken(request)) {
@@ -224,7 +232,8 @@ export async function PATCH(request: Request) {
 
     const hasInstagram = Object.prototype.hasOwnProperty.call(body, "instagram");
     const hasShare = Object.prototype.hasOwnProperty.call(body, "biodata_share");
-    if (!hasInstagram && !hasShare) {
+    const hasKundli = Object.prototype.hasOwnProperty.call(body, "kundli_share");
+    if (!hasInstagram && !hasShare && !hasKundli) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
 
@@ -259,6 +268,9 @@ export async function PATCH(request: Request) {
     if (hasShare && !(await tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN))) {
       return NextResponse.json({ error: BIODATA_SHARE_SQL_HINT }, { status: 503 });
     }
+    if (hasKundli && !(await tableHasColumn(supabase, "profiles", KUNDLI_SHARE_COLUMN))) {
+      return NextResponse.json({ error: KUNDLI_SHARE_SQL_HINT }, { status: 503 });
+    }
 
     const linked = await tableHasColumn(supabase, "profiles", "user_id");
     if (!linked) {
@@ -282,6 +294,7 @@ export async function PATCH(request: Request) {
     const patch: Record<string, string | boolean | null> = {};
     if (hasInstagram) patch.instagram = instagramHandle ?? null;
     if (hasShare) patch[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
+    if (hasKundli) patch[KUNDLI_SHARE_COLUMN] = parseKundliShare(body.kundli_share);
 
     const updated = await supabase
       .from("profiles")

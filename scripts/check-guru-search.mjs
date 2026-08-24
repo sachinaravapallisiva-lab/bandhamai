@@ -33,6 +33,8 @@ assert(!GURU_INTRO.toLowerCase().includes("who you're hoping to meet"), "old sea
 assert(!/talking to parents|talk to her parents/i.test(GURU_INTRO), "intro must not offer parent-talk coaching");
 assert(/suggestion|guidance|advice/i.test(GURU_INTRO), "intro names suggestions or guidance");
 assert(GURU_INTRO.toLowerCase().includes("ticket"), "intro mentions app issue tickets");
+assert(GURU_INTRO.toLowerCase().includes("gun milan"), "intro mentions stored Gun Milan");
+assert(GURU_INTRO.toLowerCase().includes("will not guess"), "intro refuses invented compatibility");
 
 const starterCopy = GURU_STARTERS.map(function (s) {
   return s.id + " " + s.label + " " + s.text;
@@ -40,6 +42,7 @@ const starterCopy = GURU_STARTERS.map(function (s) {
 assert(!/talk to her parents|how do i talk to her/i.test(starterCopy), "starters must not offer parent-talk or chat scripts");
 assert(!/pickup/i.test(starterCopy), "starters must not offer pickup lines");
 assert(/open a ticket/i.test(starterCopy), "starters include an app issue ticket path");
+assert(/gun milan/i.test(starterCopy), "starters include stored Gun Milan");
 assert(GURU_PLACEHOLDER.toLowerCase().includes("advice"), "guru placeholder is advice, not search");
 assert(SEARCH_PLACEHOLDER !== GURU_PLACEHOLDER, "placeholders must differ");
 assert(GURU_PATH === "/api/guru", "guru path lock");
@@ -88,6 +91,12 @@ assert(!guruLib.includes("Help someone talk to her parents"), "old parent-talk c
 assert(prompt.includes("conversation script"), "prompt forbids parent conversation scripts");
 assert(prompt.includes("not silly") || prompt.includes("not dating-app"), "prompt stays adult, not dating-app");
 assert(!/\bmost people\b|\blimited time\b|\bact now\b/.test(prompt), "no marketing in the guru prompt");
+assert(prompt.includes("gun milan"), "prompt knows Gun Milan");
+assert(prompt.includes("stored") && (prompt.includes("refuse to guess") || prompt.includes("will not guess")), "prompt refuses invented Gun Milan");
+assert(guruLib.includes("loadStoredGunMilanReport"), "guru may explain a stored report only");
+assert(guruLib.includes("GUN_MILAN_NO_REPORT_REPLY"), "guru fail-closed copy when no report");
+assert(!guruLib.includes("fetchKundliMatching"), "guru does not call the matching API");
+assert(!/astrosage/i.test(guruLib), "guru does not call AstroSage");
 
 console.log("guru / search split ok", {
   searchPlaceholder: SEARCH_PLACEHOLDER,

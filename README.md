@@ -374,11 +374,64 @@ Two surfaces. They do not share a backend job.
 | Surface | What it does | What it never does |
 | --- | --- | --- |
 | Top search box + **Tap to speak** | Typed or spoken person search: Grok STT → desi/English parse → `/api/profiles/search` | Open the assistant chip, run `/api/guru`, write chat text |
-| Bandham assistant (mic chip) | Serious suggestions and guidance: filters, honesty, evaluating fit, profile wording if asked. Can also collect an app issue summary and open a support ticket after confirm (`/api/guru`; leftover `/api/chat` is the same handler) | Search profiles, invent VerifyAI or a match %, write pickup lines or sendable chat, coach parent-conversation scripts, auto-reply, rate the other person, file a ticket from every message |
+| Bandham assistant (mic chip) | Serious suggestions and guidance: filters, honesty, evaluating fit, profile wording if asked. Can also collect an app issue summary and open a support ticket after confirm (`/api/guru`; leftover `/api/chat` is the same handler). If a stored Gun Milan report exists, it may explain that report only. | Search profiles, invent VerifyAI or a match %, invent Gun Milan scores, write pickup lines or sendable chat, coach parent-conversation scripts, auto-reply, rate the other person, file a ticket from every message |
 
 If someone asks the assistant to find people, it may say “use the search box above.” It must not run a search.
 
-`npm run check:guru-search` locks the split.
+`npm run check:guru-search` and `npm run check:gun-milan` lock the split.
+
+## Gun Milan (Prokerala)
+
+In-app Kundli Gun Milan is matrimony matching, not a horoscope toy. The paid **Prokerala Astrology API** Kundali Matching endpoint does the chart math. Bandham AI only stores the raw report and lets the assistant explain that stored report. The app does not compute gunas and does not call AstroSage. DivineAPI is not in this release.
+
+Profiles already have `dob`. Gun Milan also needs birth time and birth place (lat / lon / time zone) for both people. Those fields live in a private table. They are never on Browse cards.
+
+### How to get Prokerala keys (Sai)
+
+1. Open [Prokerala Astrology API](https://www.prokerala.com/astrology/astrology-api.htm) and create a client at [client-api.prokerala.com](https://client-api.prokerala.com/).
+2. Copy **Client ID** and **Client Secret** from the dashboard.
+3. The app uses OAuth2 client credentials: `POST https://api.prokerala.com/token`, then `GET https://api.prokerala.com/v2/astrology/kundli-matching/advanced` (Ashtakoot / North, koot table and manglik flags).
+4. Do not put these values in git or in any `NEXT_PUBLIC_` name.
+
+### Vercel env (Sai)
+
+Set these on Production, Preview, and Development. Server only.
+
+| Name | Purpose |
+| --- | --- |
+| `PROKERALA_CLIENT_ID` | Prokerala OAuth client id |
+| `PROKERALA_CLIENT_SECRET` | Prokerala OAuth client secret |
+
+If either is missing, Gun Milan **fails closed**. The UI says **Matching is not set up yet.** and the API does not invent a score.
+
+### Supabase SQL (Sai / CoS)
+
+In the SQL editor, run [`supabase/gun_milan.sql`](supabase/gun_milan.sql). That:
+
+1. Adds `public.profiles.kundli_share` (boolean, default false). Other-person Gun Milan stays off until they opt in.
+2. Creates `public.profile_birth_details` with RLS: owner read / write only.
+3. Creates `public.gun_milan_reports` to cache the raw API JSON for a pair so we do not re-bill on every view.
+
+Until that file is applied, birth details and Gun Milan APIs return **503** and ask you to run it. Browse still works. Do not add religion or caste columns.
+
+### What the app does
+
+1. Account can save birth date, time, place, coordinates, time zone, and the kundli opt-in.
+2. Signed in, on a Browse or Matches card: **Gun Milan** only if the other member opted in.
+3. Both people must have complete birth details. The first run calls Prokerala and stores the raw report. Later views reuse the cache unless birth details change.
+4. The UI shows the API score, koot table, and manglik flags exactly as returned.
+5. The Bandham assistant may explain that stored report. With no report, it refuses to guess compatibility.
+
+### Test steps
+
+1. With Prokerala env **missing**, open Gun Milan on an opted-in live card (or Account). You should see **Matching is not set up yet.** No invented score.
+2. Apply `supabase/gun_milan.sql`. Confirm `kundli_share`, `profile_birth_details`, and `gun_milan_reports` exist (RLS on).
+3. Sign in as A. Account → save birth details. Leave kundli matching off. As B, A’s card has no Gun Milan action.
+4. As A, turn on **Allow others to run Gun Milan with me**. As B (with B’s own birth details), A’s card shows Gun Milan.
+5. Run Gun Milan once. The panel shows the API score / koot table / manglik flags. A second view should say the stored report was reused.
+6. Search JSON for A must not include birth time, place, lat, lon, time zone, or dob.
+7. Ask the assistant about Gun Milan before a report exists. It must refuse to invent a score. After a stored report, it may explain that report only. It still must not search profiles or write sendable dating text.
+8. `npm run check:gun-milan` and `npm run check:guru-search`.
 
 ### Test steps
 

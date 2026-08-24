@@ -33,6 +33,7 @@ import {
 import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
 import { BIODATA_SHARE_COLUMN } from "../../../../lib/biodata-share";
+import { KUNDLI_SHARE_COLUMN } from "../../../../lib/kundli-share";
 import { INSTAGRAM_COLUMN } from "../../../../lib/instagram";
 import { normalizeProfileGender } from "../../../../lib/profile-fields";
 import { applyInstagramVisibility } from "../../../../lib/instagram-shares";
@@ -171,7 +172,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const [photo_url, diet, user_id, created_at, verifyai_status, instagram, biodata_share, sharesReady, inventory] = await Promise.all([
+    const [photo_url, diet, user_id, created_at, verifyai_status, instagram, biodata_share, kundli_share, sharesReady, inventory] = await Promise.all([
       tableHasColumn(supabase, "profiles", "photo_url"),
       tableHasColumn(supabase, "profiles", "diet"),
       tableHasColumn(supabase, "profiles", "user_id"),
@@ -179,10 +180,11 @@ export async function GET(request: Request) {
       tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN),
       tableHasColumn(supabase, "profiles", INSTAGRAM_COLUMN),
       tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN),
+      tableHasColumn(supabase, "profiles", KUNDLI_SHARE_COLUMN),
       instagramSharesReady(supabase),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", LIVE_PROFILE_STATUS),
     ]);
-    const flags = { photo_url, diet, user_id, created_at, verifyai_status, instagram, biodata_share };
+    const flags = { photo_url, diet, user_id, created_at, verifyai_status, instagram, biodata_share, kundli_share };
 
     let criteria = parsed;
     let usedLlm = false;

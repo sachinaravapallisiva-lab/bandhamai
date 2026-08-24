@@ -232,6 +232,20 @@ assertEq(toBrowseProfile({ id: "ig2", full_name: "A" })?.instagram, "", "missing
 assertEq(toBrowseProfile({ id: "bd1", full_name: "A", biodata_share: true })?.biodataShare, true, "opt-in maps on");
 assertEq(toBrowseProfile({ id: "bd2", full_name: "A" })?.biodataShare, false, "missing opt-in stays off");
 assertEq(toBrowseProfile({ id: "bd3", full_name: "A", biodata_share: "false" })?.biodataShare, false, "string false stays off");
+assertEq(toBrowseProfile({ id: "km1", full_name: "A", kundli_share: true })?.kundliShare, true, "kundli opt-in maps on");
+assertEq(toBrowseProfile({ id: "km2", full_name: "A" })?.kundliShare, false, "missing kundli opt-in stays off");
+assert(
+  !JSON.stringify(toBrowseProfile({
+    id: "km3",
+    full_name: "A",
+    birth_time: "06:30:00",
+    latitude: 17.3,
+    longitude: 78.4,
+    timezone: "+05:30",
+    dob: "1998-01-01",
+  })).includes("06:30"),
+  "public browse payload must not include birth time"
+);
 assert(
   !browseSelectColumns({ photo_url: false, diet: false }).includes("biodata_share"),
   "browse select omits biodata_share until the column exists"
@@ -239,6 +253,14 @@ assert(
 assert(
   browseSelectColumns({ photo_url: false, diet: false, biodata_share: true }).includes("biodata_share"),
   "browse select includes biodata_share when the column exists"
+);
+assert(
+  !browseSelectColumns({ photo_url: false, diet: false, kundli_share: true }).includes("birth_time"),
+  "browse select never includes birth_time"
+);
+assert(
+  browseSelectColumns({ photo_url: false, diet: false, kundli_share: true }).includes("kundli_share"),
+  "browse select includes kundli_share when the column exists"
 );
 assert(
   !browseSelectColumns({ photo_url: false, diet: false }).includes("instagram"),

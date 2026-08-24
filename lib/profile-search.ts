@@ -1,4 +1,5 @@
 import { parseBiodataShare } from "./biodata-share";
+import { parseKundliShare } from "./kundli-share";
 import {
   CITY_ALIASES,
   KEYWORD_ALIASES,
@@ -47,6 +48,8 @@ export type BrowseProfile = {
   instagram: string;
   /** True only when the member opted in to other-person biodata download. */
   biodataShare: boolean;
+  /** True only when the member opted in to Gun Milan. Birth details stay off this card. */
+  kundliShare: boolean;
 };
 
 export type BrowseFactChip = {
@@ -333,6 +336,7 @@ export function browseSelectColumns(flags: {
   verifyai_status?: boolean;
   instagram?: boolean;
   biodata_share?: boolean;
+  kundli_share?: boolean;
 }) {
   const cols: string[] = ["id"];
   PROFILE_WRITE_FIELDS.forEach(function (field) {
@@ -344,6 +348,7 @@ export function browseSelectColumns(flags: {
   if (flags.user_id) cols.push("user_id");
   if (flags.verifyai_status) cols.push("verifyai_status");
   if (flags.biodata_share) cols.push("biodata_share");
+  if (flags.kundli_share) cols.push("kundli_share");
   return cols.join(",");
 }
 
@@ -431,6 +436,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     online: row.online === true || isRecentlySeen(row.last_seen_at),
     instagram: asText(row.instagram).replace(/^@+/, ""),
     biodataShare: parseBiodataShare(row.biodata_share),
+    kundliShare: parseKundliShare(row.kundli_share),
   };
 }
 

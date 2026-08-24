@@ -19,11 +19,18 @@ import {
   BIODATA_SHARE_SAVING_LABEL,
   parseBiodataShare,
 } from "../../../lib/biodata-share";
+import { GUN_MILAN_BIRTH_ON_ACCOUNT } from "../../../lib/gun-milan";
+import {
+  KUNDLI_SHARE_SAVE_LABEL,
+  KUNDLI_SHARE_SAVING_LABEL,
+  parseKundliShare,
+} from "../../../lib/kundli-share";
 import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
 import BiodataShareField from "../../components/BiodataShareField";
+import KundliShareField from "../../components/KundliShareField";
 import DownloadBiodata from "../../components/DownloadBiodata";
 import InstagramField from "../../components/InstagramField";
 import PhotoUpload from "../../components/PhotoUpload";
@@ -40,6 +47,7 @@ type Mine = {
     photo_blurred_url?: string | null;
     instagram?: string | null;
     biodata_share?: boolean | null;
+    kundli_share?: boolean | null;
   } | null;
   linked: boolean;
 } | null;
@@ -59,6 +67,9 @@ export default function NewProfilePage() {
   const [biodataShare, setBiodataShare] = useState(false);
   const [savingShare, setSavingShare] = useState(false);
   const [shareNote, setShareNote] = useState("");
+  const [kundliShare, setKundliShare] = useState(false);
+  const [savingKundli, setSavingKundli] = useState(false);
+  const [kundliNote, setKundliNote] = useState("");
 
   useEffect(function () {
     let cancelled = false;
@@ -104,6 +115,7 @@ export default function NewProfilePage() {
                     return { ...prev, instagram: data.profile.instagram || "" };
                   });
                   setBiodataShare(parseBiodataShare(data.profile.biodata_share));
+                  setKundliShare(parseKundliShare(data.profile.kundli_share));
                   setPhotos({
                     photo_url: data.profile.photo_url || "",
                     photo_blurred_url: data.profile.photo_blurred_url || "",
@@ -234,6 +246,50 @@ export default function NewProfilePage() {
       });
   }
 
+  function saveKundliShare() {
+    setSavingKundli(true);
+    setKundliNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingKundli(false);
+          setSignedIn(false);
+          setKundliNote("Sign in to save this choice.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ kundli_share: kundliShare }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingKundli(false);
+          if (!res.ok) {
+            setKundliNote(data.error || "Could not save this choice.");
+            if (res.status === 401) setSignedIn(false);
+            return;
+          }
+          const next = parseKundliShare(data.profile?.kundli_share);
+          setKundliShare(next);
+          setMine(function (prev) {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              profile: { ...(prev.profile || {}), kundli_share: next },
+            };
+          });
+          setKundliNote(next ? "Others can run Gun Milan with you." : "Others cannot run Gun Milan with you.");
+        });
+      })
+      .catch(function () {
+        setSavingKundli(false);
+        setKundliNote("Network trouble. Try again?");
+      });
+  }
+
   function submit() {
     for (const key of REQUIRED_PROFILE_FIELDS) {
       if (!form[key].trim()) {
@@ -273,6 +329,7 @@ export default function NewProfilePage() {
             photo_url: photos.photo_url || undefined,
             photo_blurred_url: photos.photo_blurred_url || undefined,
             biodata_share: biodataShare,
+            kundli_share: kundliShare,
           }),
         });
       })
@@ -295,6 +352,7 @@ export default function NewProfilePage() {
               city: form.city,
               profession: form.profession,
               biodata_share: biodataShare,
+              kundli_share: kundliShare,
             },
             linked: !!data.linked,
           });
@@ -442,6 +500,45 @@ export default function NewProfilePage() {
                 {shareNote}
               </p>
             ) : null}
+          </div>
+          <div style={{ textAlign: "left", margin: "0 0 22px" }}>
+            <KundliShareField
+              checked={kundliShare}
+              onChange={function (next) {
+                setKundliShare(next);
+                if (kundliNote) setKundliNote("");
+              }}
+              disabled={savingKundli}
+            />
+            <button
+              type="button"
+              disabled={savingKundli}
+              onClick={saveKundliShare}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingKundli ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingKundli ? "default" : "pointer",
+                opacity: savingKundli ? 0.7 : 1,
+              }}
+            >
+              {savingKundli ? KUNDLI_SHARE_SAVING_LABEL : KUNDLI_SHARE_SAVE_LABEL}
+            </button>
+            {kundliNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
+                {kundliNote}
+              </p>
+            ) : (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+                {GUN_MILAN_BIRTH_ON_ACCOUNT}
+              </p>
+            )}
           </div>
           <div style={{ display: "flex", justifyContent: "center", margin: "0 0 16px" }}>
             <DownloadBiodata hasProfile variant="solid" />
@@ -601,6 +698,11 @@ export default function NewProfilePage() {
               <BiodataShareField
                 checked={biodataShare}
                 onChange={setBiodataShare}
+                disabled={saving}
+              />
+              <KundliShareField
+                checked={kundliShare}
+                onChange={setKundliShare}
                 disabled={saving}
               />
             </div>
