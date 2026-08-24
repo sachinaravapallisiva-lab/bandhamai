@@ -178,7 +178,7 @@ export default function MeetupPage() {
               <div>
                 <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
                   <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                    Bandhamai
+                    Bandham AI
                   </h1>
                 </Link>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED }}>

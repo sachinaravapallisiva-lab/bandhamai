@@ -77,11 +77,16 @@ assert(MEETUP_COPY.title === "Meetup this month", "title lock");
 assert(MEETUP_COPY.ticketCta === "Get a ticket", "ticket CTA names no dollar amount");
 assert(MEETUP_COPY.ticketNotConfigured.includes(EVENT_TICKET_PRICE_ENV), "fail closed copy names the env");
 assert(MEETUP_COPY.ticketNotConfigured.toLowerCase().includes("not named"), "amount stays unnamed");
-assert(MEETUP_COPY.ticketBody.includes("$9.99/mo"), "ticket copy contrasts messaging price");
-assert(MEETUP_COPY.ticketBody.toLowerCase().includes("does not include"), "messaging does not include ticket");
-assert(MEETUP_COPY.oneToOneNote.includes("$9.99/mo"), "1:1 stays messaging paywall");
+assert(
+  MEETUP_COPY.ticketBody ===
+    "This meetup needs its own ticket. It is not part of the Bandham AI subscription. One to one Chat still needs an active Bandham AI subscription.",
+  "ticket copy contrasts subscription without listing includes"
+);
+assert(MEETUP_COPY.ticketBody.toLowerCase().includes("not part of the bandham ai subscription"), "ticket is not the subscription");
+assert(MEETUP_COPY.oneToOneNote.includes("Bandham AI subscription"), "1:1 still needs the subscription");
+assert(!/messaging plan/i.test(copyValues.join("\n")), "meetup copy does not say messaging plan");
 assert(MEETUP_COPY.chatNeedRsvp.toLowerCase().includes("ticket"), "group chat after paid ticket");
-assert(!/\$\d/.test(copyValues.join("\n").replace(/\$9\.99\/mo/g, "")), "do not invent a ticket dollar amount");
+assert(!/\$\d/.test(copyValues.join("\n").replace(/\$9\.99 a month/g, "").replace(/\$9\.99\/mo/g, "")), "do not invent a ticket dollar amount");
 assert(!/price_[a-zA-Z0-9]+/.test(copyValues.join("\n")), "do not invent a live Price ID");
 
 const dating = /\b(swipe|hot near you|hot-near-you|for you tonight|super[\s-]?like|boost now|vibe check|crush|hook-?up|drinks tonight)\b/i;

@@ -66,7 +66,7 @@ export default function ChatPage() {
     if (params.get("billing") === "success" && sessionId) {
       confirmCheckoutSession(sessionId).then(function (next) {
         setEntitlement(next);
-        if (next.canMessage) setBillingNote("Subscription is active. You can send messages.");
+        if (next.canMessage) setBillingNote(BILLING_COPY.active);
       });
     }
   }, []);

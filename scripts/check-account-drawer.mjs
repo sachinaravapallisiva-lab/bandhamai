@@ -4,6 +4,7 @@ import {
   ACCOUNT_MENU_DIALOG_ID,
   ACCOUNT_MENU_FREE_CHIP,
   ACCOUNT_MENU_ITEMS,
+  ACCOUNT_MENU_MESSAGES_NOTE,
   ACCOUNT_MENU_OPEN_LABEL,
   ACCOUNT_MENU_PAID_CHIP,
   ACCOUNT_MENU_SIGN_IN,
@@ -14,6 +15,7 @@ import {
   PREFERENCES_PATH,
   PREFERENCES_TITLE,
 } from "../lib/account-menu.ts";
+import { BILLING_COPY } from "../lib/billing.ts";
 import { ALLOWED_NEXT_PATHS } from "../lib/next-path.ts";
 
 function assert(cond, message) {
@@ -58,9 +60,14 @@ assert(ACCOUNT_MENU_TITLE === "Account", "title lock");
 assert(ACCOUNT_MENU_DIALOG_ID === "account-menu", "dialog id lock");
 assert(ACCOUNT_MENU_SIGN_IN === "Sign in", "signed-out CTA");
 assert(ACCOUNT_MENU_FREE_CHIP === "Free", "free chip");
-assert(ACCOUNT_MENU_PAID_CHIP === "Paid", "paid chip");
-assert(ACCOUNT_MENU_UPGRADE === "Upgrade", "upgrade label");
-assert(ACCOUNT_MENU_UPGRADE_HREF === "/chat", "upgrade uses existing messaging checkout");
+assert(ACCOUNT_MENU_PAID_CHIP === "Bandham AI", "subscribed chip is Bandham AI");
+assert(ACCOUNT_MENU_PAID_CHIP !== "Paid", "Paid is dating chrome");
+assert(ACCOUNT_MENU_MESSAGES_NOTE !== "Paid", "messages note is not Paid");
+assert(!/paid/i.test(ACCOUNT_MENU_MESSAGES_NOTE), "messages note does not say Paid");
+assert(ACCOUNT_MENU_UPGRADE === "Subscribe $9.99 a month", "subscribe label");
+assert(ACCOUNT_MENU_UPGRADE === BILLING_COPY.subscribe, "drawer CTA matches paywall button");
+assert(!/upgrade/i.test(ACCOUNT_MENU_UPGRADE), "no Upgrade label");
+assert(ACCOUNT_MENU_UPGRADE_HREF === "/chat", "subscribe uses existing checkout");
 assert(PREFERENCES_TITLE === "Preferences", "preferences page label");
 assert(PREFERENCES_PATH === "/preferences", "preferences path");
 assert(ALLOWED_NEXT_PATHS.includes(PREFERENCES_PATH), "preferences is a real next path");
@@ -100,6 +107,11 @@ sources.forEach(function (src) {
   assert(!banned.test(src), "no dating-app chrome");
   assert(!/🔥|😍|💘|😉/.test(src), "no emoji icons");
 });
+assert(!/\bPaid\b/.test(ACCOUNT_MENU_PAID_CHIP + ACCOUNT_MENU_MESSAGES_NOTE + ACCOUNT_MENU_UPGRADE), "drawer labels are not Paid");
+assert(!/\bUpgrade\b/.test(ACCOUNT_MENU_UPGRADE), "drawer labels are not Upgrade");
+assert(!/>\s*Paid\s*</.test(drawer), "drawer does not render Paid");
+assert(!/>\s*Upgrade\s*</.test(drawer), "drawer does not render Upgrade");
+assert(!/>\s*Messaging\s*</.test(drawer), "drawer does not list messaging on the subscribe row");
 assert(!/Start Speed Match/.test(drawer), "speed match stays off the account hub");
 assert(home.includes("Start Speed Match") || read("app/components/MatchCard.tsx").includes("Start Speed Match"), "speed match stays on matches");
 

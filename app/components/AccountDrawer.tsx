@@ -535,20 +535,6 @@ export default function AccountDrawer() {
                 >
                   <MenuIcon name="upgrade" />
                   <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ACCOUNT_MENU_UPGRADE}</span>
-                  <span
-                    className="bm-sans"
-                    style={{
-                      marginLeft: "auto",
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      background: VIOLET,
-                      color: "#FFFFFF",
-                      fontSize: 11,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Messaging
-                  </span>
                 </Link>
               ) : null}
 

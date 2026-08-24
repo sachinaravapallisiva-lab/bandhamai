@@ -21,16 +21,18 @@ export const STRIPE_FOUNDING_PRICE_ENV = "STRIPE_FOUNDING_PRICE_ID";
 export const ENTITLED_STATUSES = ["active", "trialing"] as const;
 
 export const BILLING_COPY = {
-  headline: "$9.99/mo to message",
-  body: "Browse, search, Speed Match, and creating a profile stay free. A subscription unlocks sending messages. It is access to messaging, not a promise of a match, a meeting, or a marriage.",
-  lawyer: "Bandham AI does not guarantee matches. Pay only if you want to send messages.",
-  notConfigured:
-    "Billing is not configured. Messaging checkout is not live on this environment.",
+  headline: "Bandham AI subscription is $9.99 a month",
+  body: "Pay monthly. Cancel anytime in the Stripe customer portal.",
+  lawyer: "Bandham AI does not guarantee matches. A subscription is not a promise of a match, a meeting, or a marriage.",
+  notConfigured: "Billing is not configured. Checkout is not live on this environment.",
   tableMissing: "Subscription storage is not applied yet. Run " + SUBSCRIPTIONS_SQL_FILE + " in the Supabase SQL editor.",
   signIn: "Sign in to subscribe or send a message.",
-  subscribe: "Subscribe $9.99/mo",
+  subscribe: "Subscribe $9.99 a month",
   manage: "Manage subscription",
   returning: "If you just paid, wait a few seconds for Stripe to confirm. Then try Send again.",
+  active: "Bandham AI is active on this account. Cancel anytime in the customer portal.",
+  includedWhenAsked:
+    "Messaging. Browse, search, Speed Match, and creating a profile stay free. VerifyAI and meetup are separate.",
 } as const;
 
 export type Entitlement = {

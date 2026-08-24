@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Bandham AI",
-    short_name: "Bandhamai",
+    short_name: "Bandham AI",
     description: "Find your vibe match?",
     start_url: "/",
     display: "standalone",
