@@ -13,6 +13,7 @@ import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
 import { supabase } from "../lib/supabase";
+import { MEETUP_PATH } from "../lib/meetup";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
 import { homeTabFromSearch, loginHref } from "../lib/next-path";
@@ -23,12 +24,14 @@ import {
   startCheckout,
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
-import type { BrowseProfile } from "../lib/profile-search";
+import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
+import { emptyCriteria } from "../lib/profile-search";
 import {
   BROWSE_EMPTY_INVENTORY_BODY,
   BROWSE_EMPTY_INVENTORY_TITLE,
   BROWSE_EMPTY_RESULTS_BODY,
   BROWSE_EMPTY_RESULTS_TITLE,
+  BROWSE_SEE_MEETUP,
   MATCHES_EMPTY_ACTION,
   MATCHES_EMPTY_BODY,
   MATCHES_EMPTY_TITLE,
@@ -42,6 +45,7 @@ import {
   SEARCH_SPEAK_BUSY,
   SEARCH_SPEAK_IDLE,
   SEARCH_SPEAK_LIVE,
+  browseMatchCountCopy,
 } from "../lib/surfaces";
 
 /* ------------------------------------------------------------------ *
@@ -68,6 +72,8 @@ export default function Home() {
   const [speedPartner, setSpeedPartner] = useState<BrowseProfile | null>(null);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
+  const [matchCount, setMatchCount] = useState<number | null>(null);
+  const [criteria, setCriteria] = useState<SearchCriteria>(emptyCriteria());
   const [searching, setSearching] = useState(true);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
@@ -105,11 +111,24 @@ export default function Home() {
         if (!result.ok || result.data.error) {
           setProfiles([]);
           setEmptyKind("inventory");
+          setMatchCount(null);
+          setCriteria(emptyCriteria());
           setNote(result.data.error || "Couldn't load profiles. Try again?");
           return;
         }
-        setProfiles(Array.isArray(result.data.profiles) ? result.data.profiles : []);
+        const nextProfiles = Array.isArray(result.data.profiles) ? result.data.profiles : [];
+        setProfiles(nextProfiles);
         setEmptyKind(result.data.empty === "matches" || result.data.empty === "inventory" ? result.data.empty : null);
+        setMatchCount(typeof result.data.matchCount === "number" ? result.data.matchCount : nextProfiles.length);
+        setCriteria(
+          result.data.criteria && typeof result.data.criteria === "object"
+            ? {
+                city: result.data.criteria.city || null,
+                gender: result.data.criteria.gender || null,
+                keywords: Array.isArray(result.data.criteria.keywords) ? result.data.criteria.keywords : [],
+              }
+            : emptyCriteria()
+        );
         setNote("");
       })
       .catch(function () {
@@ -117,6 +136,8 @@ export default function Home() {
         setLoadedOnce(true);
         setProfiles([]);
         setEmptyKind("inventory");
+        setMatchCount(null);
+        setCriteria(emptyCriteria());
         setNote("Couldn't load profiles. Try again?");
       });
   }
@@ -369,6 +390,9 @@ export default function Home() {
   const busy = micState === "thinking" || searching;
   const matches = liked;
   const current = profiles[0] || null;
+  const searched = query.trim().length > 0;
+  const searchChips = [criteria.city, criteria.gender].concat(criteria.keywords).filter(Boolean) as string[];
+  const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
     <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
@@ -695,12 +719,65 @@ export default function Home() {
               {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
 
+            {showMatchCount && searchChips.length ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "0 0 10px" }}>
+                {searchChips.map(function (chip) {
+                  return (
+                    <span
+                      key={chip}
+                      className="bm-sans"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "5px 10px",
+                        borderRadius: 999,
+                        background: CREAM,
+                        border: "1px solid " + LINE,
+                        fontSize: 12,
+                        color: MUTED,
+                      }}
+                    >
+                      {chip}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {showMatchCount && current && matchCount !== null && matchCount > 0 ? (
+              <div style={{ margin: "0 0 14px" }}>
+                <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                  {browseMatchCountCopy(matchCount)}
+                </p>
+                <Link
+                  href={MEETUP_PATH}
+                  className="bm-sans bm-focus"
+                  style={{ display: "inline-block", marginTop: 4, fontSize: 13, color: VIOLET, fontWeight: 500, textDecoration: "none" }}
+                >
+                  {BROWSE_SEE_MEETUP}
+                </Link>
+              </div>
+            ) : null}
+
             {!searching && !current ? (
-              <EmptyState
-                eyebrow="BROWSE"
-                title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
-                body={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_BODY : BROWSE_EMPTY_RESULTS_BODY}
-              />
+              <>
+                <EmptyState
+                  eyebrow="BROWSE"
+                  title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
+                  body={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_BODY : BROWSE_EMPTY_RESULTS_BODY}
+                />
+                {emptyKind !== "inventory" ? (
+                  <p style={{ margin: "12px 0 0", textAlign: "center" }}>
+                    <Link
+                      href={MEETUP_PATH}
+                      className="bm-sans bm-focus"
+                      style={{ fontSize: 13, color: VIOLET, fontWeight: 500, textDecoration: "none" }}
+                    >
+                      {BROWSE_SEE_MEETUP}
+                    </Link>
+                  </p>
+                ) : null}
+              </>
             ) : current ? (
               <DiscoverCard
                 key={current.id}

@@ -7,6 +7,7 @@ import {
 import {
   BROWSE_EMPTY_INVENTORY_TITLE,
   BROWSE_EMPTY_RESULTS_TITLE,
+  BROWSE_SEE_MEETUP,
   GURU_INTRO,
   GURU_ORB_LABEL,
   GURU_SPEAKER,
@@ -54,7 +55,13 @@ assert(page.includes("EmptyState"), "Browse/Matches empty states are designed");
 assert(page.includes("BROWSE_EMPTY_RESULTS_TITLE") || page.includes(BROWSE_EMPTY_RESULTS_TITLE), "Browse no-results copy");
 assert(page.includes("MATCHES_EMPTY_TITLE") || page.includes(MATCHES_EMPTY_TITLE), "Matches empty copy");
 assert(BROWSE_EMPTY_INVENTORY_TITLE === "No live profiles yet.", "inventory empty title");
-assert(BROWSE_EMPTY_RESULTS_TITLE === "No matches for that yet.", "results empty title");
+assert(BROWSE_EMPTY_RESULTS_TITLE === "No one fits these chips yet", "results empty title");
+assert(BROWSE_SEE_MEETUP === "See the August meetup", "meetup second line");
+assert(!/[-–—]/.test(BROWSE_EMPTY_RESULTS_TITLE), "empty title has no hyphen or dash");
+assert(!/[-–—]/.test(BROWSE_SEE_MEETUP), "meetup line has no hyphen or dash");
+assert(page.includes("browseMatchCountCopy"), "Browse shows the honest match count");
+assert(page.includes("BROWSE_SEE_MEETUP"), "Browse can point at the August meetup");
+assert(!/millions|daily quota|daily limit/i.test(page), "Browse must not invent scale or a quota");
 assert(MATCHES_EMPTY_TITLE === "No one yet.", "matches empty title");
 
 assert(empty.includes("FDF8F1") || empty.includes("CREAM"), "empty state sits on cream");
@@ -79,7 +86,18 @@ assert(discover.includes("VIOLET") && matchCard.includes("VIOLET"), "both cards 
 assert(discover.includes("PROFILE_PHOTO_HEIGHT") && matchCard.includes("PROFILE_PHOTO_HEIGHT"), "photo size is one family");
 assert(discover.includes("minHeight: PROFILE_ACTION_MIN") && matchCard.includes("minHeight: PROFILE_ACTION_MIN"), "primary actions are 44px");
 assert(discover.includes("ProfileFactChips") && matchCard.includes("ProfileFactChips"), "quiet chips are shared");
+assert(discover.includes("browseVisaLabel") && matchCard.includes("browseVisaLabel"), "visa chip uses stored visa_status");
+assert(discover.includes("ProfilePhotoSoon") && matchCard.includes("ProfilePhotoSoon"), "no photo uses Photo coming soon");
+assert(!discover.includes("profileInitials"), "Browse no-photo is not a fake initial face");
+assert(!matchCard.includes("profileInitials"), "Matches no-photo is not a fake initial face");
+assert(!cardChrome.includes("linear-gradient"), "shared photo fallback is not a fake-face gradient");
+assert(cardChrome.includes("Photo coming soon"), "shared photo fallback names Photo coming soon");
+const footer = readFileSync(new URL("../app/components/SiteFooter.tsx", import.meta.url), "utf8");
+assert(footer.includes("Bandham AI. Adults 18 and over. US, Australia, UK, Europe, Ireland."), "footer is NRI regions, not invented counts");
+assert(!footer.includes("India and the US diaspora"), "old India diaspora footer is gone");
+assert(!/million|success stor/i.test(footer), "footer invents no user counts or success stories");
 assert(chips.includes("WASH") || chips.includes("#F7F1E8"), "chips stay on wash, not loud chrome");
+assert(chips.includes("CREAM") || chips.includes("#FDF8F1"), "visa chip sits on cream");
 assert(chips.includes("<svg"), "chips use SVG icons, not emoji");
 assert(!/\bGOLD\b/.test(matchCard), "MatchCard has no GOLD accent bar");
 assert(!/#C4A36A/.test(matchCard), "MatchCard has no gold hex bar");

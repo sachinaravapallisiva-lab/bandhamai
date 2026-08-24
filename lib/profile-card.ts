@@ -3,8 +3,9 @@ export const PROFILE_CARD_RADIUS = 22;
 export const PROFILE_PHOTO_HEIGHT = 280;
 export const PROFILE_ACTION_MIN = 44;
 export const PROFILE_PHOTO_BG = "#EDE4D4";
-export const PROFILE_PHOTO_FALLBACK =
-  "linear-gradient(160deg, #EFE4D2 0%, #D9C8EC 58%, #5B21B6 130%)";
+/** Cream wash only. Do not use a gradient that reads as a fake face. */
+export const PROFILE_PHOTO_FALLBACK = "#FDF8F1";
+export const PROFILE_PHOTO_SOON = "Photo coming soon";
 export const PROFILE_BODY_PAD = "18px 18px 16px";
 
 export function profileInitials(name: string) {

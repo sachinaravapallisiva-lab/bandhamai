@@ -53,7 +53,7 @@ export default function SiteFooter({
           className="bm-sans"
           style={{ margin: "10px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.45 }}
         >
-          Bandham AI. Adults 18 and over. India and the US diaspora.
+          Bandham AI. Adults 18 and over. US, Australia, UK, Europe, Ireland.
         </p>
       </div>
     </footer>

@@ -62,14 +62,15 @@ export function browseMetaLine(profile: BrowseProfile) {
 
 /**
  * Up to three chips from existing fields: language, education,
- * then family-like visa/diet text if present, else diet or visa.
+ * then family-like diet text if present, else diet.
+ * Visa is a dedicated cream chip via browseVisaLabel, not this list.
  */
 export function browseFactChips(profile: BrowseProfile): BrowseFactChip[] {
   const chips: BrowseFactChip[] = [];
   if (profile.langs) chips.push({ key: "lang", label: profile.langs, icon: "lang" });
   if (profile.education) chips.push({ key: "edu", label: profile.education, icon: "edu" });
 
-  const familyHay = [profile.visa, profile.diet].filter(Boolean);
+  const familyHay = [profile.diet].filter(Boolean);
   const family = familyHay.find(function (value) {
     return /nuclear|joint/i.test(value);
   });
@@ -77,11 +78,14 @@ export function browseFactChips(profile: BrowseProfile): BrowseFactChip[] {
     chips.push({ key: "family", label: family, icon: "home" });
   } else if (profile.diet) {
     chips.push({ key: "diet", label: profile.diet, icon: "home" });
-  } else if (profile.visa) {
-    chips.push({ key: "visa", label: profile.visa, icon: "home" });
   }
 
   return chips.slice(0, 3);
+}
+
+/** Stored profiles.visa_status only. Empty when the field is blank. Never invent a value. */
+export function browseVisaLabel(profile: BrowseProfile) {
+  return profile.visa.trim();
 }
 
 const STOPWORDS = new Set([

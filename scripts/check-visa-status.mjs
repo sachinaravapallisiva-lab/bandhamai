@@ -123,6 +123,15 @@ assert(!api.includes("visa_country"), "no extra visa column");
 const searchApi = read("app/api/profiles/search/route.ts");
 assert(searchApi.includes("visaKeywordVariants"), "search ILIKE expands visa shorthand");
 
+const discover = read("app/components/DiscoverCard.tsx");
+const match = read("app/components/MatchCard.tsx");
+assert(discover.includes("browseVisaLabel"), "Browse card can show stored visa_status");
+assert(match.includes("browseVisaLabel"), "Matches card can show stored visa_status");
+assert(discover.includes("visa={browseVisaLabel(profile)}"), "Browse passes the stored visa label");
+assert(match.includes("visa={browseVisaLabel(profile)}"), "Matches passes the stored visa label");
+assert(!discover.includes("raised_in") && !match.includes("raised_in"), "no invented raised_in column");
+assert(!search.includes("raised_in"), "browse mapper does not invent raised_in");
+
 console.log("visa status taxonomy ok", {
   headings: headings(),
   optionCount: VISA_STATUS_OPTIONS.length,

@@ -1,5 +1,5 @@
 import type { BrowseFactChip } from "../../lib/profile-search";
-import { LINE, MUTED, WASH } from "../../lib/theme";
+import { CREAM, LINE, MUTED, WASH } from "../../lib/theme";
 
 function ChipIcon({ kind }: { kind: "lang" | "edu" | "home" }) {
   const common = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true as const };
@@ -28,8 +28,15 @@ function ChipIcon({ kind }: { kind: "lang" | "edu" | "home" }) {
 }
 
 /** Quiet WASH pills — shared Soft Minimal meta for Browse + Matches cards. */
-export default function ProfileFactChips({ chips }: { chips: BrowseFactChip[] }) {
-  if (!chips.length) return null;
+export default function ProfileFactChips({
+  chips,
+  visa = "",
+}: {
+  chips: BrowseFactChip[];
+  visa?: string;
+}) {
+  const visaLabel = visa.trim();
+  if (!chips.length && !visaLabel) return null;
 
   return (
     <div
@@ -40,6 +47,33 @@ export default function ProfileFactChips({ chips }: { chips: BrowseFactChip[] })
         marginTop: 14,
       }}
     >
+      {visaLabel ? (
+        <span
+          className="bm-sans"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            maxWidth: "100%",
+            padding: "5px 10px",
+            borderRadius: 999,
+            background: CREAM,
+            border: "1px solid " + LINE,
+            fontSize: 12,
+            color: MUTED,
+            minWidth: 0,
+          }}
+        >
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {visaLabel}
+          </span>
+        </span>
+      ) : null}
       {chips.map(function (chip) {
         return (
           <span
