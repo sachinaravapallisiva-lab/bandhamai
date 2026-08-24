@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import { GUN_MILAN_NO_REPORT_REPLY, looksLikeGunMilanQuestion } from "./gun-milan";
+import { loadStoredGunMilanReport } from "./gun-milan-server";
+import {
+  getAnonSupabase,
+  getRequestUser,
+  getServiceSupabase,
+  hasBearerToken,
+} from "./server-supabase";
 import {
   PROPOSE_SUPPORT_TICKET_TOOL_SPEC,
   extractProposeTicketDraft,
@@ -28,11 +36,14 @@ You must never:
 - Auto-reply to anyone on their behalf
 - Rate, score, or judge the other person
 - Invent VerifyAI status, badges, or a match percentage
+- Invent Gun Milan scores, koot points, manglik flags, or compatibility when no stored paid API report is attached
 - Create a ticket from ordinary coaching chat. Only propose a ticket when they ask to open one, or they clearly describe an app bug, billing issue, or account problem
 - Say a ticket was already created or invent a ticket id. The app asks them to confirm. Call propose_support_ticket only when you have a short summary
 - Draft sendable messages to matches
 
 If they ask you to find people, tell them to use the search box above. Do not run a search.
+
+If a stored Gun Milan report from the paid matching API is attached, explain THAT report in plain language. Do not change numbers. Do not invent koots or manglik flags. If no stored report is attached, refuse to guess compatibility or invent a Gun Milan score. Tell them to run Gun Milan on that profile first.
 
 If they ask for pickup lines, chat scripts, or parent-conversation scripts, refuse briefly and offer serious guidance instead (filters, honesty, evaluating fit).
 
@@ -76,11 +87,15 @@ type GuruUpstream = {
 };
 
 async function completeGuru(
-  messages: ChatTurn[]
+  messages: ChatTurn[],
+  extraSystem?: string
 ): Promise<GuruUpstream | { error: string; status: number }> {
+  const system = extraSystem
+    ? GURU_SYSTEM_PROMPT + "\n\n" + extraSystem
+    : GURU_SYSTEM_PROMPT;
   const payload = {
     model: GURU_MODEL,
-    messages: [{ role: "system", content: GURU_SYSTEM_PROMPT }, ...messages],
+    messages: [{ role: "system", content: system }, ...messages],
     max_tokens: 600,
     tools: [PROPOSE_SUPPORT_TICKET_TOOL_SPEC],
     tool_choice: "auto",
@@ -121,13 +136,6 @@ async function completeGuru(
 
 export async function handleGuruChat(request: Request) {
   try {
-    if (!process.env.XAI_API_KEY) {
-      return NextResponse.json(
-        { error: "XAI_API_KEY is not configured" },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
     const messages = sanitizeMessages(body?.messages);
 
@@ -143,7 +151,49 @@ export async function handleGuruChat(request: Request) {
     });
     const lastUserText = lastUser?.content || "";
 
-    const data = await completeGuru(messages);
+    const otherProfileId =
+      typeof body?.profile_id === "string"
+        ? body.profile_id.trim()
+        : typeof body?.other_profile_id === "string"
+          ? body.other_profile_id.trim()
+          : "";
+
+    let storedReport: unknown = null;
+    if (otherProfileId && hasBearerToken(request)) {
+      const supabase = getServiceSupabase() || getAnonSupabase();
+      if (supabase) {
+        const { user } = await getRequestUser(request, supabase);
+        if (user) {
+          storedReport = await loadStoredGunMilanReport(supabase, {
+            viewerUserId: user.id,
+            otherProfileId,
+          });
+        }
+      }
+    }
+
+    if (looksLikeGunMilanQuestion(lastUserText) && !storedReport) {
+      return NextResponse.json({ reply: GUN_MILAN_NO_REPORT_REPLY });
+    }
+
+    if (!process.env.XAI_API_KEY) {
+      return NextResponse.json(
+        { error: "XAI_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
+
+    let extraSystem = "";
+    if (storedReport && typeof storedReport === "object") {
+      const view = { ...(storedReport as Record<string, unknown>) };
+      delete view.raw;
+      const safe = view;
+      extraSystem =
+        "A stored Gun Milan report from the paid matching API is attached as JSON. Explain only this report in plain language. Do not change numbers. Do not invent koots, scores, or manglik flags. Never write sendable dating text.\n" +
+        JSON.stringify(safe);
+    }
+
+    const data = await completeGuru(messages, extraSystem || undefined);
     if ("error" in data) {
       return NextResponse.json({ error: data.error }, { status: data.status });
     }

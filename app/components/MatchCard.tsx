@@ -1,6 +1,7 @@
 "use client";
 
 import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
+import { canShowGunMilanAction } from "../../lib/kundli-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine } from "../../lib/profile-search";
 import {
@@ -15,6 +16,7 @@ import {
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import DownloadBiodata from "./DownloadBiodata";
+import GunMilanPanel from "./GunMilanPanel";
 import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
@@ -165,6 +167,10 @@ export default function MatchCard({
           <div style={{ marginTop: 12 }}>
             <DownloadBiodata profileId={profile.id} compact />
           </div>
+        ) : null}
+
+        {canShowGunMilanAction({ signedIn, kundliShare: profile.kundliShare }) ? (
+          <GunMilanPanel profileId={profile.id} signedIn={signedIn} />
         ) : null}
 
         <InstagramShareControls

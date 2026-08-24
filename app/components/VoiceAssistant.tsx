@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { authJsonHeaders } from "../../lib/client-auth";
+import { readRememberedGunMilanProfile } from "../../lib/gun-milan";
 import { loginHref } from "../../lib/next-path";
 import {
   GURU_INTRO,
@@ -184,11 +185,18 @@ export default function VoiceAssistant() {
 
   function askGuru(history: Line[]) {
     setState("thinking");
-    fetch(GURU_PATH, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: toChatMessages(history) }),
-    })
+    const profileId = readRememberedGunMilanProfile();
+    authJsonHeaders()
+      .then(function (headers) {
+        return fetch(GURU_PATH, {
+          method: "POST",
+          headers: headers || { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: toChatMessages(history),
+            profile_id: profileId || undefined,
+          }),
+        });
+      })
       .then(function (r) {
         return r.json().then(function (data: any) {
           return { ok: r.ok, data: data };

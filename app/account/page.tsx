@@ -6,14 +6,34 @@ import { supabase } from "../../lib/supabase";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { DELETE_CONFIRM_WORD } from "../../lib/safety";
 import {
+  BIRTH_DETAILS_API_PATH,
+  GUN_MILAN_ACCOUNT_NOTE,
+  GUN_MILAN_NOT_CONFIGURED,
+} from "../../lib/gun-milan";
+import {
+  BIRTH_SAVED,
+  BIRTH_SAVE_LABEL,
+  BIRTH_SAVING_LABEL,
+  emptyBirthDetails,
+  readBirthDetails,
+  type BirthDetailsFields,
+} from "../../lib/birth-details";
+import {
   BIODATA_SHARE_SAVE_LABEL,
   BIODATA_SHARE_SAVING_LABEL,
   parseBiodataShare,
 } from "../../lib/biodata-share";
+import {
+  KUNDLI_SHARE_SAVE_LABEL,
+  KUNDLI_SHARE_SAVING_LABEL,
+  parseKundliShare,
+} from "../../lib/kundli-share";
 import { parseInstagramInput } from "../../lib/instagram";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import BiodataShareField from "../components/BiodataShareField";
+import BirthDetailsForm from "../components/BirthDetailsFields";
+import KundliShareField from "../components/KundliShareField";
 import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
@@ -41,6 +61,15 @@ export default function AccountPage() {
   const [biodataShare, setBiodataShare] = useState(false);
   const [savingShare, setSavingShare] = useState(false);
   const [shareNote, setShareNote] = useState("");
+  const [kundliShare, setKundliShare] = useState(false);
+  const [savingKundli, setSavingKundli] = useState(false);
+  const [kundliNote, setKundliNote] = useState("");
+  const [birth, setBirth] = useState<BirthDetailsFields>(function () {
+    return emptyBirthDetails();
+  });
+  const [savingBirth, setSavingBirth] = useState(false);
+  const [birthNote, setBirthNote] = useState("");
+  const [matchingConfigured, setMatchingConfigured] = useState<boolean | null>(null);
 
   function loadProfile() {
     authJsonHeaders().then(function (headers) {
@@ -57,9 +86,33 @@ export default function AccountPage() {
           setInstagram(handle);
           setHasProfile(!!(data && data.profile && data.profile.id));
           setBiodataShare(parseBiodataShare(data && data.profile && data.profile.biodata_share));
+          setKundliShare(parseKundliShare(data && data.profile && data.profile.kundli_share));
         })
         .catch(function () {
           /* account page still works without Instagram */
+        });
+    });
+
+    authJsonHeaders().then(function (headers) {
+      if (!headers) return;
+      fetch(BIRTH_DETAILS_API_PATH, { headers })
+        .then(function (r) {
+          return r.json().then(function (data) {
+            return { ok: r.ok, data };
+          });
+        })
+        .then(function (result) {
+          if (typeof result.data.configured === "boolean") {
+            setMatchingConfigured(result.data.configured);
+          }
+          if (result.ok && result.data.details) {
+            setBirth(readBirthDetails(result.data.details));
+          } else if (!result.ok && result.data.error) {
+            setBirthNote(result.data.error);
+          }
+        })
+        .catch(function () {
+          /* birth details stay empty until SQL exists */
         });
     });
   }
@@ -227,6 +280,86 @@ export default function AccountPage() {
       .catch(function () {
         setSavingShare(false);
         setShareNote("Network trouble. Try again?");
+      });
+  }
+
+  function saveKundliShare() {
+    if (!hasProfile) {
+      setKundliNote("Create a profile first.");
+      return;
+    }
+
+    setSavingKundli(true);
+    setKundliNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingKundli(false);
+          setKundliNote("Sign in to save this choice.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ kundli_share: kundliShare }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingKundli(false);
+          if (!res.ok) {
+            setKundliNote(data.error || "Could not save this choice.");
+            return;
+          }
+          const next = parseKundliShare(data.profile?.kundli_share);
+          setKundliShare(next);
+          setKundliNote(next ? "Others can run Gun Milan with you." : "Others cannot run Gun Milan with you.");
+        });
+      })
+      .catch(function () {
+        setSavingKundli(false);
+        setKundliNote("Network trouble. Try again?");
+      });
+  }
+
+  function saveBirthDetails() {
+    if (!hasProfile) {
+      setBirthNote("Create a profile first.");
+      return;
+    }
+
+    setSavingBirth(true);
+    setBirthNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingBirth(false);
+          setBirthNote("Sign in to save birth details.");
+          return null;
+        }
+        return fetch(BIRTH_DETAILS_API_PATH, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(birth),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingBirth(false);
+          if (typeof data.configured === "boolean") setMatchingConfigured(data.configured);
+          if (!res.ok) {
+            setBirthNote(data.error || "Could not save birth details.");
+            return;
+          }
+          if (data.details) setBirth(readBirthDetails(data.details));
+          setBirthNote(BIRTH_SAVED);
+        });
+      })
+      .catch(function () {
+        setSavingBirth(false);
+        setBirthNote("Network trouble. Try again?");
       });
   }
 
@@ -430,6 +563,86 @@ export default function AccountPage() {
             {!hasProfile || shareNote ? (
               <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
                 {hasProfile ? shareNote : "Create a profile first. This stays off until you turn it on."}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <BirthDetailsForm
+              value={birth}
+              onChange={function (next: BirthDetailsFields) {
+                setBirth(next);
+                if (birthNote) setBirthNote("");
+              }}
+              disabled={savingBirth || !hasProfile}
+              idPrefix="account-birth"
+            />
+            <p className="bm-sans" style={{ margin: "14px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
+              {GUN_MILAN_ACCOUNT_NOTE}
+            </p>
+            {matchingConfigured === false ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
+                {GUN_MILAN_NOT_CONFIGURED}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              disabled={savingBirth || !hasProfile}
+              onClick={saveBirthDetails}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingBirth ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingBirth || !hasProfile ? "default" : "pointer",
+              }}
+            >
+              {savingBirth ? BIRTH_SAVING_LABEL : BIRTH_SAVE_LABEL}
+            </button>
+            {!hasProfile || birthNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                {hasProfile ? birthNote : "Create a profile first. Birth details stay private."}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <KundliShareField
+              id="account-kundli-share"
+              checked={kundliShare}
+              onChange={function (next) {
+                setKundliShare(next);
+                if (kundliNote) setKundliNote("");
+              }}
+              disabled={savingKundli || !hasProfile}
+            />
+            <button
+              type="button"
+              disabled={savingKundli || !hasProfile}
+              onClick={saveKundliShare}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingKundli ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingKundli || !hasProfile ? "default" : "pointer",
+              }}
+            >
+              {savingKundli ? KUNDLI_SHARE_SAVING_LABEL : KUNDLI_SHARE_SAVE_LABEL}
+            </button>
+            {!hasProfile || kundliNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                {hasProfile ? kundliNote : "Create a profile first. This stays off until you turn it on."}
               </p>
             ) : null}
           </section>
