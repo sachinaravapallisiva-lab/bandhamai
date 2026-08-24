@@ -136,13 +136,6 @@ async function completeGuru(
 
 export async function handleGuruChat(request: Request) {
   try {
-    if (!process.env.XAI_API_KEY) {
-      return NextResponse.json(
-        { error: "XAI_API_KEY is not configured" },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
     const messages = sanitizeMessages(body?.messages);
 
@@ -181,6 +174,13 @@ export async function handleGuruChat(request: Request) {
 
     if (looksLikeGunMilanQuestion(lastUserText) && !storedReport) {
       return NextResponse.json({ reply: GUN_MILAN_NO_REPORT_REPLY });
+    }
+
+    if (!process.env.XAI_API_KEY) {
+      return NextResponse.json(
+        { error: "XAI_API_KEY is not configured" },
+        { status: 500 }
+      );
     }
 
     let extraSystem = "";
