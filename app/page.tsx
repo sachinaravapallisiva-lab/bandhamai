@@ -8,9 +8,17 @@ import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
 import DiscoverCard from "./components/DiscoverCard";
+import BrowseAsk from "./components/BrowseAsk";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
+import {
+  BROWSE_ASK_LIST_LABEL,
+  foldBrowseAskIntoQuery,
+  questionsForBrowsePrompt,
+  type BrowseAskAnswer,
+  type BrowseAskQuestion,
+} from "../lib/browse-ask";
 import { supabase } from "../lib/supabase";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -46,7 +54,8 @@ import {
 /* ------------------------------------------------------------------ *
    Bandham AI — main app
    Browse (profile search only) / Matches / Chat
-   Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
+   Top box + Tap to speak: STT → short ask chips → desi/English parse → /api/profiles/search.
+   Empty Browse load still shows the default shortlist. Ask runs only after a prompt.
    Never opens the Bandham assistant from this path. Assistant is the mic chip.
  * ------------------------------------------------------------------ */
 
@@ -68,6 +77,12 @@ export default function Home() {
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
   const [searching, setSearching] = useState(true);
+  const [askSession, setAskSession] = useState<{
+    prompt: string;
+    questions: BrowseAskQuestion[];
+    index: number;
+    answers: BrowseAskAnswer[];
+  } | null>(null);
   const [amps, setAmps] = useState<number[]>(Array(16).fill(0.18));
   const [draft, setDraft] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -121,6 +136,50 @@ export default function Home() {
   }
 
   searchRef.current = runSearch;
+
+  function beginPrompt(text?: string) {
+    const q = typeof text === "string" ? text : query;
+    const trimmed = q.trim();
+    setAskSession(null);
+    if (!trimmed) {
+      runSearch("");
+      return;
+    }
+    const questions = questionsForBrowsePrompt(trimmed);
+    if (questions.length === 0) {
+      runSearch(trimmed);
+      return;
+    }
+    setSearching(false);
+    setNote("");
+    setAskSession({
+      prompt: trimmed,
+      questions: questions,
+      index: 0,
+      answers: [],
+    });
+  }
+
+  function answerBrowseAsk(choiceId: string) {
+    if (!askSession) return;
+    const question = askSession.questions[askSession.index];
+    if (!question) return;
+    const nextAnswers = askSession.answers.concat({
+      questionId: question.id,
+      choiceId: choiceId,
+    });
+    if (askSession.index + 1 >= askSession.questions.length) {
+      setAskSession(null);
+      runSearch(foldBrowseAskIntoQuery(askSession.prompt, nextAnswers));
+      return;
+    }
+    setAskSession({
+      prompt: askSession.prompt,
+      questions: askSession.questions,
+      index: askSession.index + 1,
+      answers: nextAnswers,
+    });
+  }
 
   useEffect(() => {
     function applySession(session: { user?: { email?: string }; access_token?: string } | null) {
@@ -257,7 +316,7 @@ export default function Home() {
             if (data && data.text) {
               setQuery(function (prev) {
                 const next = (prev + " " + data.text).trim();
-                queueMicrotask(function () { runSearch(next); });
+                queueMicrotask(function () { beginPrompt(next); });
                 return next;
               });
               setNote("");
@@ -586,7 +645,7 @@ export default function Home() {
                 onKeyDown={function (e) {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    runSearch();
+                    beginPrompt();
                   }
                 }}
                 placeholder={SEARCH_PLACEHOLDER}
@@ -634,7 +693,7 @@ export default function Home() {
                   {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
-                  onClick={function () { runSearch(); }}
+                  onClick={function () { beginPrompt(); }}
                   disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
@@ -678,7 +737,7 @@ export default function Home() {
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); runSearch(""); }}
+                    onClick={function () { setAskSession(null); setQuery(""); setNote(""); runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -689,10 +748,16 @@ export default function Home() {
             </section>
 
             <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
-              {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
+              {askSession ? BROWSE_ASK_LIST_LABEL : searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
 
-            {!searching && !current ? (
+            {askSession ? (
+              <BrowseAsk
+                questions={askSession.questions}
+                index={askSession.index}
+                onChoose={answerBrowseAsk}
+              />
+            ) : !searching && !current ? (
               <EmptyState
                 eyebrow="BROWSE"
                 title={emptyKind === "inventory" ? BROWSE_EMPTY_INVENTORY_TITLE : BROWSE_EMPTY_RESULTS_TITLE}
