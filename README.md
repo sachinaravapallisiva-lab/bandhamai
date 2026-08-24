@@ -385,9 +385,13 @@ If someone asks the assistant to find people, it may say “use the search box a
 **Profile search (top box)**
 
 1. On Browse, the box is labeled **PROFILE SEARCH**. Placeholder starts with “Search profiles”.
-2. Type `doctor in Hyderabad` and press Search or Enter. Cards come from `/api/profiles/search`. The assistant chip stays closed.
-3. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and searches. The chip still stays closed.
-4. Network tab: search path is `/api/transcribe` then `/api/profiles/search`. No `/api/guru` or `/api/chat`.
+2. A first load with an empty box still shows the default shortlist of 3. No dealbreaker widget yet.
+3. Type `doctor in Hyderabad` and press Search or Enter. Bandham AI first asks every remaining needed dealbreaker as tap chips (diet, India vs abroad, mother tongue if missing, parents, timeline, joint vs nuclear, children, plus city or gender if the prompt did not already say them). Each chip row includes **Don't want to answer**. Then cards come from `/api/profiles/search` with the prompt plus the tapped answers. The assistant chip stays closed.
+4. Type `Telugu vegetarian woman in Hyderabad`. Diet, city, gender, and mother tongue are skipped because the prompt already answered them. The other needed taps still appear.
+5. Tap **Don't want to answer** on a question. That filter is omitted from the search.
+6. Tap **Tap to speak**, say a person search, tap stop. Transcript lands in the same box and opens the same ask widget, then searches. The chip still stays closed.
+7. After a search, **EARLIER SEARCHES** cards appear under the search field (session-only if signed out; signed-in rows persist after `supabase/browse_prompts.sql`). **View results** reopens that shortlist. **Search again** reruns the raw prompt through the ask widget.
+8. Network tab: search path is `/api/transcribe` then `/api/profiles/search`. Signed-in save/list uses `/api/browse/prompts`. No `/api/guru` or `/api/chat` from the top box.
 
 **Bandham assistant (mic chip)**
 
@@ -398,6 +402,14 @@ If someone asks the assistant to find people, it may say “use the search box a
 5. Ask it to write a first message she would think you wrote, or to rate someone, or for a match % / VerifyAI score. It should refuse.
 6. Network tab: chip posts `/api/guru` (or leftover `/api/chat`, same handler). No `/api/profiles/search`.
 7. Ask to open a ticket about a billing or app bug, give a short summary, then tap **Open ticket**. A row should land in `support_tickets`. Ordinary coaching must not create a row.
+
+### Earlier Browse searches
+
+Signed-in members persist the raw Browse prompt (plus the folded search used to reopen that shortlist) in `public.browse_prompts`. This is own history only. It is not swipe history and it does not store caste, religion, or other invented columns.
+
+CoS / Sai: run [`supabase/browse_prompts.sql`](supabase/browse_prompts.sql) in the Supabase SQL editor after merge. Until that file is applied, `GET`/`POST` `/api/browse/prompts` return **503** and the UI keeps session-only cards on this device. Signed-out visitors stay session-only.
+
+`npm run check:browse-ask` and `npm run check:browse-prompts` lock the ask-after-prompt widget and the earlier-search cards.
 
 ### Microphone
 

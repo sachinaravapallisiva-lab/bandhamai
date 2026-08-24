@@ -282,7 +282,7 @@ export function parseSearchQuery(raw: string): SearchCriteria {
   return {
     city: cityHit.city,
     gender: genderHit.gender,
-    keywords: keywords.slice(0, 6),
+    keywords: keywords.slice(0, 10),
   };
 }
 
@@ -313,7 +313,7 @@ export function mergeCriteria(base: SearchCriteria, extra: SearchCriteria | null
   return {
     city: extra.city || base.city,
     gender: extra.gender || base.gender,
-    keywords: keywords.slice(0, 6),
+    keywords: keywords.slice(0, 10),
   };
 }
 
