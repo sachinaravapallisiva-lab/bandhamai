@@ -488,23 +488,6 @@ export default function AccountDrawer() {
                         <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>{item.hint}</span>
                       ) : null}
                     </span>
-                    {"note" in item && item.note ? (
-                      <span
-                        className="bm-sans"
-                        style={{
-                          marginLeft: "auto",
-                          padding: "2px 8px",
-                          borderRadius: 999,
-                          border: "1px solid " + LINE,
-                          background: WASH,
-                          color: VIOLET_DEEP,
-                          fontSize: 11,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {item.note}
-                      </span>
-                    ) : null}
                   </Link>
                 );
               })}
