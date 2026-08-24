@@ -219,16 +219,17 @@ export async function loadMeetupShortlist(
   const blocked = await loadBlockedSet(supabase, viewerId);
   const flags = await profileColumns(supabase);
   if (!flags.user_id) {
-    return userIds.slice(0, MEETUP_SHORTLIST_SIZE).map(function (userId) {
-      if (blocked.userIds.has(userId)) return null;
-      return {
+    const fallback: MeetupMember[] = [];
+    for (const userId of userIds) {
+      if (blocked.userIds.has(userId)) continue;
+      fallback.push({
         userId,
         displayName: MEETUP_COPY.memberFallback,
         profile: null,
-      };
-    }).filter(function (row): row is MeetupMember {
-      return !!row;
-    });
+      });
+      if (fallback.length >= MEETUP_SHORTLIST_SIZE) break;
+    }
+    return fallback;
   }
 
   const select = browseSelectColumns(flags) + ", status";
@@ -240,8 +241,9 @@ export async function loadMeetupShortlist(
   const presence = await loadPresenceByUserIds(supabase, userIds);
   const byUser = new Map<string, Record<string, unknown>>();
   if (Array.isArray(profiles)) {
+    const rows = profiles as unknown as Record<string, unknown>[];
     const visible = applyBlockedFilter(
-      (profiles as Record<string, unknown>[]).filter(function (row) {
+      rows.filter(function (row) {
         return asId(row.status) !== "removed";
       }),
       blocked
