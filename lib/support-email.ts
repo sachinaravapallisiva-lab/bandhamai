@@ -8,6 +8,8 @@ export type TicketEmailInput = SupportTicketDraft & {
   id: string;
   userId: string;
   email?: string | null;
+  source?: string;
+  callerPhone?: string | null;
 };
 
 export type TicketEmailResult = {
@@ -15,15 +17,24 @@ export type TicketEmailResult = {
   error: string | null;
 };
 
+function founderEmailLead(ticket: TicketEmailInput) {
+  if (ticket.source === "voice") {
+    return "A Bandham AI phone support call opened an app issue ticket.";
+  }
+  return "A Bandham AI member confirmed an app issue ticket.";
+}
+
 function founderEmailHtml(ticket: TicketEmailInput) {
   const email = ticket.email || "(no email on the account)";
+  const phone = ticket.callerPhone ? "<br><strong>Caller phone:</strong> " + escapeHtml(ticket.callerPhone) : "";
+  const userId = ticket.userId || "(not linked)";
   return [
-    "<p>A Bandham AI member confirmed an app issue ticket.</p>",
+    "<p>" + escapeHtml(founderEmailLead(ticket)) + "</p>",
     "<p><strong>Ticket:</strong> " + escapeHtml(ticket.id) + "<br>",
     "<strong>Category:</strong> " + escapeHtml(ticket.category) + "<br>",
     "<strong>Subject:</strong> " + escapeHtml(ticket.subject) + "<br>",
-    "<strong>Member:</strong> " + escapeHtml(email) + "<br>",
-    "<strong>User id:</strong> " + escapeHtml(ticket.userId) + "</p>",
+    "<strong>Member:</strong> " + escapeHtml(email) + phone + "<br>",
+    "<strong>User id:</strong> " + escapeHtml(userId) + "</p>",
     "<p>" + escapeHtml(ticket.body).replace(/\n/g, "<br>") + "</p>",
     "<p>This is the in-app support queue, not a safety report and not an emergency alert.</p>",
   ].join("");
@@ -31,19 +42,19 @@ function founderEmailHtml(ticket: TicketEmailInput) {
 
 function founderEmailText(ticket: TicketEmailInput) {
   const email = ticket.email || "(no email on the account)";
-  return [
-    "A Bandham AI member confirmed an app issue ticket.",
+  const userId = ticket.userId || "(not linked)";
+  const lines = [
+    founderEmailLead(ticket),
     "",
     "Ticket: " + ticket.id,
     "Category: " + ticket.category,
     "Subject: " + ticket.subject,
     "Member: " + email,
-    "User id: " + ticket.userId,
-    "",
-    ticket.body,
-    "",
-    "This is the in-app support queue, not a safety report and not an emergency alert.",
-  ].join("\n");
+  ];
+  if (ticket.callerPhone) lines.push("Caller phone: " + ticket.callerPhone);
+  lines.push("User id: " + userId, "", ticket.body, "");
+  lines.push("This is the in-app support queue, not a safety report and not an emergency alert.");
+  return lines.join("\n");
 }
 
 function escapeHtml(value: string) {
