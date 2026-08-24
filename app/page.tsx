@@ -11,6 +11,22 @@ import DiscoverCard from "./components/DiscoverCard";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
+import BrowseAsk from "./components/BrowseAsk";
+import BrowseRecent from "./components/BrowseRecent";
+import {
+  foldBrowseAnswers,
+  remainingBrowseQuestions,
+  type BrowseAskAnswer,
+  type BrowseAskQuestion,
+} from "../lib/browse-ask";
+import {
+  BROWSE_PROMPTS_PATH,
+  dedupeBrowsePrompts,
+  readLocalBrowsePrompts,
+  rememberLocalBrowsePrompt,
+  writeLocalBrowsePrompts,
+  type BrowsePromptItem,
+} from "../lib/browse-prompts";
 import { supabase } from "../lib/supabase";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -46,7 +62,7 @@ import {
 /* ------------------------------------------------------------------ *
    Bandham AI — main app
    Browse (profile search only) / Matches / Chat
-   Top box + Tap to speak: STT → desi/English parse → /api/profiles/search.
+   Top box + Tap to speak: STT → remaining dealbreaker taps → /api/profiles/search.
    Never opens the Bandham assistant from this path. Assistant is the mic chip.
  * ------------------------------------------------------------------ */
 
@@ -78,10 +94,16 @@ export default function Home() {
   const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingNote, setBillingNote] = useState("");
+  const [askQueue, setAskQueue] = useState<BrowseAskQuestion[]>([]);
+  const [askIndex, setAskIndex] = useState(0);
+  const [askAnswers, setAskAnswers] = useState<BrowseAskAnswer[]>([]);
+  const [askPrompt, setAskPrompt] = useState("");
+  const [recentPrompts, setRecentPrompts] = useState<BrowsePromptItem[]>([]);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const searchRef = useRef<((text?: string) => void) | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   function runSearch(text?: string) {
     const q = typeof text === "string" ? text : query;
@@ -120,6 +142,114 @@ export default function Home() {
       });
   }
 
+  function clearAsk() {
+    setAskQueue([]);
+    setAskIndex(0);
+    setAskAnswers([]);
+    setAskPrompt("");
+  }
+
+  function rememberPrompt(prompt: string, searchQ: string) {
+    const next = rememberLocalBrowsePrompt(prompt, searchQ);
+    writeLocalBrowsePrompts(next);
+    setRecentPrompts(next);
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) return null;
+        return fetch(BROWSE_PROMPTS_PATH, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ prompt: prompt, search_q: searchQ }),
+        });
+      })
+      .then(function (res) {
+        if (!res || !res.ok) return null;
+        return loadRecentPrompts();
+      })
+      .catch(function () { /* session list already updated */ });
+  }
+
+  function loadRecentPrompts() {
+    const local = readLocalBrowsePrompts();
+    setRecentPrompts(local);
+    return authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) return null;
+        return fetch(BROWSE_PROMPTS_PATH, headers ? { headers: headers } : undefined);
+      })
+      .then(function (res) {
+        if (!res) return null;
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result || !result.ok || !Array.isArray(result.data.prompts)) return;
+        const remote = result.data.prompts;
+        const merged = dedupeBrowsePrompts(remote.concat(local));
+        writeLocalBrowsePrompts(merged);
+        setRecentPrompts(merged);
+      })
+      .catch(function () { /* keep session list */ });
+  }
+
+  function submitPrompt(text?: string) {
+    const q = (typeof text === "string" ? text : query).trim();
+    if (!q) {
+      clearAsk();
+      runSearch("");
+      return;
+    }
+    const remaining = remainingBrowseQuestions(q);
+    if (remaining.length === 0) {
+      clearAsk();
+      runSearch(q);
+      rememberPrompt(q, q);
+      return;
+    }
+    setAskPrompt(q);
+    setAskQueue(remaining);
+    setAskIndex(0);
+    setAskAnswers([]);
+    setSearching(false);
+    setNote("");
+  }
+
+  function chooseAsk(choiceId: string) {
+    const question = askQueue[askIndex];
+    if (!question) return;
+    const nextAnswers = askAnswers.concat({ questionId: question.id, choiceId: choiceId });
+    if (askIndex + 1 >= askQueue.length) {
+      const source = askPrompt || query;
+      const folded = foldBrowseAnswers(source, nextAnswers);
+      clearAsk();
+      runSearch(folded);
+      rememberPrompt(source, folded);
+      return;
+    }
+    setAskAnswers(nextAnswers);
+    setAskIndex(askIndex + 1);
+  }
+
+  function viewRecent(item: BrowsePromptItem) {
+    clearAsk();
+    setQuery(item.prompt);
+    runSearch(item.searchQ);
+  }
+
+  function rerunRecent(item: BrowsePromptItem) {
+    setQuery(item.prompt);
+    submitPrompt(item.prompt);
+  }
+
+  function newSearch() {
+    setQuery("");
+    setNote("");
+    clearAsk();
+    runSearch("");
+    if (searchInputRef.current) searchInputRef.current.focus();
+  }
+
   searchRef.current = runSearch;
 
   useEffect(() => {
@@ -132,6 +262,7 @@ export default function Home() {
         fetchEntitlement().then(function (next) {
           setEntitlement(next);
         });
+        loadRecentPrompts();
         return;
       }
       setSignedIn(true);
@@ -149,6 +280,7 @@ export default function Home() {
       fetchEntitlement().then(function (next) {
         setEntitlement(next);
       });
+      loadRecentPrompts();
     }
 
     supabase.auth.getSession().then(function (result) {
@@ -257,7 +389,7 @@ export default function Home() {
             if (data && data.text) {
               setQuery(function (prev) {
                 const next = (prev + " " + data.text).trim();
-                queueMicrotask(function () { runSearch(next); });
+                queueMicrotask(function () { submitPrompt(next); });
                 return next;
               });
               setNote("");
@@ -581,12 +713,13 @@ export default function Home() {
               </p>
 
               <input
+                ref={searchInputRef}
                 value={query}
                 onChange={function (e) { setQuery(e.target.value); }}
                 onKeyDown={function (e) {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    runSearch();
+                    submitPrompt();
                   }
                 }}
                 placeholder={SEARCH_PLACEHOLDER}
@@ -634,7 +767,7 @@ export default function Home() {
                   {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
-                  onClick={function () { runSearch(); }}
+                  onClick={function () { submitPrompt(); }}
                   disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
@@ -678,7 +811,7 @@ export default function Home() {
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); runSearch(""); }}
+                    onClick={function () { setQuery(""); setNote(""); clearAsk(); runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -688,6 +821,22 @@ export default function Home() {
               </div>
             </section>
 
+            <BrowseRecent
+              items={recentPrompts}
+              onView={viewRecent}
+              onRerun={rerunRecent}
+              onNewSearch={newSearch}
+            />
+
+            {askQueue[askIndex] ? (
+              <BrowseAsk
+                question={askQueue[askIndex]}
+                index={askIndex}
+                total={askQueue.length}
+                onChoose={chooseAsk}
+              />
+            ) : (
+              <>
             <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
               {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
@@ -719,6 +868,8 @@ export default function Home() {
                 }}
               />
             ) : null}
+              </>
+            )}
           </>
         )}
 
