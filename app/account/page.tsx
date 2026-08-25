@@ -16,8 +16,19 @@ import AppChrome, { ChromeLink } from "../components/AppChrome";
 import BiodataShareField from "../components/BiodataShareField";
 import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
+import SubscribeCallField from "../components/SubscribeCallField";
 import VerifyOffer from "../components/VerifyOffer";
 import MeetupCard from "../components/MeetupCard";
+import {
+  SUBSCRIBE_CALL_NEED_PHONE,
+  SUBSCRIBE_CALL_NEED_PROFILE,
+  SUBSCRIBE_CALL_SAVED_OFF,
+  SUBSCRIBE_CALL_SAVED_ON,
+  SUBSCRIBE_CALL_SAVE_LABEL,
+  SUBSCRIBE_CALL_SAVING_LABEL,
+  displayPhoneWithSpaces,
+  parseCallSubscribeOptIn,
+} from "../../lib/subscribe-call";
 
 type BlockRow = {
   id: string;
@@ -42,6 +53,10 @@ export default function AccountPage() {
   const [biodataShare, setBiodataShare] = useState(false);
   const [savingShare, setSavingShare] = useState(false);
   const [shareNote, setShareNote] = useState("");
+  const [callOptIn, setCallOptIn] = useState(false);
+  const [callPhone, setCallPhone] = useState("");
+  const [savingCall, setSavingCall] = useState(false);
+  const [callNote, setCallNote] = useState("");
 
   function loadProfile() {
     authJsonHeaders().then(function (headers) {
@@ -58,6 +73,12 @@ export default function AccountPage() {
           setInstagram(handle);
           setHasProfile(!!(data && data.profile && data.profile.id));
           setBiodataShare(parseBiodataShare(data && data.profile && data.profile.biodata_share));
+          setCallOptIn(parseCallSubscribeOptIn(data && data.profile && data.profile.call_subscribe_opt_in));
+          setCallPhone(
+            displayPhoneWithSpaces(
+              data && data.profile && typeof data.profile.phone === "string" ? data.profile.phone : ""
+            )
+          );
         })
         .catch(function () {
           /* account page still works without Instagram */
@@ -188,6 +209,56 @@ export default function AccountPage() {
       .catch(function () {
         setSavingSocial(false);
         setSocialNote("Network trouble. Try again?");
+      });
+  }
+
+  function saveSubscribeCall() {
+    if (!hasProfile) {
+      setCallNote(SUBSCRIBE_CALL_NEED_PROFILE);
+      return;
+    }
+    if (callOptIn && !callPhone.trim()) {
+      setCallNote(SUBSCRIBE_CALL_NEED_PHONE);
+      return;
+    }
+
+    setSavingCall(true);
+    setCallNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setSavingCall(false);
+          setCallNote("Sign in to save this choice.");
+          return null;
+        }
+        return fetch("/api/profiles", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            phone: callPhone,
+            call_subscribe_opt_in: callOptIn,
+          }),
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        return res.json().then(function (data) {
+          setSavingCall(false);
+          if (!res.ok) {
+            setCallNote(data.error || "Could not save this choice.");
+            return;
+          }
+          const nextOn = parseCallSubscribeOptIn(data.profile?.call_subscribe_opt_in);
+          const nextPhone =
+            data.profile && typeof data.profile.phone === "string" ? data.profile.phone : callPhone;
+          setCallOptIn(nextOn);
+          setCallPhone(displayPhoneWithSpaces(nextPhone || ""));
+          setCallNote(nextOn ? SUBSCRIBE_CALL_SAVED_ON : SUBSCRIBE_CALL_SAVED_OFF);
+        });
+      })
+      .catch(function () {
+        setSavingCall(false);
+        setCallNote("Network trouble. Try again?");
       });
   }
 
@@ -433,6 +504,46 @@ export default function AccountPage() {
             {!hasProfile || shareNote ? (
               <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
                 {hasProfile ? shareNote : "Create a profile first. This stays off until you turn it on."}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <SubscribeCallField
+              checked={callOptIn}
+              phone={callPhone}
+              onChecked={function (next) {
+                setCallOptIn(next);
+                if (callNote) setCallNote("");
+              }}
+              onPhone={function (next) {
+                setCallPhone(next);
+                if (callNote) setCallNote("");
+              }}
+              disabled={savingCall || !hasProfile}
+            />
+            <button
+              type="button"
+              disabled={savingCall || !hasProfile}
+              onClick={saveSubscribeCall}
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                marginTop: 12,
+                background: savingCall ? VIOLET_DEEP : VIOLET,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: savingCall || !hasProfile ? "default" : "pointer",
+              }}
+            >
+              {savingCall ? SUBSCRIBE_CALL_SAVING_LABEL : SUBSCRIBE_CALL_SAVE_LABEL}
+            </button>
+            {!hasProfile || callNote ? (
+              <p className="bm-sans" style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+                {hasProfile ? callNote : SUBSCRIBE_CALL_NEED_PROFILE}
               </p>
             ) : null}
           </section>

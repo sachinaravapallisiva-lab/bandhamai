@@ -542,6 +542,49 @@ Messaging is **$9.99/mo**. VerifyAI is **$4.99** one-time. The phone agent must 
 6. Signed-in in-app **Open ticket** still uses `/api/support/tickets` and `source=assistant`.
 7. `npm run check:voice-support`, `npm run check:support-tickets`, and `npm run check:guru-search`.
 
+## Subscribe reminder calls (opt-in only, no live dials)
+
+Regular members can ask for one Bandham AI voice check in every 15 days. This is a marketing call in the US, Australia, the UK, the EU, and Ireland. **Default is off.** They must save a phone on their own Bandham profile and tap **Call me about Bandham AI** on Account.
+
+This is **not** Bandham Support and **not** the in app assistant / love guru. Support stays tickets and billing. Guru still never writes sendable dating text and never searches profiles. Do not send WhatsApp.
+
+**No live outbound calls ship in this drop.** Zero profiles may have a phone today. The app stores opt-in, lists who would be called, and keeps a conversational agent prompt. It does not dial.
+
+### What is in the repo
+
+| Piece | Job |
+| --- | --- |
+| [`supabase/subscribe_call_opt_in.sql`](supabase/subscribe_call_opt_in.sql) | Adds `phone` if missing, `call_subscribe_opt_in` (default false), `call_subscribe_opted_at`, `last_subscribe_call_at`. Revokes public phone reads. Members may update only their own phone and opt-in. |
+| Account | Toggle + phone field. Number shown with spaces, no hyphens. |
+| `GET` / `POST` `/api/voice/subscribe-reminders` | Secret-gated dry run. Returns `count` and masked members. Never dials. A dial action returns 400. |
+| [`docs/subscribe-call-prompt.md`](docs/subscribe-call-prompt.md) | Conversational voice agent prompt (not IVR, not a recitation). English, Hindi, Telugu, and other major Indian languages. |
+
+Auth is the same `BANDHAM_VOICE_SUPPORT_SECRET` header as inbound phone support. If the secret is unset, the list route **fails closed** (503). Wrong secret is 401.
+
+Eligibility (fail closed):
+
+1. Phone saved on their own profile
+2. Explicit opt-in (`call_subscribe_opt_in` true)
+3. Regular / not entitled (no active or trialing subscription)
+4. No reminder call in the last 15 days
+5. 18+ (stored under-18 `dob` is excluded; demo / layout preview rows are excluded)
+
+Premium members are never listed. Bought or scraped numbers are never used.
+
+### Spoken product facts
+
+Bandham AI subscription is $9.99 a month. Do **not** say that price is for messaging. Browse, search, Speed Match, and creating a profile stay free. If they say stop, opt them out.
+
+### Test steps
+
+1. Run [`supabase/subscribe_call_opt_in.sql`](supabase/subscribe_call_opt_in.sql). Confirm the four columns exist.
+2. Account: toggle stays off until tapped. Saving opt-in without a phone fails.
+3. Secret missing: `GET /api/voice/subscribe-reminders` returns 503, `dialed: false`.
+4. With the secret: the list returns a count. Today that count should be 0 if no phones are saved. The JSON must not include full phone numbers.
+5. `?action=dial` or `{ "action": "dial" }` returns 400 and does not call anyone.
+6. Browse, Instagram, Stripe checkout, Chat layout preview, and inbound Support are unchanged.
+7. `npm run check:subscribe-call`, `npm run check:voice-support`, and `npm run check:guru-search`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
