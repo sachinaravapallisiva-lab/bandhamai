@@ -340,7 +340,7 @@ assert(SIDEBAR_DASH_MAX === 920, "dash stays 920");
 assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/maxWidth:\s*640/.test(pageCode), "do not restore the 640 canyon on Home");
 assert(PHONE_ACCOUNT_BREAKPOINT === 800, "phone breakpoint is 800");
-assert(theme.includes(".bm-rail{display:none}"), "phones hide the always-open rail");
+assert(theme.includes(".bm-rail{display:none"), "phones hide the always-open rail");
 assert(theme.includes(".bm-account-toggle{display:none}"), "desktop has no hamburger");
 assert(page.includes("AccountMenuControl"), "Home phones open Account from one control");
 assert(!/<span>Menu<\/span>/.test(page + theme), "do not restore the old Menu drawer label");

@@ -189,7 +189,7 @@ assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fatte
 assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
 assert(PHONE_ACCOUNT_BREAKPOINT === 800, "phone breakpoint is 800");
 assert(theme.includes("PHONE_ACCOUNT_BREAKPOINT"), "phone breakpoint is named");
-assert(theme.includes(".bm-rail{display:none}"), "phones hide the 240 rail");
+assert(theme.includes(".bm-rail{display:none"), "phones hide the 240 rail");
 assert(theme.includes(".bm-account-toggle{display:none}"), "desktop keeps the rail, no hamburger");
 assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/\.bm-dash-inner\{[^}]*max-width:none/.test(theme.replace(/\s/g, "")), "full-bleed dash inner fails");

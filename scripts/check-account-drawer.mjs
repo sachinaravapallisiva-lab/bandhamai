@@ -60,9 +60,9 @@ assert(theme.includes(".bm-rail{flex:0 0 ") && theme.includes(".bm-dash{flex:0 1
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fails");
 assert(!theme.includes("max-width:none"), "full-bleed dash inner fails");
 assert(theme.includes("PHONE_ACCOUNT_BREAKPOINT"), "phone breakpoint lives in theme");
-assert(theme.includes(".bm-rail{display:none}"), "phones hide the always-open rail");
+assert(theme.includes(".bm-rail{display:none"), "phones hide the always-open rail");
 assert(theme.includes(".bm-account-toggle{display:none}"), "desktop has no Account hamburger");
-assert(theme.includes(".bm-account-toggle{display:inline-flex}"), "phones show the Account control");
+assert(theme.includes(".bm-account-toggle{display:inline-flex"), "phones show the Account control");
 assert(chrome.includes("AccountMenuControl") && home.includes("AccountMenuControl"), "hosts expose the same Account control");
 assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "640 dash max is the canyon and fails");

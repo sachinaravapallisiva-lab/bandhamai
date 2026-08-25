@@ -560,8 +560,6 @@ export default function AccountDrawer() {
           height: "100vh",
           background: CREAM,
           borderRight: "1px solid " + LINE,
-          display: "flex",
-          flexDirection: "column",
           overflowY: "auto",
         }}
       >

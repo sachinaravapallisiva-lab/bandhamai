@@ -39,7 +39,7 @@ export const BM_CSS =
   SIDEBAR_RAIL_MIN +
   "px;max-width:" +
   SIDEBAR_RAIL_MAX +
-  "px;box-sizing:border-box}" +
+  "px;box-sizing:border-box;display:flex;flex-direction:column}" +
   ".bm-dash{flex:0 1 " +
   SIDEBAR_DASH_MAX +
   "px;max-width:" +
@@ -51,7 +51,7 @@ export const BM_CSS =
   ".bm-account-toggle{display:none}" +
   "@media (max-width:" +
   PHONE_ACCOUNT_BREAKPOINT +
-  "px){.bm-rail{display:none}.bm-account-toggle{display:inline-flex}[data-meetup-rail]{display:none}}" +
+  "px){.bm-rail{display:none!important}.bm-account-toggle{display:inline-flex!important}[data-meetup-rail]{display:none!important}}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
