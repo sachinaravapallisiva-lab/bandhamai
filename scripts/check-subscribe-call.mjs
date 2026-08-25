@@ -21,8 +21,10 @@ import {
   SUBSCRIBE_CALL_SPOKEN_STOP,
   SUBSCRIBE_CALL_SPOKEN_TAGLINE,
   SUBSCRIBE_CALL_SQL_FILE,
+  SUBSCRIBE_CALL_ENGLISH_FIRST,
   calledWithinCadence,
   decideSubscribeCallEligibility,
+  defaultSubscribeCallOpenLanguage,
   displayPhoneWithSpaces,
   isAdultMember,
   isDemoOrPreviewProfile,
@@ -163,6 +165,21 @@ assert(SUBSCRIBE_CALL_LANGUAGES.includes("Hindi"), "Hindi");
 assert(SUBSCRIBE_CALL_LANGUAGES.includes("English"), "English");
 assert(SUBSCRIBE_CALL_LANGUAGES.includes("Urdu"), "Urdu");
 assert(SUBSCRIBE_CALL_LANGUAGES.includes("Assamese"), "Assamese");
+assertEq(SUBSCRIBE_CALL_LANGUAGES[0], "English", "English is listed first");
+assertEq(SUBSCRIBE_CALL_ENGLISH_FIRST, "English is first class, not only a fallback.", "English first class lock");
+assertEq(defaultSubscribeCallOpenLanguage(""), "English", "unknown tongue opens English");
+assertEq(defaultSubscribeCallOpenLanguage(null), "English", "missing tongue opens English");
+assertEq(defaultSubscribeCallOpenLanguage("English"), "English", "English tongue opens English");
+assertEq(defaultSubscribeCallOpenLanguage("american english"), "English", "English variant opens English");
+assertEq(defaultSubscribeCallOpenLanguage("Telugu"), "Telugu", "Telugu tongue opens Telugu");
+assertEq(defaultSubscribeCallOpenLanguage("Hindi"), "Hindi", "Hindi tongue opens Hindi");
+assertEq(defaultSubscribeCallOpenLanguage("something unknown"), "English", "unrecognized tongue opens English");
+assertEq(publicEligibleMember(base).open_language, "English", "list default open language is English");
+assertEq(
+  publicEligibleMember({ ...base, mother_tongue: "Telugu" }).open_language,
+  "Telugu",
+  "list respects Telugu mother tongue"
+);
 
 const prev = process.env.BANDHAM_VOICE_SUPPORT_SECRET;
 delete process.env.BANDHAM_VOICE_SUPPORT_SECRET;
@@ -237,6 +254,10 @@ assert(prompt.toLowerCase().includes("press 1") && prompt.toLowerCase().includes
 assert(prompt.toLowerCase().includes("telugu") && prompt.toLowerCase().includes("hindi"), "Telugu and Hindi");
 assert(prompt.toLowerCase().includes("mother tongue"), "can use mother tongue");
 assert(prompt.toLowerCase().includes("english is first class"), "English is first class");
+assert(prompt.toLowerCase().includes("not only a fallback"), "English is not only a fallback");
+assert(prompt.toLowerCase().includes("clear professional english"), "professional English for NRI members");
+assert(prompt.toLowerCase().includes("default open in english"), "default open in English");
+assert(prompt.toLowerCase().includes("same professional, pleasing, soft marketing tone"), "same tone in every language");
 assert(prompt.toLowerCase().includes("never force english"), "never force English");
 assert(prompt.includes("Hello, my name is Sai."), "Sai English opening");
 assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్"), "Sai Telugu opening");

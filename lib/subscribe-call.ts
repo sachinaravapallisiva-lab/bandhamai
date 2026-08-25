@@ -49,6 +49,54 @@ export const SUBSCRIBE_CALL_EXAMPLE_OPENING =
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE = "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING_HI = "Hello, my name is Sai.";
 
+export const SUBSCRIBE_CALL_ENGLISH_FIRST =
+  "English is first class, not only a fallback.";
+
+const OPEN_LANGUAGE_ALIASES: Record<string, (typeof SUBSCRIBE_CALL_LANGUAGES)[number]> = {
+  english: "English",
+  en: "English",
+  hindi: "Hindi",
+  hin: "Hindi",
+  hi: "Hindi",
+  telugu: "Telugu",
+  te: "Telugu",
+  tel: "Telugu",
+  tamil: "Tamil",
+  ta: "Tamil",
+  kannada: "Kannada",
+  kn: "Kannada",
+  malayalam: "Malayalam",
+  ml: "Malayalam",
+  marathi: "Marathi",
+  mr: "Marathi",
+  gujarati: "Gujarati",
+  gu: "Gujarati",
+  bengali: "Bengali",
+  bangla: "Bengali",
+  bn: "Bengali",
+  punjabi: "Punjabi",
+  pa: "Punjabi",
+  odia: "Odia",
+  oriya: "Odia",
+  or: "Odia",
+  assamese: "Assamese",
+  as: "Assamese",
+  urdu: "Urdu",
+  ur: "Urdu",
+};
+
+/** Open in English when mother tongue is unknown or English. Named Indian languages stay first class too. */
+export function defaultSubscribeCallOpenLanguage(motherTongue?: string | null) {
+  const raw = typeof motherTongue === "string" ? motherTongue.trim().toLowerCase() : "";
+  if (!raw) return "English";
+  const exact = OPEN_LANGUAGE_ALIASES[raw];
+  if (exact) return exact;
+  for (const lang of SUBSCRIBE_CALL_LANGUAGES) {
+    if (raw.includes(lang.toLowerCase())) return lang;
+  }
+  return "English";
+}
+
 export const SUBSCRIBE_CALL_SPOKEN_PRICE =
   "Bandham AI subscription is 9.99 a month.";
 
@@ -214,11 +262,13 @@ export function decideSubscribeCallEligibility(
 }
 
 export function publicEligibleMember(row: SubscribeCallProfileRow) {
+  const motherTongue = typeof row.mother_tongue === "string" ? row.mother_tongue.trim() : "";
   return {
     profile_id: typeof row.id === "string" ? row.id : "",
     user_id: typeof row.user_id === "string" ? row.user_id : "",
     first_name: firstNameFromProfile(row.full_name),
-    mother_tongue: typeof row.mother_tongue === "string" ? row.mother_tongue.trim() : "",
+    mother_tongue: motherTongue,
+    open_language: defaultSubscribeCallOpenLanguage(motherTongue),
     phone_masked: maskPhoneForList(typeof row.phone === "string" ? row.phone : ""),
     last_subscribe_call_at: row.last_subscribe_call_at || null,
   };
