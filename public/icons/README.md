@@ -1,7 +1,6 @@
-# App icons (placeholders)
+# App icons
 
-These PNGs are temporary violet/white marks for PWA install and the iOS home
-screen. Replace them with final Bandham AI artwork before TestFlight.
+Violet line varmala couple on cream. Same mark as the rail.
 
 | File | Size | Use |
 | --- | --- | --- |

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import {
   ACCOUNT_MENU_FREE_CHIP,
   ACCOUNT_MENU_ITEMS,
@@ -95,6 +95,13 @@ assert(SIDEBAR_AVATAR_SIZE >= 28 && SIDEBAR_AVATAR_SIZE <= 32, "avatar is a 28 t
 assert(avatar.includes("borderRadius: 999"), "avatar is circular");
 assert(drawer.includes("SidebarAvatar"), "drawer hosts the signed in mark");
 assert(drawer.includes("BANDHAM AI"), "Bandham AI kicker stays two words");
+assert(drawer.includes("BandhamMark"), "rail shows the garland couple mark beside Bandham AI");
+assert(read("app/components/BandhamMark.tsx").includes("BANDHAM_MARK_SRC"), "mark uses the shared src");
+assert(read("lib/bandham-mark.ts").includes("/brand/bandham-mark.png"), "mark file is the garland couple");
+assert(existsSync(new URL("../public/brand/bandham-mark.png", import.meta.url)), "garland mark PNG is present");
+assert(statSync(new URL("../public/icons/icon-192.png", import.meta.url)).size > 2000, "favicon is no longer the old circle placeholder");
+assert(statSync(new URL("../public/icons/icon-512.png", import.meta.url)).size > 2000, "512 icon is the garland couple");
+assert(statSync(new URL("../public/icons/apple-touch-icon.png", import.meta.url)).size > 2000, "apple touch icon is the garland couple");
 assert(drawer.includes("ACCOUNT_MENU_TITLE"), "Account row stays");
 assert(drawer.includes("{signedIn ? <SidebarAvatar"), "avatar only when signed in");
 assert(!/signedIn \? null/.test(drawer) || drawer.includes("{signedIn ? <SidebarAvatar"), "no fake signed out avatar");

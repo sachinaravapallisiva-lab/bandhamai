@@ -21,6 +21,7 @@ import { loginHref } from "../../lib/next-path";
 import { sidebarOwnPhotoUrl } from "../../lib/sidebar-avatar";
 import { supabase } from "../../lib/supabase";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
+import BandhamMark from "./BandhamMark";
 import DownloadBiodata from "./DownloadBiodata";
 import SidebarAvatar from "./SidebarAvatar";
 
@@ -297,9 +298,12 @@ export default function AccountDrawer() {
       >
         {signedIn ? <SidebarAvatar photoUrl={photoUrl} name={fullName} /> : null}
         <div>
-          <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
-            BANDHAM AI
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }}>
+            <BandhamMark />
+            <p className="bm-sans" style={{ margin: 0, fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
+              BANDHAM AI
+            </p>
+          </div>
           <h2 id={titleId} className="bm-serif" style={{ margin: 0, fontSize: 24, fontWeight: 400, color: INK }}>
             {ACCOUNT_MENU_TITLE}
           </h2>
