@@ -12,8 +12,10 @@ function assert(cond, message) {
 }
 
 assert(DELETE_CONFIRM_WORD === "DELETE", "typed confirm stays explicit");
-assert(REPORT_REASONS.length >= 4, "report reasons exist");
+assert(REPORT_REASONS.length >= 5 && REPORT_REASONS.length <= 6, "keep the five reasons, at most one extra");
 assert(isReportReason("fake") && isReportReason("money"), "known reasons");
+assert(isReportReason("harassment") && isReportReason("underage") && isReportReason("other"), "core reasons stay");
+assert(isReportReason("photo"), "optional matrimony photo reason");
 assert(!isReportReason("spam-marketing"), "do not invent extra reasons");
 assert(isReportSurface("profile") && isReportSurface("chat"), "surfaces");
 assert(!isReportSurface("email"), "contact stub is not a report surface");
