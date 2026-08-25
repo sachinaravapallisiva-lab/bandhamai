@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import {
   BROWSE_CAROUSEL_ADVANCE_MS,
   BROWSE_CAROUSEL_ARIA,
@@ -16,7 +16,10 @@ import {
 import {
   BROWSE_PIN_CAP,
   BROWSE_PIN_CAP_NOTE,
+  BROWSE_PIN_CARD_WIDTH,
   BROWSE_PIN_NOT_CONFIGURED,
+  BROWSE_PIN_PHOTO_DIR,
+  BROWSE_PIN_PHOTO_HEIGHT,
   BROWSE_PIN_RENEW_NOTE,
   BROWSE_PIN_SEPARATE_NOTE,
   BROWSE_PIN_VOICE,
@@ -110,9 +113,17 @@ assert(BROWSE_TEST_PROFILES.length === 20, "twenty test profiles");
 assert(browseShortlistPond([]).length === 20, "empty live pond still rolls the test shortlist");
 assert(
   BROWSE_TEST_PROFILES.every(function (profile) {
-    return profile.photoUrl === "" && profile.verified === false && profile.promptLabel === "About";
+    return profile.verified === false && profile.promptLabel === "About";
   }),
-  "test cards are Photo coming soon, unverified, About"
+  "test cards stay unverified About"
+);
+assert(
+  BROWSE_TEST_PROFILES.filter(function (profile) {
+    return !BROWSE_TEST_PINNED_IDS.includes(profile.id);
+  }).every(function (profile) {
+    return profile.photoUrl === "";
+  }),
+  "unpinned slideshow cards stay Photo coming soon"
 );
 assert(BROWSE_PIN_CAP === 10, "pin cap is 10");
 assert(BROWSE_PRIORITY_MARK === "Priority", "mark is Priority");
@@ -121,7 +132,30 @@ assert(BROWSE_TEST_PINNED_IDS.length >= 3, "several pinned test cards");
 assert(BROWSE_TEST_PINNED_IDS.length <= BROWSE_PIN_CAP, "pinned ids honor the cap");
 assert(browsePinnedPreview().length === BROWSE_TEST_PINNED_IDS.length, "preview pin row uses the capped ids");
 assert(pinnedRow.includes("BROWSE_PRIORITY_MARK"), "pin cards show Priority");
-assert(pinnedRow.includes("PROFILE_PHOTO_SOON") || pinnedRow.includes(PROFILE_PHOTO_SOON), "pin cards use Photo coming soon");
+assert(!pinnedRow.includes("PROFILE_PHOTO_SOON") && !pinnedRow.includes(PROFILE_PHOTO_SOON), "pin cards must not say Photo coming soon");
+assert(pinnedRow.includes("data-pin-photo"), "pin cards render a real photo");
+assert(pinnedRow.includes('objectFit: "contain"'), "pin photos use contain so faces are not cropped");
+assert(!/objectFit:\s*["']cover["']/.test(pinnedRow), "do not crop pin photos into a dating headshot");
+assert(BROWSE_PIN_PHOTO_HEIGHT >= 140, "pin photo well is tall enough to show the portrait");
+assert(BROWSE_PIN_CARD_WIDTH >= 148 && BROWSE_PIN_CARD_WIDTH < 240, "pin cards stay compact, not 240 roll cards");
+assert(pinnedRow.includes("overflow: \"visible\"") || pinnedRow.includes("overflowY: \"visible\""), "pin bar does not clip card contents");
+assert(!/maxHeight:\s*\d+/.test(pinnedRow), "do not lock a short max height that clips the city line");
+assert(browsePinnedPreview().length === BROWSE_TEST_PINNED_IDS.length, "preview pin row uses the capped ids");
+assert(
+  browsePinnedPreview().every(function (profile) {
+    return profile.photoUrl.indexOf(BROWSE_PIN_PHOTO_DIR + "/") === 0 && profile.city.trim().length > 0;
+  }),
+  "every pinned preview card has a portrait and a city"
+);
+browsePinnedPreview().forEach(function (profile) {
+  const rel = "public" + profile.photoUrl;
+  assert(existsSync(new URL("../" + rel, import.meta.url)), "pin portrait file exists: " + rel);
+  assert(statSync(new URL("../" + rel, import.meta.url)).size > 4000, "pin portrait is a real image: " + rel);
+});
+const pinPhotos = browsePinnedPreview().map(function (profile) {
+  return profile.photoUrl;
+});
+assert(new Set(pinPhotos).size === pinPhotos.length, "pinned portraits are distinct");
 assert(pinnedRow.includes("PresenceMark"), "pin cards show online or offline");
 assert(pinnedRow.includes("flexWrap: \"nowrap\""), "pinned cards stay on one horizontal line");
 assert(pinnedRow.includes("overflowX: \"auto\""), "the pin line can scroll sideways if needed");

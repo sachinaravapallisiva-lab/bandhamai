@@ -14,9 +14,11 @@ import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
 import MeetupRail from "./components/MeetupRail";
+import BandhamMark from "./components/BandhamMark";
 import { supabase } from "../lib/supabase";
 import { INBOX_PATH, INBOX_PREVIEW_NOTE, INBOX_PREVIEW_OPEN } from "../lib/inbox";
 import { MEETUP_PATH } from "../lib/meetup";
+import { BANDHAM_MARK_HEADER_SIZE } from "../lib/bandham-mark";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
 import { homeTabFromSearch, loginHref } from "../lib/next-path";
@@ -411,9 +413,12 @@ export default function Home() {
         <div className="bm-dash-inner" style={{ padding: "20px 20px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-                <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                  Bandham AI
-                </h1>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                    Bandham AI
+                  </h1>
+                  <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} />
+                </div>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
                   Find your vibe match?
                 </p>

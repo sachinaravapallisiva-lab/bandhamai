@@ -4,7 +4,9 @@ import { useState } from "react";
 import type { BrowseProfile } from "../../lib/profile-search";
 import {
   BROWSE_PIN_CAP_NOTE,
+  BROWSE_PIN_CARD_WIDTH,
   BROWSE_PIN_NOT_CONFIGURED,
+  BROWSE_PIN_PHOTO_HEIGHT,
   BROWSE_PIN_RENEW_NOTE,
   BROWSE_PIN_SEPARATE_NOTE,
   BROWSE_PIN_VOICE,
@@ -12,7 +14,7 @@ import {
   BROWSE_PRIORITY_MARK,
   PIN_CHECKOUT_PATH,
 } from "../../lib/browse-pin";
-import { PROFILE_CARD_RADIUS, PROFILE_PHOTO_FALLBACK, PROFILE_PHOTO_SOON } from "../../lib/profile-card";
+import { PROFILE_CARD_RADIUS, PROFILE_PHOTO_FALLBACK } from "../../lib/profile-card";
 import { CREAM, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 import PresenceMark from "./PresenceMark";
 
@@ -90,45 +92,65 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
         style={{
           display: "flex",
           flexWrap: "nowrap",
+          alignItems: "stretch",
           gap: 10,
           overflowX: "auto",
-          overflowY: "hidden",
-          paddingBottom: 4,
+          overflowY: "visible",
+          minHeight: BROWSE_PIN_PHOTO_HEIGHT + 92,
+          paddingBottom: 8,
         }}
       >
         {profiles.map(function (profile) {
           const city = profile.city.trim();
+          const photoUrl = profile.photoUrl.trim();
           return (
             <article
               key={profile.id}
               className="bm-card"
               data-priority-mark="true"
               style={{
-                flex: "0 0 148px",
-                width: 148,
-                maxWidth: 148,
+                flex: "0 0 " + BROWSE_PIN_CARD_WIDTH + "px",
+                width: BROWSE_PIN_CARD_WIDTH,
+                maxWidth: BROWSE_PIN_CARD_WIDTH,
                 background: CREAM,
                 border: "1px solid " + LINE,
                 borderRadius: PROFILE_CARD_RADIUS,
-                overflow: "hidden",
+                overflow: "visible",
               }}
             >
               <div
-                role="img"
-                aria-label={profile.name ? profile.name + " " + PROFILE_PHOTO_SOON.toLowerCase() : PROFILE_PHOTO_SOON}
+                data-pin-photo-well="true"
                 style={{
-                  height: 56,
+                  height: BROWSE_PIN_PHOTO_HEIGHT,
+                  minHeight: BROWSE_PIN_PHOTO_HEIGHT,
                   background: PROFILE_PHOTO_FALLBACK,
                   display: "grid",
                   placeItems: "center",
                   borderBottom: "1px solid " + LINE,
+                  overflow: "hidden",
+                  borderTopLeftRadius: PROFILE_CARD_RADIUS,
+                  borderTopRightRadius: PROFILE_CARD_RADIUS,
                 }}
               >
-                <span className="bm-sans" style={{ fontSize: 10, color: MUTED }}>
-                  {PROFILE_PHOTO_SOON}
-                </span>
+                {photoUrl ? (
+                  // Preview-only in-repo portrait. next/image remote config is unused here.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoUrl}
+                    alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
+                    data-pin-photo="true"
+                    style={{
+                      width: "100%",
+                      height: BROWSE_PIN_PHOTO_HEIGHT,
+                      objectFit: "contain",
+                      objectPosition: "center",
+                      display: "block",
+                      background: PROFILE_PHOTO_FALLBACK,
+                    }}
+                  />
+                ) : null}
               </div>
-              <div style={{ padding: "8px 10px 10px" }}>
+              <div style={{ padding: "8px 10px 12px", overflow: "visible" }}>
                 <p
                   className="bm-sans"
                   style={{
@@ -161,6 +183,7 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
                 {city ? (
                   <p
                     className="bm-sans"
+                    data-pin-city="true"
                     style={{
                       margin: "4px 0 0",
                       fontSize: 12,

@@ -10,7 +10,7 @@ import {
 import {
   isOwnStoredPhotoUrl,
 } from "../lib/profile-photos.ts";
-import { BANDHAM_MARK_SIZE } from "../lib/bandham-mark.ts";
+import { BANDHAM_MARK_HEADER_SIZE, BANDHAM_MARK_SIZE } from "../lib/bandham-mark.ts";
 import {
   SIDEBAR_AVATAR_ALT,
   SIDEBAR_AVATAR_MARK,
@@ -102,7 +102,15 @@ assert(mark.includes("BANDHAM_MARK_SRC"), "mark uses the shared src");
 assert(mark.includes('objectFit: "contain"'), "rail mark uses contain so the full couple is visible");
 assert(!/objectFit:\s*["']cover["']/.test(mark), "cover crops the couple into a cream speck");
 assert(read("lib/bandham-mark.ts").includes("/brand/bandham-garland.png"), "rail uses the full garland couple artwork");
-assert(BANDHAM_MARK_SIZE >= 48 && BANDHAM_MARK_SIZE <= 56, "mark is 48 to 56px so a person can see the couple");
+assert(BANDHAM_MARK_SIZE >= 48 && BANDHAM_MARK_SIZE <= 56, "rail mark stays 48 to 56px");
+assert(BANDHAM_MARK_SIZE === 52, "rail mark lock is 52");
+assert(BANDHAM_MARK_HEADER_SIZE >= 72 && BANDHAM_MARK_HEADER_SIZE <= 88, "Home wordmark mark is a bit larger than the rail");
+assert(BANDHAM_MARK_HEADER_SIZE > BANDHAM_MARK_SIZE, "header mark is larger than the rail mark");
+assert(home.includes("BandhamMark"), "Home wordmark shows the garland couple mark");
+assert(home.includes("BANDHAM_MARK_HEADER_SIZE"), "Home uses the larger header mark size");
+assert(home.indexOf("Bandham AI") < home.indexOf("<BandhamMark"), "couple mark sits to the right of Bandham AI");
+assert(drawer.includes("<BandhamMark />"), "rail still uses the small default mark");
+assert(!drawer.includes("BANDHAM_MARK_HEADER_SIZE"), "do not enlarge the rail mark");
 assert(chrome.includes("BandhamMark"), "AppChrome shows the garland couple next to Bandham AI");
 assert(existsSync(new URL("../public/brand/bandham-garland.png", import.meta.url)), "full garland couple artwork is present");
 assert(existsSync(new URL("../public/brand/bandham-mark.png", import.meta.url)), "cropped garland mark PNG is present");

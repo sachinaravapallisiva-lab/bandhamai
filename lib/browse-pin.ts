@@ -15,6 +15,11 @@ export const BROWSE_PIN_NOT_CONFIGURED =
 export const PIN_CHECKOUT_PATH = "/api/pins/checkout";
 export const PIN_CHECKOUT_CODE = "pin_checkout_not_configured";
 
+/** Compact pin card. Tall enough for photo, Priority, name, and city. Not a 240 roll card. */
+export const BROWSE_PIN_CARD_WIDTH = 168;
+export const BROWSE_PIN_PHOTO_HEIGHT = 150;
+export const BROWSE_PIN_PHOTO_DIR = "/preview/pins";
+
 export function pinCheckoutNotConfiguredPayload() {
   return {
     error: BROWSE_PIN_NOT_CONFIGURED,
