@@ -300,7 +300,13 @@ export async function PATCH(request: Request) {
     if (existing.error) {
       return NextResponse.json({ error: existing.error.message }, { status: 400 });
     }
-    if (!existing.data) {
+    const existingRow = (existing.data || null) as {
+      id?: string;
+      phone?: string | null;
+      call_subscribe_opt_in?: unknown;
+    } | null;
+    const existingId = existingRow && typeof existingRow.id === "string" ? existingRow.id.trim() : "";
+    if (!existingRow || !existingId) {
       return NextResponse.json({ error: "Create a profile first." }, { status: 404 });
     }
 
@@ -309,11 +315,7 @@ export async function PATCH(request: Request) {
     if (hasShare) patch[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
 
     if (hasPhone || hasCallOptIn) {
-      const current = (existing.data || {}) as {
-        phone?: string | null;
-        call_subscribe_opt_in?: unknown;
-        call_subscribe_opted_at?: string | null;
-      };
+      const current = existingRow;
       const nextPhone = hasPhone
         ? normalizeSubscribePhone(body.phone)
         : normalizeSubscribePhone(current.phone || "");
@@ -347,7 +349,7 @@ export async function PATCH(request: Request) {
     const updated = await supabase
       .from("profiles")
       .update(patch)
-      .eq("id", existing.data.id)
+      .eq("id", existingId)
       .select()
       .maybeSingle();
 

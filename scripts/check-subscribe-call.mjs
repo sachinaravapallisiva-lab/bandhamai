@@ -298,6 +298,7 @@ const profiles = read("app/api/profiles/route.ts");
 assert(profiles.includes("SUBSCRIBE_CALL_OPT_IN_COLUMN") || profiles.includes("call_subscribe_opt_in"), "PATCH writes opt in");
 assert(profiles.includes("normalizeSubscribePhone"), "PATCH normalizes phone");
 assert(profiles.includes("subscribeCallPhoneError"), "opt in without E.164 fails closed");
+assert(profiles.includes("existingId"), "PATCH uses a typed profile id");
 assert(!profiles.includes("last_subscribe_call_at ="), "members cannot write last call");
 
 const account = read("app/account/page.tsx");
