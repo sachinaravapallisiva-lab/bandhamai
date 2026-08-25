@@ -22,6 +22,7 @@ import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
 import {
   CREAM,
   LINE,
+  PHONE_ACCOUNT_BREAKPOINT,
   SIDEBAR_DASH_MAX,
   SIDEBAR_RAIL_BASIS,
   SIDEBAR_RAIL_MAX,
@@ -174,18 +175,23 @@ assert(drawer.includes('data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" :
 assert(drawer.includes("<aside"), "sidebar is a persistent aside");
 assert(drawer.includes("bm-rail"), "sidebar uses the always visible rail");
 assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
-assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
+assert(!/{open \?/.test(drawer), "desktop rail is not gated on an open flag");
 assert(!/<span>Menu<\/span>/.test(drawer), "no Menu hamburger");
 assert(!/<span>Close<\/span>/.test(drawer), "no Close control");
-assert(!/aria-modal/.test(drawer), "no overlay dialog");
-assert(!/bm-scrim/.test(drawer), "no dismiss overlay");
-assert(!/ACCOUNT_MENU_OPEN_LABEL/.test(drawer), "no open menu control");
+assert(drawer.includes("bm-account-overlay"), "phones use an overlay, not a desktop Menu drawer");
+assert(drawer.includes("ACCOUNT_MENU_OPEN_LABEL"), "phones get an Account control");
+assert(!/bm-scrim/.test(drawer), "do not restore the old desktop scrim drawer");
 const theme = read("lib/theme.ts");
 assert(theme.includes(".bm-rail"), "rail width lives in theme");
 assert(theme.includes(".bm-dash"), "dashboard canvas lives in theme");
 assert(theme.includes(".bm-dash-inner"), "dashboard inner is the capped column");
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fattens the pair and fails");
 assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
+assert(PHONE_ACCOUNT_BREAKPOINT === 800, "phone breakpoint is 800");
+assert(theme.includes("PHONE_ACCOUNT_BREAKPOINT"), "phone breakpoint is named");
+assert(theme.includes(".bm-rail{display:none}"), "phones hide the 240 rail");
+assert(theme.includes(".bm-account-toggle{display:none}"), "desktop keeps the rail, no hamburger");
+assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/\.bm-dash-inner\{[^}]*max-width:none/.test(theme.replace(/\s/g, "")), "full-bleed dash inner fails");
 assert(!theme.includes("max-width:none"), "dash inner must not drop its max-width");
 assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner uses the locked dash max");
@@ -203,6 +209,7 @@ assert(SIDEBAR_RAIL_MIN >= 220 && SIDEBAR_RAIL_MIN <= 240, "rail min-width still
 assert(SIDEBAR_RAIL_SLIM >= 140 && SIDEBAR_RAIL_SLIM <= 180, "phones keep a slimmer visible rail");
 assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
 assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
+assert(home.includes("AccountMenuControl") && chrome.includes("AccountMenuControl") && meetup.includes("AccountMenuControl"), "same Account control on Home, chrome, and meetup");
 assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home uses the capped dash column");
 assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome uses the capped dash column");
 assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup uses the capped dash column");

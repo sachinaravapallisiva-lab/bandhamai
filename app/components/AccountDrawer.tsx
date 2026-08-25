@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   ACCOUNT_MENU_BIODATA_ID,
+  ACCOUNT_MENU_CLOSE_LABEL,
   ACCOUNT_MENU_DIALOG_ID,
   ACCOUNT_MENU_FREE_CHIP,
   ACCOUNT_MENU_ITEMS,
+  ACCOUNT_MENU_OPEN_LABEL,
   ACCOUNT_MENU_PAID_CHIP,
   ACCOUNT_MENU_SIGN_IN,
   ACCOUNT_MENU_SIGN_OUT,
@@ -20,7 +22,7 @@ import { fetchEntitlement } from "../../lib/client-billing";
 import { loginHref } from "../../lib/next-path";
 import { sidebarOwnPhotoUrl } from "../../lib/sidebar-avatar";
 import { supabase } from "../../lib/supabase";
-import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
+import { CREAM, INK, LINE, MUTED, PHONE_ACCOUNT_BREAKPOINT, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import BandhamMark from "./BandhamMark";
 import DownloadBiodata from "./DownloadBiodata";
 import SidebarAvatar from "./SidebarAvatar";
@@ -227,76 +229,58 @@ const ITEM_STYLE = {
   boxSizing: "border-box" as const,
 };
 
-export default function AccountDrawer() {
-  const [signedIn, setSignedIn] = useState(false);
-  const [email, setEmail] = useState("");
-  const [hasProfile, setHasProfile] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [plan, setPlan] = useState<"free" | "paid" | null>(null);
-  const titleId = useId();
+const ACCOUNT_PHONE_OVERLAY_ID = "account-menu-phone";
 
-  useEffect(function () {
-    supabase.auth.getSession().then(function (result) {
-      const session = result.data.session;
-      if (!session) {
-        setSignedIn(false);
-        setEmail("");
-        setPlan(null);
-        setHasProfile(false);
-        setPhotoUrl("");
-        setFullName("");
-        return;
-      }
-      setSignedIn(true);
-      setEmail(session.user.email || "");
-      const userId = session.user.id || "";
-      Promise.all([
-        fetchEntitlement(),
-        authJsonHeaders().then(function (headers) {
-          if (!headers) return null;
-          return fetch("/api/profiles", { headers }).then(function (res) {
-            return res.json();
-          });
-        }),
-      ])
-        .then(function (result) {
-          const entitlement = result[0];
-          const data = result[1];
-          const profile = data && data.profile;
-          setPlan(entitlement.canMessage ? "paid" : "free");
-          setHasProfile(!!(profile && profile.id));
-          setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
-          setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
-        })
-        .catch(function () {
-          setPlan("free");
-          setHasProfile(false);
-          setPhotoUrl("");
-          setFullName("");
-        });
-    });
-  }, []);
+let phoneMenuOpen = false;
+const phoneMenuListeners = new Set<() => void>();
 
+function subscribePhoneMenu(listener: () => void) {
+  phoneMenuListeners.add(listener);
+  return function () {
+    phoneMenuListeners.delete(listener);
+  };
+}
+
+function getPhoneMenuOpen() {
+  return phoneMenuOpen;
+}
+
+function setPhoneMenuOpen(next: boolean) {
+  phoneMenuOpen = next;
+  phoneMenuListeners.forEach(function (listener) {
+    listener();
+  });
+}
+
+function usePhoneMenuOpen() {
+  return useSyncExternalStore(subscribePhoneMenu, getPhoneMenuOpen, function () {
+    return false;
+  });
+}
+
+type AccountPanelProps = {
+  signedIn: boolean;
+  email: string;
+  hasProfile: boolean;
+  photoUrl: string;
+  fullName: string;
+  plan: "free" | "paid" | null;
+  titleId: string;
+  closeControl?: ReactNode;
+};
+
+function AccountPanel({
+  signedIn,
+  email,
+  hasProfile,
+  photoUrl,
+  fullName,
+  plan,
+  titleId,
+  closeControl,
+}: AccountPanelProps) {
   return (
-    <aside
-      id={ACCOUNT_MENU_DIALOG_ID}
-      aria-labelledby={titleId}
-      data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}
-      className="bm-drawer bm-rail"
-      style={{
-        position: "sticky",
-        top: 0,
-        alignSelf: "stretch",
-        minHeight: "100vh",
-        height: "100vh",
-        background: CREAM,
-        borderRight: "1px solid " + LINE,
-        display: "flex",
-        flexDirection: "column",
-        overflowY: "auto",
-      }}
-    >
+    <>
       <div
         style={{
           display: "flex",
@@ -307,7 +291,7 @@ export default function AccountDrawer() {
         }}
       >
         {signedIn ? <SidebarAvatar photoUrl={photoUrl} name={fullName} /> : null}
-        <div>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }}>
             <BandhamMark />
             <p className="bm-sans" style={{ margin: 0, fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
@@ -354,6 +338,7 @@ export default function AccountDrawer() {
             </div>
           ) : null}
         </div>
+        {closeControl}
       </div>
 
       <nav aria-label={ACCOUNT_MENU_TITLE} style={{ padding: "12px 10px 18px" }}>
@@ -387,6 +372,9 @@ export default function AccountDrawer() {
               href={item.href}
               className="bm-sans bm-menu bm-focus"
               style={ITEM_STYLE}
+              onClick={function () {
+                setPhoneMenuOpen(false);
+              }}
             >
               <MenuIcon name={iconForItem(item.id)} />
               <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
@@ -421,6 +409,9 @@ export default function AccountDrawer() {
             href={ACCOUNT_MENU_UPGRADE_HREF}
             className="bm-sans bm-menu bm-focus"
             style={ITEM_STYLE}
+            onClick={function () {
+              setPhoneMenuOpen(false);
+            }}
           >
             <MenuIcon name="upgrade" />
             <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ACCOUNT_MENU_UPGRADE}</span>
@@ -432,11 +423,225 @@ export default function AccountDrawer() {
             href="/logout"
             className="bm-sans bm-menu bm-focus"
             style={{ ...ITEM_STYLE, color: MUTED, marginTop: 8 }}
+            onClick={function () {
+              setPhoneMenuOpen(false);
+            }}
           >
             <span style={{ fontSize: 14, fontWeight: 600 }}>{ACCOUNT_MENU_SIGN_OUT}</span>
           </Link>
         ) : null}
       </nav>
-    </aside>
+    </>
+  );
+}
+
+export function AccountMenuControl() {
+  const overlayOpen = usePhoneMenuOpen();
+  return (
+    <button
+      type="button"
+      className="bm-account-toggle bm-sans bm-ghost bm-focus"
+      data-account-toggle="true"
+      aria-expanded={overlayOpen}
+      aria-controls={ACCOUNT_PHONE_OVERLAY_ID}
+      aria-label={ACCOUNT_MENU_OPEN_LABEL}
+      onClick={function () {
+        setPhoneMenuOpen(true);
+      }}
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 44,
+        minWidth: 44,
+        padding: "0 14px",
+        borderRadius: 999,
+        border: "1px solid " + LINE,
+        background: WASH,
+        color: VIOLET_DEEP,
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
+    >
+      Account
+    </button>
+  );
+}
+
+export default function AccountDrawer() {
+  const [signedIn, setSignedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [hasProfile, setHasProfile] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [plan, setPlan] = useState<"free" | "paid" | null>(null);
+  const titleId = useId();
+  const overlayTitleId = useId();
+  const overlayOpen = usePhoneMenuOpen();
+
+  useEffect(function () {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setPhoneMenuOpen(false);
+    }
+    function onResize() {
+      if (window.innerWidth > PHONE_ACCOUNT_BREAKPOINT) setPhoneMenuOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return function () {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(function () {
+    supabase.auth.getSession().then(function (result) {
+      const session = result.data.session;
+      if (!session) {
+        setSignedIn(false);
+        setEmail("");
+        setPlan(null);
+        setHasProfile(false);
+        setPhotoUrl("");
+        setFullName("");
+        return;
+      }
+      setSignedIn(true);
+      setEmail(session.user.email || "");
+      const userId = session.user.id || "";
+      Promise.all([
+        fetchEntitlement(),
+        authJsonHeaders().then(function (headers) {
+          if (!headers) return null;
+          return fetch("/api/profiles", { headers }).then(function (res) {
+            return res.json();
+          });
+        }),
+      ])
+        .then(function (result) {
+          const entitlement = result[0];
+          const data = result[1];
+          const profile = data && data.profile;
+          setPlan(entitlement.canMessage ? "paid" : "free");
+          setHasProfile(!!(profile && profile.id));
+          setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
+          setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
+        })
+        .catch(function () {
+          setPlan("free");
+          setHasProfile(false);
+          setPhotoUrl("");
+          setFullName("");
+        });
+    });
+  }, []);
+
+  const panelProps = {
+    signedIn,
+    email,
+    hasProfile,
+    photoUrl,
+    fullName,
+    plan,
+  };
+
+  return (
+    <>
+      <aside
+        id={ACCOUNT_MENU_DIALOG_ID}
+        aria-labelledby={titleId}
+        data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}
+        className="bm-drawer bm-rail"
+        style={{
+          position: "sticky",
+          top: 0,
+          alignSelf: "stretch",
+          minHeight: "100vh",
+          height: "100vh",
+          background: CREAM,
+          borderRight: "1px solid " + LINE,
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
+        }}
+      >
+        <AccountPanel {...panelProps} titleId={titleId} />
+      </aside>
+      {overlayOpen ? (
+        <div
+          id={ACCOUNT_PHONE_OVERLAY_ID}
+          className="bm-account-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={overlayTitleId}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            display: "flex",
+          }}
+        >
+          <button
+            type="button"
+            aria-label={ACCOUNT_MENU_CLOSE_LABEL}
+            onClick={function () {
+              setPhoneMenuOpen(false);
+            }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              border: 0,
+              background: "rgba(30,27,54,.28)",
+              cursor: "pointer",
+            }}
+          />
+          <aside
+            className="bm-drawer"
+            style={{
+              position: "relative",
+              zIndex: 1,
+              width: "min(240px, 86vw)",
+              maxWidth: 280,
+              height: "100%",
+              background: CREAM,
+              borderRight: "1px solid " + LINE,
+              display: "flex",
+              flexDirection: "column",
+              overflowY: "auto",
+              boxSizing: "border-box",
+            }}
+          >
+            <AccountPanel
+              {...panelProps}
+              titleId={overlayTitleId}
+              closeControl={
+                <button
+                  type="button"
+                  className="bm-sans bm-ghost bm-focus"
+                  aria-label={ACCOUNT_MENU_CLOSE_LABEL}
+                  onClick={function () {
+                    setPhoneMenuOpen(false);
+                  }}
+                  style={{
+                    flex: "0 0 auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 44,
+                    minHeight: 44,
+                    border: "1px solid " + LINE,
+                    borderRadius: 999,
+                    background: WASH,
+                    cursor: "pointer",
+                  }}
+                >
+                  <MenuIcon name="close" />
+                </button>
+              }
+            />
+          </aside>
+        </div>
+      ) : null}
+    </>
   );
 }

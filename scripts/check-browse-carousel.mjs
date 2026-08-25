@@ -57,7 +57,7 @@ import {
   BROWSE_EMPTY_INVENTORY_TITLE,
   BROWSE_EMPTY_RESULTS_TITLE,
 } from "../lib/surfaces.ts";
-import { SIDEBAR_DASH_MAX, SIDEBAR_RAIL_BASIS } from "../lib/theme.ts";
+import { PHONE_ACCOUNT_BREAKPOINT, SIDEBAR_DASH_MAX, SIDEBAR_RAIL_BASIS } from "../lib/theme.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -339,6 +339,11 @@ assert(SIDEBAR_RAIL_BASIS === 240, "rail stays 240");
 assert(SIDEBAR_DASH_MAX === 920, "dash stays 920");
 assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/maxWidth:\s*640/.test(pageCode), "do not restore the 640 canyon on Home");
+assert(PHONE_ACCOUNT_BREAKPOINT === 800, "phone breakpoint is 800");
+assert(theme.includes(".bm-rail{display:none}"), "phones hide the always-open rail");
+assert(theme.includes(".bm-account-toggle{display:none}"), "desktop has no hamburger");
+assert(page.includes("AccountMenuControl"), "Home phones open Account from one control");
+assert(!/<span>Menu<\/span>/.test(page + theme), "do not restore the old Menu drawer label");
 
 const menu = read("lib/account-menu.ts");
 assert(menu.includes("Inbox"), "Inbox stays");

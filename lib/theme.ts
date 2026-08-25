@@ -13,6 +13,8 @@ export const SIDEBAR_RAIL_MAX = 280;
 export const SIDEBAR_RAIL_MIN = 220;
 export const SIDEBAR_RAIL_SLIM = 148;
 export const SIDEBAR_DASH_MAX = 920;
+/** Phones and tablets hide the always-open rail. Desktop above this stays locked. */
+export const PHONE_ACCOUNT_BREAKPOINT = 800;
 
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
@@ -46,17 +48,13 @@ export const BM_CSS =
   ".bm-dash-inner{width:100%;max-width:" +
   SIDEBAR_DASH_MAX +
   "px;margin:0;margin-right:auto;box-sizing:border-box}" +
-  "@media (max-width:720px){.bm-rail{flex:0 0 " +
-  SIDEBAR_RAIL_SLIM +
-  "px;width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px;min-width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px;max-width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px}}" +
+  ".bm-account-toggle{display:none}" +
+  "@media (max-width:" +
+  PHONE_ACCOUNT_BREAKPOINT +
+  "px){.bm-rail{display:none}.bm-account-toggle{display:inline-flex}[data-meetup-rail]{display:none}}" +
+  ".bm-account-overlay{transition:opacity .2s ease}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
   ".bm-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +
-  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab,.bm-menu,.bm-drawer,.bm-scrim{transition:none!important}}";
+  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab,.bm-menu,.bm-drawer,.bm-scrim,.bm-account-overlay{transition:none!important}}";

@@ -11,7 +11,7 @@ import BrowseCarousel from "./components/BrowseCarousel";
 import PinnedRow from "./components/PinnedRow";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
-import AccountDrawer from "./components/AccountDrawer";
+import AccountDrawer, { AccountMenuControl } from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
 import MeetupRail from "./components/MeetupRail";
 import BandhamMark from "./components/BandhamMark";
@@ -414,6 +414,7 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <AccountMenuControl />
                   <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                     Bandham AI
                   </h1>
