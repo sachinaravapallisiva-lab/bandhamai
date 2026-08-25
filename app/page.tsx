@@ -7,7 +7,7 @@ import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
-import DiscoverCard from "./components/DiscoverCard";
+import BrowseCarousel from "./components/BrowseCarousel";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
@@ -390,7 +390,7 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
-  const current = profiles[0] || null;
+  const hasProfiles = profiles.length > 0;
   const searched = query.trim().length > 0;
   const searchChips = [criteria.city, criteria.gender].concat(criteria.keywords).filter(Boolean) as string[];
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
@@ -744,7 +744,7 @@ export default function Home() {
               </div>
             ) : null}
 
-            {showMatchCount && current && matchCount !== null && matchCount > 0 ? (
+            {showMatchCount && hasProfiles && matchCount !== null && matchCount > 0 ? (
               <div style={{ margin: "0 0 14px" }}>
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED }}>
                   {browseMatchCountCopy(matchCount)}
@@ -759,7 +759,7 @@ export default function Home() {
               </div>
             ) : null}
 
-            {!searching && !current ? (
+            {!searching && !hasProfiles ? (
               <>
                 <EmptyState
                   eyebrow="BROWSE"
@@ -778,17 +778,18 @@ export default function Home() {
                   </p>
                 ) : null}
               </>
-            ) : current ? (
-              <DiscoverCard
-                key={current.id}
-                profile={current}
-                saved={saved.some(function (x) { return x.id === current.id; })}
+            ) : hasProfiles ? (
+              <BrowseCarousel
+                profiles={profiles}
+                saved={saved}
                 signedIn={signedIn}
-                onInterested={function () { markInterested(current); }}
-                onPass={function () { passProfile(current.id); }}
-                onSave={function () { toggleSave(current); }}
-                onBlocked={function () {
-                  const blockedId = current.id;
+                onInterested={markInterested}
+                onPass={function (profile) {
+                  passProfile(profile.id);
+                }}
+                onSave={toggleSave}
+                onBlocked={function (profile) {
+                  const blockedId = profile.id;
                   passProfile(blockedId);
                   setLiked(function (prev) {
                     return prev.filter(function (x) { return x.id !== blockedId; });
