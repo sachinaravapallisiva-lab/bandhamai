@@ -44,10 +44,25 @@ export const SUBSCRIBE_CALL_LANGUAGES = [
 ] as const;
 
 /** Openings they may use. Not a recitation. No hyphens. English is first class. */
+export const SUBSCRIBE_CALL_AGENT_NAME = "Sai";
+export const SUBSCRIBE_CALL_PRODUCT = "Bandham AI";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING =
   "Hello, my name is Sai.";
-export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE = "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE =
+  "\u0C39\u0C32\u0C4B \u0C28\u0C3E \u0C2A\u0C47\u0C30\u0C41 \u0C38\u0C3E\u0C2F\u0C4D \u0C38\u0C1A\u0C4D\u0C1A\u0C28\u0C4D. \u0C0F\u0C02 \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C28\u0C4D\u0C28\u0C3E\u0C30\u0C41?";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING_HI = "Hello, my name is Sai.";
+
+export const SUBSCRIBE_CALL_IDENTITY_LOCKS = {
+  name: "Sai",
+  product: "Bandham AI",
+  notSupport: "Not Bandham Support.",
+  notUnnamedBot: "Not an unnamed bot.",
+  notBandhamai: "Not Bandhamai.",
+  noLiveVoiceClone: "Do not claim this already sounds like Sai's real voice.",
+  voiceCloneLater: "A voice clone is a later step after he provides a recording.",
+  inboundFirst: "This is inbound first.",
+  futureOutbound: "Any future outbound is Regular members only, explicit opt-in.",
+} as const;
 
 export const SUBSCRIBE_CALL_ENGLISH_FIRST =
   "English is first class, not only a fallback.";

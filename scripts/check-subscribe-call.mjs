@@ -21,7 +21,10 @@ import {
   SUBSCRIBE_CALL_SPOKEN_STOP,
   SUBSCRIBE_CALL_SPOKEN_TAGLINE,
   SUBSCRIBE_CALL_SQL_FILE,
+  SUBSCRIBE_CALL_AGENT_NAME,
   SUBSCRIBE_CALL_ENGLISH_FIRST,
+  SUBSCRIBE_CALL_IDENTITY_LOCKS,
+  SUBSCRIBE_CALL_PRODUCT,
   calledWithinCadence,
   decideSubscribeCallEligibility,
   defaultSubscribeCallOpenLanguage,
@@ -72,6 +75,16 @@ ui.forEach(function (text) {
   assert(!/Paid|Upgrade/i.test(text), "no Paid or Upgrade in new copy: " + text);
 });
 
+assertEq(SUBSCRIBE_CALL_AGENT_NAME, "Sai", "agent first name is Sai");
+assertEq(SUBSCRIBE_CALL_PRODUCT, "Bandham AI", "product is Bandham AI two words");
+assertEq(SUBSCRIBE_CALL_IDENTITY_LOCKS.name, "Sai", "identity name");
+assertEq(SUBSCRIBE_CALL_IDENTITY_LOCKS.notSupport, "Not Bandham Support.", "not support");
+assertEq(SUBSCRIBE_CALL_IDENTITY_LOCKS.notUnnamedBot, "Not an unnamed bot.", "not unnamed bot");
+assertEq(SUBSCRIBE_CALL_IDENTITY_LOCKS.notBandhamai, "Not Bandhamai.", "not Bandhamai");
+assert(SUBSCRIBE_CALL_IDENTITY_LOCKS.noLiveVoiceClone.includes("Do not claim"), "no live clone claim");
+assert(SUBSCRIBE_CALL_IDENTITY_LOCKS.voiceCloneLater.includes("later step"), "clone is later");
+assert(SUBSCRIBE_CALL_IDENTITY_LOCKS.inboundFirst.includes("inbound first"), "inbound first");
+assert(SUBSCRIBE_CALL_IDENTITY_LOCKS.futureOutbound.includes("Regular members only"), "future outbound Regular only");
 assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING, "Hello, my name is Sai.", "English opening is Sai");
 assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING_HI, "Hello, my name is Sai.", "Hindi intent opening is Sai");
 assertEq(
@@ -262,7 +275,14 @@ assert(prompt.toLowerCase().includes("never force english"), "never force Englis
 assert(prompt.includes("Hello, my name is Sai."), "Sai English opening");
 assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్"), "Sai Telugu opening");
 assert(prompt.toLowerCase().includes("introduces itself as sai") || prompt.toLowerCase().includes("introduce yourself as sai"), "agent is Sai");
-assert(!/voice clone is live|already sounds like/i.test(prompt) || prompt.toLowerCase().includes("do not claim"), "no live voice clone claim");
+assert(prompt.toLowerCase().includes("first name only"), "first name only");
+assert(prompt.toLowerCase().includes("unnamed bot"), "forbids unnamed bot");
+assert(prompt.includes("Not Bandhamai") || prompt.includes("Call yourself Bandhamai"), "forbids Bandhamai name");
+assert(prompt.toLowerCase().includes("inbound first"), "inbound first");
+assert(prompt.toLowerCase().includes("regular members only") && prompt.toLowerCase().includes("opt-in") || prompt.toLowerCase().includes("explicit opt-in"), "future outbound Regular opt-in only");
+assert(prompt.toLowerCase().includes("do not claim") && prompt.toLowerCase().includes("real voice"), "no live voice clone claim");
+assert(prompt.toLowerCase().includes("voice clone is a later step"), "voice clone is later");
+assert(prompt.toLowerCase().includes("provides a recording"), "clone waits for a recording");
 assert(prompt.toLowerCase().includes("vapi") && prompt.toLowerCase().includes("must not"), "no Vapi outbound");
 assert(prompt.includes("Bandham AI subscription is 9.99 a month"), "price lock");
 assert(prompt.toLowerCase().includes("regular") && prompt.toLowerCase().includes("premium"), "Regular vs Premium");
