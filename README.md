@@ -555,7 +555,7 @@ This is **not** Bandham Support and **not** the in app assistant / love guru. Su
 | Piece | Job |
 | --- | --- |
 | [`supabase/subscribe_call_opt_in.sql`](supabase/subscribe_call_opt_in.sql) | Adds `phone` if missing, `call_subscribe_opt_in` (default false), `call_subscribe_opted_at`, `last_subscribe_call_at`. Revokes public phone reads. Members may update only their own phone and opt-in. |
-| Account | Toggle + phone field. Number shown with spaces, no hyphens. |
+| Account | Toggle + phone field. Country code is required. Placeholder `+1 470 962 0438`. Number shown with spaces, no hyphens. |
 | `GET` / `POST` `/api/voice/subscribe-reminders` | Secret-gated dry run. Returns `count` and masked members. Never dials. A dial action returns 400. |
 | [`docs/subscribe-call-prompt.md`](docs/subscribe-call-prompt.md) | Conversational voice agent prompt (not IVR, not a recitation). The agent is Sai. English is first class, plus Hindi, Telugu, and other major Indian languages. No live voice clone and no Vapi or Twilio outbound. |
 
@@ -563,7 +563,7 @@ Auth is the same `BANDHAM_VOICE_SUPPORT_SECRET` header as inbound phone support.
 
 Eligibility (fail closed):
 
-1. Phone saved on their own profile
+1. Phone saved on their own profile in E.164 (`+` and a country code). A 10 digit number with no `+` fails closed. Do not invent `+1`.
 2. Explicit opt-in (`call_subscribe_opt_in` true)
 3. Regular / not entitled (no active or trialing subscription)
 4. No reminder call in the last 15 days
@@ -578,7 +578,7 @@ Bandham AI subscription is $9.99 a month. Do **not** say that price is for messa
 ### Test steps
 
 1. Run [`supabase/subscribe_call_opt_in.sql`](supabase/subscribe_call_opt_in.sql). Confirm the four columns exist.
-2. Account: toggle stays off until tapped. Saving opt-in without a phone fails.
+2. Account: toggle stays off until tapped. Opt-in cannot turn on until the saved phone is E.164 with a country code. A 10 digit number with no `+` fails closed.
 3. Secret missing: `GET /api/voice/subscribe-reminders` returns 503, `dialed: false`.
 4. With the secret: the list returns a count. Today that count should be 0 if no phones are saved. The JSON must not include full phone numbers.
 5. `?action=dial` or `{ "action": "dial" }` returns 400 and does not call anyone.

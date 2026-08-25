@@ -25,13 +25,13 @@ import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../..
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
 import {
   SUBSCRIBE_CALL_LAST_AT_COLUMN,
-  SUBSCRIBE_CALL_NEED_PHONE,
   SUBSCRIBE_CALL_OPT_IN_COLUMN,
   SUBSCRIBE_CALL_OPTED_AT_COLUMN,
   SUBSCRIBE_CALL_PHONE_COLUMN,
   SUBSCRIBE_CALL_SQL_HINT,
   normalizeSubscribePhone,
   parseCallSubscribeOptIn,
+  subscribeCallPhoneError,
 } from "../../../lib/subscribe-call";
 
 function asString(value: unknown) {
@@ -318,7 +318,7 @@ export async function PATCH(request: Request) {
         ? normalizeSubscribePhone(body.phone)
         : normalizeSubscribePhone(current.phone || "");
       if (hasPhone && typeof body.phone === "string" && body.phone.trim() && !nextPhone) {
-        return NextResponse.json({ error: "That phone does not look usable." }, { status: 400 });
+        return NextResponse.json({ error: subscribeCallPhoneError(body.phone) }, { status: 400 });
       }
 
       const wantsOptIn = hasCallOptIn
@@ -326,7 +326,10 @@ export async function PATCH(request: Request) {
         : parseCallSubscribeOptIn(current.call_subscribe_opt_in);
 
       if (wantsOptIn && !nextPhone) {
-        return NextResponse.json({ error: SUBSCRIBE_CALL_NEED_PHONE }, { status: 400 });
+        return NextResponse.json(
+          { error: subscribeCallPhoneError(hasPhone ? body.phone : current.phone) },
+          { status: 400 }
+        );
       }
 
       if (hasPhone) patch[SUBSCRIBE_CALL_PHONE_COLUMN] = nextPhone || null;

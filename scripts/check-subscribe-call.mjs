@@ -9,11 +9,13 @@ import {
   SUBSCRIBE_CALL_LABEL,
   SUBSCRIBE_CALL_LANGUAGES,
   SUBSCRIBE_CALL_LAST_AT_COLUMN,
+  SUBSCRIBE_CALL_NEED_COUNTRY,
   SUBSCRIBE_CALL_NEED_PHONE,
   SUBSCRIBE_CALL_OPT_IN_COLUMN,
   SUBSCRIBE_CALL_PATH,
   SUBSCRIBE_CALL_PHONE_COLUMN,
   SUBSCRIBE_CALL_PHONE_HINT,
+  SUBSCRIBE_CALL_PHONE_PLACEHOLDER,
   SUBSCRIBE_CALL_PROMPT_FILE,
   SUBSCRIBE_CALL_SAVE_LABEL,
   SUBSCRIBE_CALL_SPOKEN_FREE,
@@ -33,8 +35,10 @@ import {
   isAdultMember,
   isDemoOrPreviewProfile,
   maskPhoneForList,
+  isE164SubscribePhone,
   normalizeSubscribePhone,
   parseCallSubscribeOptIn,
+  subscribeCallPhoneError,
   publicEligibleMember,
 } from "../lib/subscribe-call.ts";
 import { VOICE_SUPPORT_SECRET_ENV, authorizeVoiceSupport } from "../lib/voice-support.ts";
@@ -64,6 +68,8 @@ const ui = [
   SUBSCRIBE_CALL_PHONE_HINT,
   SUBSCRIBE_CALL_SAVE_LABEL,
   SUBSCRIBE_CALL_NEED_PHONE,
+  SUBSCRIBE_CALL_NEED_COUNTRY,
+  SUBSCRIBE_CALL_PHONE_PLACEHOLDER,
   SUBSCRIBE_CALL_SPOKEN_PRICE,
   SUBSCRIBE_CALL_SPOKEN_TAGLINE,
   SUBSCRIBE_CALL_SPOKEN_FREE,
@@ -90,8 +96,12 @@ assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING, "Hello, my name is Sai.", "English open
 assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING_HI, "Hello, my name is Sai.", "Hindi intent opening is Sai");
 assertEq(
   SUBSCRIBE_CALL_EXAMPLE_OPENING_TE,
-  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
-  "Telugu opening is Sai's sample"
+  "\u0C39\u0C32\u0C4B \u0C28\u0C3E \u0C2A\u0C47\u0C30\u0C41 \u0C38\u0C3E\u0C2F\u0C4D. \u0C0F\u0C02 \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C28\u0C4D\u0C28\u0C3E\u0C30\u0C41?",
+  "Telugu opening is first name Sai only"
+);
+assert(
+  !SUBSCRIBE_CALL_EXAMPLE_OPENING_TE.includes("\u0C38\u0C1A\u0C4D\u0C1A\u0C28\u0C4D"),
+  "Telugu opening has no Sachin"
 );
 assertEq(SUBSCRIBE_CALL_LABEL, "Call me about Bandham AI", "toggle label");
 assertEq(SUBSCRIBE_CALL_SQL_FILE, "supabase/subscribe_call_opt_in.sql", "sql file name");
@@ -111,18 +121,33 @@ assertEq(parseCallSubscribeOptIn(""), false, "empty is off");
 assertEq(parseCallSubscribeOptIn(true), true, "true is on");
 assertEq(parseCallSubscribeOptIn("yes"), true, "yes is on");
 
-assertEq(normalizeSubscribePhone("+1 (512) 555-0100"), "+15125550100", "phone normalize");
+assertEq(SUBSCRIBE_CALL_PHONE_PLACEHOLDER, "+1 470 962 0438", "placeholder shows country code with spaces");
+assert(!SUBSCRIBE_CALL_PHONE_PLACEHOLDER.includes("-"), "placeholder has no hyphen");
+assertEq(normalizeSubscribePhone("+1 470 962 0438"), "+14709620438", "E.164 example stores plus country");
+assertEq(normalizeSubscribePhone("+1 (470) 962-0438"), "+14709620438", "E.164 strips punctuation");
+assertEq(normalizeSubscribePhone("4709620438"), "", "10 digit no plus fails closed");
+assertEq(normalizeSubscribePhone("470 962 0438"), "", "spaced 10 digit no plus fails closed");
+assertEq(normalizeSubscribePhone("14709620438"), "", "11 digit no plus does not invent +1");
+assertEq(normalizeSubscribePhone("04709620438"), "", "leading 0 fails closed");
+assertEq(normalizeSubscribePhone("+04709620438"), "", "plus then 0 fails closed");
+assertEq(normalizeSubscribePhone("+1"), "", "country code alone fails closed");
 assertEq(normalizeSubscribePhone("12"), "", "short phone fails closed");
-assert(displayPhoneWithSpaces("+15125550100").includes(" "), "display uses spaces");
-assert(!displayPhoneWithSpaces("+15125550100").includes("-"), "display has no hyphen");
-assertEq(maskPhoneForList("+15125550100"), "saved ending 0100", "list masks phone");
+assertEq(isE164SubscribePhone("+1 470 962 0438"), true, "example is E.164");
+assertEq(isE164SubscribePhone("4709620438"), false, "local 10 digit is not E.164");
+assertEq(subscribeCallPhoneError(""), SUBSCRIBE_CALL_NEED_PHONE, "empty uses need phone");
+assertEq(subscribeCallPhoneError("4709620438"), SUBSCRIBE_CALL_NEED_COUNTRY, "10 digit uses country error");
+assertEq(subscribeCallPhoneError("470 962 0438"), SUBSCRIBE_CALL_NEED_COUNTRY, "spaced 10 digit uses country error");
+assert(displayPhoneWithSpaces("+14709620438").includes(" "), "display uses spaces");
+assert(!displayPhoneWithSpaces("+14709620438").includes("-"), "display has no hyphen");
+assertEq(displayPhoneWithSpaces("+14709620438"), "+1 470 962 0438", "display matches Sai example");
+assertEq(maskPhoneForList("+14709620438"), "saved ending 0438", "list masks phone");
 
 const now = new Date("2026-08-24T12:00:00.000Z");
 const base = {
   id: "p1",
   user_id: "u1",
   full_name: "Sai Aravapalli",
-  phone: "+15125550100",
+  phone: "+14709620438",
   call_subscribe_opt_in: true,
   last_subscribe_call_at: null,
   status: "live",
@@ -133,6 +158,19 @@ assert(decideSubscribeCallEligibility(base, { entitled: false, now }).eligible, 
 assert(
   !decideSubscribeCallEligibility({ ...base, phone: "" }, { entitled: false, now }).eligible,
   "missing phone fails closed"
+);
+assert(
+  !decideSubscribeCallEligibility({ ...base, phone: "4709620438" }, { entitled: false, now }).eligible,
+  "10 digit no plus cannot be called"
+);
+assert(
+  !decideSubscribeCallEligibility({ ...base, phone: "470 962 0438", call_subscribe_opt_in: true }, { entitled: false, now })
+    .eligible,
+  "opt in plus 10 digit no plus still fails closed"
+);
+assert(
+  !decideSubscribeCallEligibility({ ...base, phone: "14709620438" }, { entitled: false, now }).eligible,
+  "missing plus does not invent +1"
 );
 assert(
   !decideSubscribeCallEligibility({ ...base, call_subscribe_opt_in: false }, { entitled: false, now }).eligible,
@@ -171,7 +209,7 @@ assert(isEntitledStatus("active") && isEntitledStatus("trialing"), "active and t
 assert(!isEntitledStatus("canceled"), "canceled is Regular");
 assert(calledWithinCadence("2026-08-20T00:00:00.000Z", now), "within cadence");
 assert(!calledWithinCadence("2026-07-01T00:00:00.000Z", now), "outside cadence");
-assertEq(publicEligibleMember(base).phone_masked, "saved ending 0100", "public list hides full phone");
+assertEq(publicEligibleMember(base).phone_masked, "saved ending 0438", "public list hides full phone");
 assert(!Object.prototype.hasOwnProperty.call(publicEligibleMember(base), "phone"), "public list has no phone key");
 
 assert(SUBSCRIBE_CALL_LANGUAGES.includes("Telugu"), "Telugu");
@@ -197,14 +235,14 @@ assertEq(
 );
 assertEq(
   subscribeCallOpening("Telugu"),
-  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
-  "Telugu uses Sai sample"
+  SUBSCRIBE_CALL_EXAMPLE_OPENING_TE,
+  "Telugu uses first name Sai only"
 );
 assertEq(subscribeCallOpening("Hindi"), "Hello, my name is Sai.", "Hindi uses Sai English sample");
 assertEq(subscribeCallOpening(""), "Hello, my name is Sai.", "English first class open");
 assertEq(
   publicEligibleMember({ ...base, mother_tongue: "Telugu" }).opening,
-  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
+  SUBSCRIBE_CALL_EXAMPLE_OPENING_TE,
   "list carries Telugu opening"
 );
 
@@ -259,19 +297,24 @@ assert(!/twilio|vapi|whatsapp/i.test(server), "server helper does not dial");
 const profiles = read("app/api/profiles/route.ts");
 assert(profiles.includes("SUBSCRIBE_CALL_OPT_IN_COLUMN") || profiles.includes("call_subscribe_opt_in"), "PATCH writes opt in");
 assert(profiles.includes("normalizeSubscribePhone"), "PATCH normalizes phone");
-assert(profiles.includes("SUBSCRIBE_CALL_NEED_PHONE"), "opt in without phone fails closed");
+assert(profiles.includes("subscribeCallPhoneError"), "opt in without E.164 fails closed");
 assert(!profiles.includes("last_subscribe_call_at ="), "members cannot write last call");
 
 const account = read("app/account/page.tsx");
 assert(account.includes("SubscribeCallField"), "account hosts the toggle");
 assert(account.includes("call_subscribe_opt_in"), "account saves opt in");
-assert(account.includes("SUBSCRIBE_CALL_NEED_PHONE"), "account fails closed without a phone");
+assert(account.includes("isE164SubscribePhone"), "account validates E.164 before opt in");
+assert(account.includes("subscribeCallPhoneError"), "account fails closed without E.164");
 
 const field = read("app/components/SubscribeCallField.tsx");
 assert(field.includes('type="checkbox"') || field.includes("type=\"checkbox\""), "explicit tap");
 assert(field.includes("displayPhoneWithSpaces"), "phone shown with spaces");
 assert(field.includes("SUBSCRIBE_CALL_LABEL"), "uses locked label");
 assert(field.includes("SUBSCRIBE_CALL_HINT"), "uses locked hint");
+assert(field.includes("SUBSCRIBE_CALL_PHONE_PLACEHOLDER"), "placeholder shows country code");
+assert(field.includes("SUBSCRIBE_CALL_NEED_COUNTRY"), "field shows country code error");
+assert(field.includes("isE164SubscribePhone"), "field blocks opt in without E.164");
+assert(!field.includes("512 555 0100"), "old local placeholder is gone");
 
 const prompt = read(SUBSCRIBE_CALL_PROMPT_FILE);
 assert(!/[—–]/.test(prompt), "prompt avoids em dashes");
@@ -287,7 +330,8 @@ assert(prompt.toLowerCase().includes("default open in english"), "default open i
 assert(prompt.toLowerCase().includes("same professional, pleasing, soft marketing tone"), "same tone in every language");
 assert(prompt.toLowerCase().includes("never force english"), "never force English");
 assert(prompt.includes("Hello, my name is Sai."), "Sai English opening");
-assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?"), "Sai Telugu opening exact");
+assert(prompt.includes(SUBSCRIBE_CALL_EXAMPLE_OPENING_TE), "Sai Telugu opening exact first name only");
+assert(!prompt.includes("\u0C38\u0C1A\u0C4D\u0C1A\u0C28\u0C4D"), "prompt Telugu has no Sachin");
 assert(prompt.toLowerCase().includes("then listen"), "then listen");
 assert(prompt.toLowerCase().includes("introduces itself as sai") || prompt.toLowerCase().includes("introduce yourself as sai"), "agent is Sai");
 assert(prompt.toLowerCase().includes("first name only"), "first name only");

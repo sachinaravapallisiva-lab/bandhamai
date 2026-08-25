@@ -60,7 +60,7 @@ Hello, my name is Sai.
 
 Telugu opening. Use this:
 Say this:
-హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?
+హలో నా పేరు సాయ్. ఏం చేస్తున్నారు?
 
 Then listen.
 

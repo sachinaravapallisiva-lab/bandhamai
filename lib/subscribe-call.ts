@@ -18,11 +18,14 @@ export const SUBSCRIBE_CALL_HINT =
   "Regular members can get one voice call every 15 days about Bandham AI. You can turn this off anytime. Premium members are not called.";
 export const SUBSCRIBE_CALL_PHONE_LABEL = "PHONE";
 export const SUBSCRIBE_CALL_PHONE_HINT =
-  "This number stays on your Bandham AI profile. We only call the number you save here.";
+  "Include the country code. Example: +1 470 962 0438. This number stays on your Bandham AI profile. We only call the number you save here.";
+export const SUBSCRIBE_CALL_PHONE_PLACEHOLDER = "+1 470 962 0438";
 export const SUBSCRIBE_CALL_SAVE_LABEL = "Save call choice";
 export const SUBSCRIBE_CALL_SAVING_LABEL = "Saving…";
 export const SUBSCRIBE_CALL_NEED_PHONE =
   "Save a phone on your profile before turning this on.";
+export const SUBSCRIBE_CALL_NEED_COUNTRY =
+  "Add a country code before the number. Example: +1 470 962 0438.";
 export const SUBSCRIBE_CALL_NEED_PROFILE = "Create a profile first.";
 export const SUBSCRIBE_CALL_SAVED_ON = "We will only call if you stay Regular and opted in.";
 export const SUBSCRIBE_CALL_SAVED_OFF = "Subscribe reminder calls are off.";
@@ -49,7 +52,7 @@ export const SUBSCRIBE_CALL_PRODUCT = "Bandham AI";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING =
   "Hello, my name is Sai.";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE =
-  "\u0C39\u0C32\u0C4B \u0C28\u0C3E \u0C2A\u0C47\u0C30\u0C41 \u0C38\u0C3E\u0C2F\u0C4D \u0C38\u0C1A\u0C4D\u0C1A\u0C28\u0C4D. \u0C0F\u0C02 \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C28\u0C4D\u0C28\u0C3E\u0C30\u0C41?";
+  "\u0C39\u0C32\u0C4B \u0C28\u0C3E \u0C2A\u0C47\u0C30\u0C41 \u0C38\u0C3E\u0C2F\u0C4D. \u0C0F\u0C02 \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C28\u0C4D\u0C28\u0C3E\u0C30\u0C41?";
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING_HI = "Hello, my name is Sai.";
 
 export const SUBSCRIBE_CALL_IDENTITY_LOCKS = {
@@ -170,15 +173,29 @@ export function parseCallSubscribeOptIn(value: unknown): boolean {
   return false;
 }
 
-/** Keep digits and a leading plus. Fail closed on short or long junk. */
+/** E.164 only. Leading +, country code (first digit 1 to 9), then the rest. Never invent +1. */
 export function normalizeSubscribePhone(value: unknown) {
   if (typeof value !== "string") return "";
   const raw = value.trim();
-  if (!raw) return "";
-  const hasPlus = raw.startsWith("+");
+  if (!raw.startsWith("+")) return "";
   const digits = raw.replace(/\D/g, "");
+  if (!digits || digits.startsWith("0")) return "";
   if (digits.length < 8 || digits.length > 15) return "";
-  return (hasPlus ? "+" : "") + digits;
+  return "+" + digits;
+}
+
+export function isE164SubscribePhone(value: unknown) {
+  return Boolean(normalizeSubscribePhone(value));
+}
+
+export function subscribeCallPhoneError(value: unknown) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return SUBSCRIBE_CALL_NEED_PHONE;
+  const compact = raw.replace(/\s/g, "");
+  if (!compact.startsWith("+") || compact.startsWith("+0") || compact.startsWith("0")) {
+    return SUBSCRIBE_CALL_NEED_COUNTRY;
+  }
+  return SUBSCRIBE_CALL_NEED_PHONE;
 }
 
 export function displayPhoneWithSpaces(value: string) {

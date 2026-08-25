@@ -3,9 +3,12 @@
 import {
   SUBSCRIBE_CALL_HINT,
   SUBSCRIBE_CALL_LABEL,
+  SUBSCRIBE_CALL_NEED_COUNTRY,
   SUBSCRIBE_CALL_PHONE_HINT,
   SUBSCRIBE_CALL_PHONE_LABEL,
+  SUBSCRIBE_CALL_PHONE_PLACEHOLDER,
   displayPhoneWithSpaces,
+  isE164SubscribePhone,
 } from "../../lib/subscribe-call";
 import { INK, LINE, MUTED, WASH } from "../../lib/theme";
 
@@ -15,6 +18,7 @@ export default function SubscribeCallField({
   onChecked,
   onPhone,
   disabled,
+  error,
   optInId = "account-subscribe-call",
   phoneId = "account-subscribe-phone",
 }: {
@@ -23,9 +27,14 @@ export default function SubscribeCallField({
   onChecked: (next: boolean) => void;
   onPhone: (next: string) => void;
   disabled?: boolean;
+  error?: string;
   optInId?: string;
   phoneId?: string;
 }) {
+  const trimmedPhone = phone.trim();
+  const missingCountry =
+    !!trimmedPhone && (!trimmedPhone.startsWith("+") || /^[+]?0/.test(trimmedPhone.replace(/\s/g, "")));
+  const phoneError = error || (missingCountry ? SUBSCRIBE_CALL_NEED_COUNTRY : "");
   return (
     <div>
       <div
@@ -52,7 +61,12 @@ export default function SubscribeCallField({
             checked={checked}
             disabled={disabled}
             onChange={function (e) {
-              onChecked(e.target.checked);
+              const next = e.target.checked;
+              if (next && !isE164SubscribePhone(phone)) {
+                onChecked(true);
+                return;
+              }
+              onChecked(next);
             }}
             className="bm-focus"
             style={{ marginTop: 3, width: 16, height: 16, accentColor: INK }}
@@ -82,7 +96,8 @@ export default function SubscribeCallField({
         autoComplete="tel"
         disabled={disabled}
         value={phone}
-        placeholder="+1 512 555 0100"
+        placeholder={SUBSCRIBE_CALL_PHONE_PLACEHOLDER}
+        aria-invalid={phoneError ? true : undefined}
         onChange={function (e) {
           onPhone(displayPhoneWithSpaces(e.target.value));
         }}
@@ -102,6 +117,11 @@ export default function SubscribeCallField({
       <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.45 }}>
         {SUBSCRIBE_CALL_PHONE_HINT}
       </p>
+      {phoneError ? (
+        <p className="bm-sans" style={{ margin: "6px 0 0", fontSize: 12, color: INK, lineHeight: 1.45 }}>
+          {phoneError}
+        </p>
+      ) : null}
     </div>
   );
 }

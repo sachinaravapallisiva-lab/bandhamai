@@ -20,6 +20,7 @@ import SubscribeCallField from "../components/SubscribeCallField";
 import VerifyOffer from "../components/VerifyOffer";
 import MeetupCard from "../components/MeetupCard";
 import {
+  SUBSCRIBE_CALL_NEED_COUNTRY,
   SUBSCRIBE_CALL_NEED_PHONE,
   SUBSCRIBE_CALL_NEED_PROFILE,
   SUBSCRIBE_CALL_SAVED_OFF,
@@ -27,7 +28,9 @@ import {
   SUBSCRIBE_CALL_SAVE_LABEL,
   SUBSCRIBE_CALL_SAVING_LABEL,
   displayPhoneWithSpaces,
+  isE164SubscribePhone,
   parseCallSubscribeOptIn,
+  subscribeCallPhoneError,
 } from "../../lib/subscribe-call";
 
 type BlockRow = {
@@ -217,8 +220,8 @@ export default function AccountPage() {
       setCallNote(SUBSCRIBE_CALL_NEED_PROFILE);
       return;
     }
-    if (callOptIn && !callPhone.trim()) {
-      setCallNote(SUBSCRIBE_CALL_NEED_PHONE);
+    if (callOptIn && !isE164SubscribePhone(callPhone)) {
+      setCallNote(subscribeCallPhoneError(callPhone));
       return;
     }
 
@@ -513,13 +516,28 @@ export default function AccountPage() {
               checked={callOptIn}
               phone={callPhone}
               onChecked={function (next) {
+                if (next && !isE164SubscribePhone(callPhone)) {
+                  setCallOptIn(false);
+                  setCallNote(subscribeCallPhoneError(callPhone));
+                  return;
+                }
                 setCallOptIn(next);
                 if (callNote) setCallNote("");
               }}
               onPhone={function (next) {
                 setCallPhone(next);
+                if (callOptIn && !isE164SubscribePhone(next)) {
+                  setCallOptIn(false);
+                  setCallNote(subscribeCallPhoneError(next));
+                  return;
+                }
                 if (callNote) setCallNote("");
               }}
+              error={
+                callNote === SUBSCRIBE_CALL_NEED_PHONE || callNote === SUBSCRIBE_CALL_NEED_COUNTRY
+                  ? callNote
+                  : ""
+              }
               disabled={savingCall || !hasProfile}
             />
             <button
