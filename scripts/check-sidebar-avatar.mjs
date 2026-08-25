@@ -17,6 +17,7 @@ import {
   sidebarAvatarInitial,
   sidebarOwnPhotoUrl,
 } from "../lib/sidebar-avatar.ts";
+import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
 import { CREAM, LINE, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme.ts";
 
 function assert(cond, message) {
@@ -49,14 +50,23 @@ const itemLabels = ACCOUNT_MENU_ITEMS.map(function (item) {
 });
 
 assert(
-  itemIds.join(",") === "profile,preferences,browse,meetup,messages,verifyai,help,settings",
-  "sidebar item order unchanged"
+  itemIds.join(",") === "profile,preferences,browse,meetup,messages,verifyai,help,call,settings",
+  "sidebar item order keeps Call us"
 );
 assert(
   itemLabels.join("|") ===
-    "My profile|Preferences|Browse / Matches|Meetup this month|Messages|VerifyAI|Help / Support|Settings / Account",
-  "sidebar labels unchanged"
+    "My profile|Preferences|Browse / Matches|Meetup this month|Messages|VerifyAI|Help / Support|Call us|Settings / Account",
+  "sidebar labels keep Call us"
 );
+const callItem = ACCOUNT_MENU_ITEMS.find(function (item) {
+  return item.id === "call";
+});
+assert(!!callItem, "Call us stays in the sidebar");
+assert(callItem.label === SUPPORT_CALL_LABEL, "Call us label lock");
+assert(callItem.label === "Call us", "Call us is two words");
+assert(callItem.href === SUPPORT_CALL_PATH, "Call us goes to contact hash");
+assert(callItem.href === "/contact#call", "Call us href lock");
+assert(drawer.includes('name === "call"') || drawer.includes('id === "call"'), "rail can icon Call us");
 assert(ACCOUNT_MENU_TITLE === "Account", "Account title stays Account");
 assert(ACCOUNT_MENU_PAID_CHIP === "Bandham AI", "subscribed self chip stays Bandham AI");
 assert(ACCOUNT_MENU_FREE_CHIP === "Free", "free chip stays Free");

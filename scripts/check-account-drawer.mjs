@@ -87,6 +87,12 @@ assert(!labels.includes("Messages"), "Inbox replaces the Messages label");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
 assert(labels.includes("Call us"), "call us item");
+assert(
+  ACCOUNT_MENU_ITEMS.map(function (item) {
+    return item.id;
+  }).join(",") === "profile,preferences,browse,meetup,messages,verifyai,help,call,settings",
+  "Call us stays between Help and Settings"
+);
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
