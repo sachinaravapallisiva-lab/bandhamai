@@ -62,7 +62,7 @@ const aboutCopy = about
 assert(!/[-–—]/.test(aboutCopy), "about user facing copy has no hyphen or dash");
 
 assert(login.includes('href="/about"'), "login links About");
-assert(login.includes(">About<") || login.includes(">About</Link>"), "login labels the About link");
+assert(/href="\/about"[\s\S]{0,220}About/.test(login), "login labels the About link");
 assert(login.includes('href="/safety"'), "login still links Safety");
 assert(login.includes('href="/terms"'), "login still links Terms");
 
