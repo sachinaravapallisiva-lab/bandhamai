@@ -348,6 +348,7 @@ assert(theme.includes(".bm-shell{flex-direction:column}"), "phone Home is one co
 assert(theme.includes(".bm-pin-card{flex:0 0 122px"), "pin cards shrink on phone only");
 assert(theme.includes(".bm-shortlist-photo{width:140px"), "shortlist photo shrinks on phone only");
 assert(theme.includes("[data-meetup-rail]{display:block"), "meetup stays on phone under the shortlist");
+assert(theme.includes("width:100%!important"), "phone meetup is a full width column");
 assert(!theme.includes("[data-meetup-rail]{display:none"), "do not hide the meetup stack on phone");
 assert(pinnedRow.includes("bm-pin-card") && pinnedRow.includes("bm-pin-photo"), "pin cards accept the phone size");
 assert(discover.includes("bm-shortlist-photo"), "shortlist photo accepts the phone size");
