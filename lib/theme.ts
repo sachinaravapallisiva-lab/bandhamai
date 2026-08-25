@@ -58,7 +58,7 @@ export const BM_CSS =
   "@media (max-width:" +
   PHONE_ACCOUNT_BREAKPOINT +
   "px){" +
-  ".bm-shell{flex-direction:column;flex-wrap:nowrap}" +
+  ".bm-shell{flex-direction:column}" +
   ".bm-rail{display:none!important}" +
   ".bm-account-phone{display:block}" +
   ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
