@@ -8,10 +8,24 @@ export const REPORT_REASONS = [
   { id: "harassment", label: "Harassment, threats, or will not stop" },
   { id: "money", label: "Asked for money, dowry, tickets, or papers" },
   { id: "underage", label: "Looks under 18" },
+  { id: "photo", label: "Inappropriate photo" },
   { id: "other", label: "Something else" },
 ] as const;
 
 export type ReportReasonId = (typeof REPORT_REASONS)[number]["id"];
+
+export const REPORT_COPY = {
+  action: "Report",
+  submit: "Submit report",
+  cancel: "Cancel",
+  reasonKicker: "REASON",
+  detailsKicker: "DETAILS",
+  detailsPlaceholder: "What happened, and about when",
+  intro: "This creates a review row. It does not call the police.",
+  pickReason: "Pick a report reason.",
+  saved:
+    "Report saved. We will look at it. If someone is in immediate danger, contact local authorities. We are not an emergency service.",
+} as const;
 
 export const REPORT_SURFACES = ["profile", "chat"] as const;
 export type ReportSurface = (typeof REPORT_SURFACES)[number];
@@ -37,6 +51,10 @@ export function reportReasonLabel(id: string) {
     return item.id === id;
   });
   return row ? row.label : "";
+}
+
+export function reportNeedsDetails(reason: string) {
+  return reason === "other";
 }
 
 export type BlockedSet = {

@@ -14,6 +14,7 @@ import {
   unauthorizedResponse,
 } from "../../../lib/server-supabase";
 import {
+  REPORT_COPY,
   REPORTS_TABLE,
   SAFETY_SQL_FILE,
   isReportReason,
@@ -51,10 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Choose a profile or conversation to report." }, { status: 400 });
     }
     if (!isReportReason(reason)) {
-      return NextResponse.json({ error: "Pick a report reason." }, { status: 400 });
-    }
-    if (reason === "other" && details.length < 4) {
-      return NextResponse.json({ error: "Add a short note for “something else.”" }, { status: 400 });
+      return NextResponse.json({ error: REPORT_COPY.pickReason }, { status: 400 });
     }
     if (!isReportSurface(surfaceRaw)) {
       return NextResponse.json({ error: "Say whether this is from a profile or chat." }, { status: 400 });
@@ -110,8 +108,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       report: data,
-      message:
-        "Report saved. We will look at it. If someone is in immediate danger, contact local authorities. We are not an emergency service.",
+      message: REPORT_COPY.saved,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong.";
