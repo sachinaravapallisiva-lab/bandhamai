@@ -13,7 +13,18 @@ import {
   prevCarouselIndex,
   shouldAutoAdvance,
 } from "../lib/browse-carousel.ts";
-import { BROWSE_PIN_CAP, BROWSE_PINNED_LABEL, BROWSE_PRIORITY_MARK } from "../lib/browse-pin.ts";
+import {
+  BROWSE_PIN_CAP,
+  BROWSE_PIN_CAP_NOTE,
+  BROWSE_PIN_NOT_CONFIGURED,
+  BROWSE_PIN_RENEW_NOTE,
+  BROWSE_PIN_SEPARATE_NOTE,
+  BROWSE_PIN_VOICE,
+  BROWSE_PINNED_LABEL,
+  BROWSE_PRIORITY_MARK,
+  PIN_CHECKOUT_PATH,
+} from "../lib/browse-pin.ts";
+import { MEETUP_TEST_POSTS, MEETUP_TEST_SEED_ENABLED } from "../lib/meetup-test-pond.ts";
 import {
   BROWSE_TEST_PINNED_IDS,
   BROWSE_TEST_PROFILES,
@@ -121,7 +132,40 @@ assert(!pinnedRow.includes("profile.note"), "pin cards do not show the tall Abou
 assert(testPond.includes("TEST ONLY") || testPond.includes("TEST ONLY preview"), "seed is labeled test in code");
 assert(!/Test|Demo|Fake/.test(stripComments(pinnedRow)), "no loud Test Demo Fake banner on the pin row");
 assert(!/Featured|boost|crown|♛|👑/i.test(pinCode), "pin row is not Featured, boost, or crown");
-assert(!/4\.99|7 days|paywall/i.test(pinCode + testPond), "paid Stripe pin stays parked");
+assert(BROWSE_PIN_VOICE === "Priority $4.99 for 7 days", "pin voice lock");
+assert(pinnedRow.includes("BROWSE_PIN_VOICE") || pinnedRow.includes(BROWSE_PIN_VOICE), "pin row shows Priority $4.99 for 7 days");
+assert(pinnedRow.includes("data-pin-cta") || pinnedRow.includes(BROWSE_PIN_VOICE), "pin CTA uses the same voice");
+assert(pinnedRow.includes("PIN_CHECKOUT_PATH") || pinnedRow.includes(PIN_CHECKOUT_PATH), "pin CTA hits fail closed checkout");
+assert(BROWSE_PIN_CAP_NOTE.toLowerCase().includes("cap 10 pins per week"), "weekly cap is named");
+assert(BROWSE_PIN_RENEW_NOTE.toLowerCase().includes("pay again"), "same or new profiles renew by paying again");
+assert(BROWSE_PIN_SEPARATE_NOTE.includes("$9.99 a month"), "pin is separate from the monthly subscription");
+assert(BROWSE_PIN_SEPARATE_NOTE.includes("$4.99 one time"), "pin is separate from VerifyAI");
+assert(!/\$9\.99 for messaging/i.test(pinCode + testPond), "do not say subscription is $9.99 for messaging");
+assert(!/price_[a-zA-Z0-9]+/.test(pinCode + testPond), "do not invent a pin Price ID");
+assert(!/STRIPE_PIN_PRICE_ID/.test(stripComments(pinLib + pinnedRow)), "do not invent STRIPE_PIN_PRICE_ID in pin UI");
+
+const pinCheckout = read("app/api/pins/checkout/route.ts");
+assert(pinCheckout.includes("pinCheckoutNotConfiguredPayload") || pinCheckout.includes(BROWSE_PIN_NOT_CONFIGURED), "pin pay fails closed");
+assert(pinCheckout.includes("503"), "pin pay fail closed is 503");
+assert(!pinCheckout.includes("checkout.sessions.create"), "pin checkout does not open live Stripe");
+assert(!/price_[a-zA-Z0-9]+/.test(pinCheckout), "pin checkout does not invent a Price ID");
+assert(!/STRIPE_PIN_PRICE_ID\s*=/.test(pinCheckout), "pin checkout does not invent STRIPE_PIN_PRICE_ID");
+
+const envExample = read(".env.example");
+assert(!/STRIPE_PIN_PRICE_ID=/.test(envExample), "do not invent STRIPE_PIN_PRICE_ID");
+assert(!/STRIPE_PIN_PRICE_ID=price_/.test(envExample), "do not invent a live pin Price ID");
+
+assert(page.includes("MeetupRail"), "right cream is the meetup stack");
+assert(page.indexOf("<MeetupRail") > page.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
+assert(page.indexOf("<MeetupCard") > page.indexOf("<MeetupRail"), "this month card is in the right stack");
+assert(MEETUP_TEST_SEED_ENABLED === true, "meetup test posts are on for this PR");
+assert(MEETUP_TEST_POSTS.length >= 3, "right stack has more than this month");
+assert(
+  MEETUP_TEST_POSTS.every(function (post) {
+    return post.body && !/\$\d/.test(post.body) && !/price_/i.test(post.body + post.title);
+  }),
+  "test meetup posts name no ticket price"
+);
 
 assert(BROWSE_CAROUSEL_EMPTY_TITLE === "No matches yet.", "empty title is honest");
 assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body names Photo coming soon");
@@ -133,10 +177,20 @@ assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body name
   BROWSE_CAROUSEL_EMPTY_BODY,
   BROWSE_PRIORITY_MARK,
   BROWSE_PINNED_LABEL,
+  BROWSE_PIN_VOICE,
+  BROWSE_PIN_CAP_NOTE,
+  BROWSE_PIN_RENEW_NOTE,
+  BROWSE_PIN_SEPARATE_NOTE,
+  BROWSE_PIN_NOT_CONFIGURED,
 ]
   .concat(
     BROWSE_TEST_SEEDS.flatMap(function (row) {
       return [row.name, row.city, row.work, row.note];
+    })
+  )
+  .concat(
+    MEETUP_TEST_POSTS.flatMap(function (post) {
+      return [post.kicker, post.monthLabel, post.title, post.body];
     })
   )
   .forEach(function (value) {

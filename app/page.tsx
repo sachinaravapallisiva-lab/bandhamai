@@ -13,6 +13,7 @@ import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
+import MeetupRail from "./components/MeetupRail";
 import { supabase } from "../lib/supabase";
 import { INBOX_PATH, INBOX_PREVIEW_NOTE, INBOX_PREVIEW_OPEN } from "../lib/inbox";
 import { MEETUP_PATH } from "../lib/meetup";
@@ -400,7 +401,7 @@ export default function Home() {
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "wrap", alignItems: "stretch" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">
@@ -592,8 +593,6 @@ export default function Home() {
                 </p>
               </section>
             ) : null}
-
-            <MeetupCard />
 
             <section
               style={{
@@ -813,7 +812,6 @@ export default function Home() {
         {/* ---------------- MATCHES ---------------- */}
         {tab === "matches" && (
           <div>
-            {speedPartner ? null : <MeetupCard />}
             {speedPartner ? (
               <SpeedMatch
                 partner={speedPartner}
@@ -991,6 +989,11 @@ export default function Home() {
       <SiteFooter extraBottom={56} />
       <VoiceAssistant />
       </div>
+      {tab === "browse" || tab === "matches" ? (
+        <MeetupRail>
+          <MeetupCard compact />
+        </MeetupRail>
+      ) : null}
     </div>
   );
 }
