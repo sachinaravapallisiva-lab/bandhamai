@@ -112,8 +112,12 @@ assert(browsePinnedPreview().length === BROWSE_TEST_PINNED_IDS.length, "preview 
 assert(pinnedRow.includes("BROWSE_PRIORITY_MARK"), "pin cards show Priority");
 assert(pinnedRow.includes("PROFILE_PHOTO_SOON") || pinnedRow.includes(PROFILE_PHOTO_SOON), "pin cards use Photo coming soon");
 assert(pinnedRow.includes("PresenceMark"), "pin cards show online or offline");
-assert(pinnedRow.includes("browseMetaLine"), "pin cards show city and role");
-assert(pinnedRow.includes("ProfileFactChips"), "pin cards show tags");
+assert(pinnedRow.includes("flexWrap: \"nowrap\""), "pinned cards stay on one horizontal line");
+assert(pinnedRow.includes("overflowX: \"auto\""), "the pin line can scroll sideways if needed");
+assert(!/flexWrap:\s*["']wrap["']/.test(pinnedRow), "pin row must not wrap into a second stack");
+assert(!/flex:\s*["']0 0 240px["']/.test(pinnedRow), "pin cards must not be full 240 Discover cards");
+assert(!pinnedRow.includes("ProfileFactChips"), "pin cards stay compact, no tall chip stack");
+assert(!pinnedRow.includes("profile.note"), "pin cards do not show the tall About body");
 assert(testPond.includes("TEST ONLY") || testPond.includes("TEST ONLY preview"), "seed is labeled test in code");
 assert(!/Test|Demo|Fake/.test(stripComments(pinnedRow)), "no loud Test Demo Fake banner on the pin row");
 assert(!/Featured|boost|crown|♛|👑/i.test(pinCode), "pin row is not Featured, boost, or crown");
