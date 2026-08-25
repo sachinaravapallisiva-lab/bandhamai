@@ -19,9 +19,11 @@ import {
 import { authJsonHeaders } from "../../lib/client-auth";
 import { fetchEntitlement } from "../../lib/client-billing";
 import { loginHref } from "../../lib/next-path";
+import { sidebarOwnPhotoUrl } from "../../lib/sidebar-avatar";
 import { supabase } from "../../lib/supabase";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import DownloadBiodata from "./DownloadBiodata";
+import SidebarAvatar from "./SidebarAvatar";
 
 type IconName =
   | "menu"
@@ -223,6 +225,8 @@ export default function AccountDrawer() {
   const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [hasProfile, setHasProfile] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [fullName, setFullName] = useState("");
   const [plan, setPlan] = useState<"free" | "paid" | null>(null);
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -236,10 +240,14 @@ export default function AccountDrawer() {
         setSignedIn(false);
         setEmail("");
         setPlan(null);
+        setHasProfile(false);
+        setPhotoUrl("");
+        setFullName("");
         return;
       }
       setSignedIn(true);
       setEmail(session.user.email || "");
+      const userId = session.user.id || "";
       Promise.all([
         fetchEntitlement(),
         authJsonHeaders().then(function (headers) {
@@ -252,12 +260,17 @@ export default function AccountDrawer() {
         .then(function (result) {
           const entitlement = result[0];
           const data = result[1];
+          const profile = data && data.profile;
           setPlan(entitlement.canMessage ? "paid" : "free");
-          setHasProfile(!!(data && data.profile && data.profile.id));
+          setHasProfile(!!(profile && profile.id));
+          setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
+          setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
         })
         .catch(function () {
           setPlan("free");
           setHasProfile(false);
+          setPhotoUrl("");
+          setFullName("");
         });
     });
   }, []);
@@ -401,49 +414,52 @@ export default function AccountDrawer() {
                 borderBottom: "1px solid " + LINE,
               }}
             >
-              <div>
-                <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
-                  BANDHAM AI
-                </p>
-                <h2 id={titleId} className="bm-serif" style={{ margin: 0, fontSize: 24, fontWeight: 400, color: INK }}>
-                  {ACCOUNT_MENU_TITLE}
-                </h2>
-                {signedIn ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                    <span
-                      className="bm-sans"
-                      style={{
-                        fontSize: 12.5,
-                        color: MUTED,
-                        maxWidth: 170,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {email || "Signed in"}
-                    </span>
-                    {plan ? (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
+                {signedIn ? <SidebarAvatar photoUrl={photoUrl} name={fullName} /> : null}
+                <div>
+                  <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
+                    BANDHAM AI
+                  </p>
+                  <h2 id={titleId} className="bm-serif" style={{ margin: 0, fontSize: 24, fontWeight: 400, color: INK }}>
+                    {ACCOUNT_MENU_TITLE}
+                  </h2>
+                  {signedIn ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                       <span
                         className="bm-sans"
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          minHeight: 24,
-                          padding: "2px 8px",
-                          borderRadius: 999,
-                          border: "1px solid " + LINE,
-                          background: WASH,
-                          color: plan === "paid" ? VIOLET_DEEP : MUTED,
-                          fontSize: 11,
-                          fontWeight: 600,
+                          fontSize: 12.5,
+                          color: MUTED,
+                          maxWidth: 170,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        {plan === "paid" ? ACCOUNT_MENU_PAID_CHIP : ACCOUNT_MENU_FREE_CHIP}
+                        {email || "Signed in"}
                       </span>
-                    ) : null}
-                  </div>
-                ) : null}
+                      {plan ? (
+                        <span
+                          className="bm-sans"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            minHeight: 24,
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            border: "1px solid " + LINE,
+                            background: WASH,
+                            color: plan === "paid" ? VIOLET_DEEP : MUTED,
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {plan === "paid" ? ACCOUNT_MENU_PAID_CHIP : ACCOUNT_MENU_FREE_CHIP}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <button
                 ref={closeRef}
