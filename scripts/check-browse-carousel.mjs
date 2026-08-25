@@ -7,6 +7,8 @@ import {
   BROWSE_CAROUSEL_MOTION,
   BROWSE_CAROUSEL_NEXT,
   BROWSE_CAROUSEL_PREV,
+  BROWSE_CAROUSEL_PHOTO_HEIGHT,
+  BROWSE_CAROUSEL_PHOTO_WIDTH,
   BROWSE_CAROUSEL_SLIDE_MS,
   clampCarouselIndex,
   nextCarouselIndex,
@@ -37,7 +39,8 @@ import {
   browsePinnedPreview,
   browseShortlistPond,
 } from "../lib/browse-test-pond.ts";
-import { PROFILE_PHOTO_SOON } from "../lib/profile-card.ts";
+import { GET_PRIORITY, PLANS_BODY, PLANS_PATH, PLANS_TITLE } from "../lib/plans.ts";
+import { PROFILE_PHOTO_HEIGHT, PROFILE_PHOTO_SOON } from "../lib/profile-card.ts";
 import {
   BROWSE_EMPTY_INVENTORY_TITLE,
   BROWSE_EMPTY_RESULTS_TITLE,
@@ -166,14 +169,27 @@ assert(!pinnedRow.includes("profile.note"), "pin cards do not show the tall Abou
 assert(testPond.includes("TEST ONLY") || testPond.includes("TEST ONLY preview"), "seed is labeled test in code");
 assert(!/Test|Demo|Fake/.test(stripComments(pinnedRow)), "no loud Test Demo Fake banner on the pin row");
 assert(!/Featured|boost|crown|♛|👑/i.test(pinCode), "pin row is not Featured, boost, or crown");
-assert(BROWSE_PIN_VOICE === "Priority $4.99 for 7 days", "pin voice lock");
-assert(pinnedRow.includes("BROWSE_PIN_VOICE") || pinnedRow.includes(BROWSE_PIN_VOICE), "pin row shows Priority $4.99 for 7 days");
-assert(pinnedRow.includes("data-pin-cta") || pinnedRow.includes(BROWSE_PIN_VOICE), "pin CTA uses the same voice");
-assert(pinnedRow.includes("PIN_CHECKOUT_PATH") || pinnedRow.includes(PIN_CHECKOUT_PATH), "pin CTA hits fail closed checkout");
-assert(BROWSE_PIN_CAP_NOTE.toLowerCase().includes("cap 10 pins per week"), "weekly cap is named");
+assert(BROWSE_PIN_VOICE === "Priority $4.99 for 7 days", "pin voice lock stays for Plans");
+assert(GET_PRIORITY === "Get Priority", "dashboard CTA is Get Priority");
+assert(PLANS_PATH === "/plans", "Plans path lock");
+assert(pinnedRow.includes("GET_PRIORITY") || pinnedRow.includes(GET_PRIORITY), "pin row shows Get Priority");
+assert(pinnedRow.includes("PLANS_PATH") || pinnedRow.includes(PLANS_PATH), "Get Priority goes to Plans");
+assert(!/\$4\.99/.test(pinnedRow), "pin row has no $4.99 prose");
+assert(!/\$9\.99/.test(pinnedRow), "pin row has no $9.99 prose");
+assert(!/Cap 10 pins per week/.test(pinnedRow), "cap copy left the dashboard");
+assert(!/Pay again to renew/.test(pinnedRow), "renew copy left the dashboard");
+assert(!/\$4\.99/.test(page), "Home dashboard has no $4.99 prose");
+assert(BROWSE_PIN_CAP_NOTE.toLowerCase().includes("cap 10 pins per week"), "weekly cap is named on Plans");
 assert(BROWSE_PIN_RENEW_NOTE.toLowerCase().includes("pay again"), "same or new profiles renew by paying again");
 assert(BROWSE_PIN_SEPARATE_NOTE.includes("$9.99 a month"), "pin is separate from the monthly subscription");
 assert(BROWSE_PIN_SEPARATE_NOTE.includes("$4.99 one time"), "pin is separate from VerifyAI");
+assert(BROWSE_CAROUSEL_PHOTO_HEIGHT >= 180 && BROWSE_CAROUSEL_PHOTO_HEIGHT <= 220, "shortlist photo is medium small");
+assert(BROWSE_CAROUSEL_PHOTO_WIDTH < 240, "shortlist photo is not a wide billboard");
+assert(BROWSE_CAROUSEL_PHOTO_HEIGHT < PROFILE_PHOTO_HEIGHT, "shortlist photo is shorter than the old 280 well");
+assert(discover.includes("BROWSE_CAROUSEL_PHOTO_HEIGHT"), "Discover card uses the smaller photo well");
+assert(discover.includes('objectFit: "cover"'), "shortlist photo keeps the face in frame");
+assert(BROWSE_PIN_PHOTO_HEIGHT === 150, "do not retune the pin photo well");
+assert(BROWSE_PIN_CARD_WIDTH === 168, "do not retune the pin card width");
 assert(!/\$9\.99 for messaging/i.test(pinCode + testPond), "do not say subscription is $9.99 for messaging");
 assert(!/price_[a-zA-Z0-9]+/.test(pinCode + testPond), "do not invent a pin Price ID");
 assert(!/STRIPE_PIN_PRICE_ID/.test(stripComments(pinLib + pinnedRow)), "do not invent STRIPE_PIN_PRICE_ID in pin UI");
@@ -188,6 +204,12 @@ assert(!/STRIPE_PIN_PRICE_ID\s*=/.test(pinCheckout), "pin checkout does not inve
 const envExample = read(".env.example");
 assert(!/STRIPE_PIN_PRICE_ID=/.test(envExample), "do not invent STRIPE_PIN_PRICE_ID");
 assert(!/STRIPE_PIN_PRICE_ID=price_/.test(envExample), "do not invent a live pin Price ID");
+
+const plansPage = read("app/plans/page.tsx");
+assert(plansPage.includes("PlansPanel"), "Plans page hosts the three costs");
+assert(read("app/components/PlansPanel.tsx").includes("PLANS_PRIORITY_HEADLINE"), "Plans names Priority $4.99 for 7 days");
+assert(read("app/components/PlansPanel.tsx").includes("PIN_CHECKOUT_PATH"), "Plans pin pay stays fail closed");
+assert(!/STRIPE_PIN_PRICE_ID=price_/.test(read("app/components/PlansPanel.tsx")), "Plans does not invent a pin Price");
 
 assert(page.includes("MeetupRail"), "right cream is the meetup stack");
 assert(page.indexOf("<MeetupRail") > page.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
@@ -216,6 +238,9 @@ assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body name
   BROWSE_PIN_RENEW_NOTE,
   BROWSE_PIN_SEPARATE_NOTE,
   BROWSE_PIN_NOT_CONFIGURED,
+  GET_PRIORITY,
+  PLANS_TITLE,
+  PLANS_BODY,
 ]
   .concat(
     BROWSE_TEST_SEEDS.flatMap(function (row) {

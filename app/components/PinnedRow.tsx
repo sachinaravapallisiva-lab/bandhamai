@@ -1,44 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import type { BrowseProfile } from "../../lib/profile-search";
 import {
-  BROWSE_PIN_CAP_NOTE,
   BROWSE_PIN_CARD_WIDTH,
-  BROWSE_PIN_NOT_CONFIGURED,
   BROWSE_PIN_PHOTO_HEIGHT,
-  BROWSE_PIN_RENEW_NOTE,
-  BROWSE_PIN_SEPARATE_NOTE,
-  BROWSE_PIN_VOICE,
   BROWSE_PINNED_LABEL,
   BROWSE_PRIORITY_MARK,
-  PIN_CHECKOUT_PATH,
 } from "../../lib/browse-pin";
+import { GET_PRIORITY, PLANS_PATH } from "../../lib/plans";
 import { PROFILE_CARD_RADIUS, PROFILE_PHOTO_FALLBACK } from "../../lib/profile-card";
 import { CREAM, LINE, MUTED, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 import PresenceMark from "./PresenceMark";
 
 export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState("");
-
   if (!profiles.length) return null;
-
-  async function startPinCheckout() {
-    setBusy(true);
-    setNote("");
-    try {
-      const res = await fetch(PIN_CHECKOUT_PATH, { method: "POST" });
-      const data = (await res.json().catch(function () {
-        return {};
-      })) as { error?: string };
-      setNote(data.error || BROWSE_PIN_NOT_CONFIGURED);
-    } catch {
-      setNote(BROWSE_PIN_NOT_CONFIGURED);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <section
@@ -49,26 +25,12 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
       <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 8px" }}>
         {BROWSE_PINNED_LABEL}
       </p>
-      <p
-        className="bm-sans"
-        data-pin-voice="true"
-        style={{ margin: "0 0 6px", fontSize: 13.5, fontWeight: 600, color: VIOLET_DEEP }}
-      >
-        {BROWSE_PIN_VOICE}
-      </p>
-      <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 12, color: MUTED }}>
-        {BROWSE_PIN_CAP_NOTE} {BROWSE_PIN_RENEW_NOTE}
-      </p>
-      <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 12, color: MUTED }}>
-        {BROWSE_PIN_SEPARATE_NOTE}
-      </p>
-      <button
-        type="button"
+      <Link
+        href={PLANS_PATH}
         data-pin-cta="true"
-        onClick={startPinCheckout}
-        disabled={busy}
         className="bm-sans bm-ghost bm-focus"
         style={{
+          display: "inline-block",
           margin: "0 0 12px",
           background: "transparent",
           color: VIOLET,
@@ -77,16 +39,11 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
           padding: "8px 14px",
           fontSize: 13,
           fontWeight: 600,
-          cursor: busy ? "default" : "pointer",
+          textDecoration: "none",
         }}
       >
-        {BROWSE_PIN_VOICE}
-      </button>
-      {note ? (
-        <p className="bm-sans" data-pin-fail-closed="true" style={{ margin: "0 0 12px", fontSize: 12, color: MUTED }}>
-          {note}
-        </p>
-      ) : null}
+        {GET_PRIORITY}
+      </Link>
       <div
         data-browse-pinned-line="true"
         style={{

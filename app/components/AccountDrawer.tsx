@@ -36,6 +36,7 @@ type IconName =
   | "inbox"
   | "block"
   | "verifyai"
+  | "plans"
   | "biodata"
   | "help"
   | "call"
@@ -124,6 +125,14 @@ function MenuIcon({ name }: { name: IconName }) {
       </svg>
     );
   }
+  if (name === "plans") {
+    return (
+      <svg {...common}>
+        <rect x="5.5" y="5.5" width="13" height="13" rx="2" stroke={stroke} strokeWidth="1.7" />
+        <path d="M8.4 9.4h7.2M8.4 12h7.2M8.4 14.6h5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (name === "biodata") {
     return (
       <svg {...common}>
@@ -198,6 +207,7 @@ function iconForItem(id: string): IconName {
   if (id === "messages" || id === "inbox") return "messages";
   if (id === "block") return "block";
   if (id === "verifyai") return "verifyai";
+  if (id === "plans") return "plans";
   if (id === "help") return "help";
   if (id === "call") return "call";
   if (id === "settings") return "settings";

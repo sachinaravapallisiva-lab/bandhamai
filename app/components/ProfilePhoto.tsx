@@ -32,19 +32,20 @@ export function ProfilePhoto({
 }
 
 /** Honest no-photo treatment. Cream only. Not an initial gradient that looks like a face. */
-export function ProfilePhotoSoon({ name }: { name: string }) {
+export function ProfilePhotoSoon({ name, height }: { name: string; height?: number }) {
   const label = PROFILE_PHOTO_SOON;
   return (
     <div
       role="img"
       aria-label={name ? name + " " + label.toLowerCase() : label}
       style={{
-        height: PROFILE_PHOTO_HEIGHT,
+        height: height || PROFILE_PHOTO_HEIGHT,
+        width: "100%",
         background: PROFILE_PHOTO_FALLBACK,
         display: "grid",
         placeItems: "center",
         boxSizing: "border-box",
-        borderBottom: "1px solid " + LINE,
+        borderBottom: height ? "none" : "1px solid " + LINE,
       }}
     >
       <span className="bm-sans" style={{ fontSize: 13, color: MUTED, letterSpacing: ".01em" }}>

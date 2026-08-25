@@ -62,14 +62,15 @@ const itemLabels = ACCOUNT_MENU_ITEMS.map(function (item) {
 });
 
 assert(
-  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
-  "sidebar item order keeps Inbox, Call us, and Block"
+  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
+  "sidebar item order keeps Inbox, Call us, Block, and Plans"
 );
 assert(
   itemLabels.join("|") ===
-    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Help / Support|Call us|Settings / Account|Block",
-  "sidebar labels keep Inbox, Call us, and Block"
+    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Plans|Help / Support|Call us|Settings / Account|Block",
+  "sidebar labels keep Inbox, Call us, Block, and Plans"
 );
+assert(itemIds.includes("plans") && itemLabels.includes("Plans"), "Plans is in the sidebar");
 assert(!itemIds.includes("messages"), "Messages item id is gone");
 assert(!itemLabels.includes("Messages"), "Messages label is gone");
 assert(itemIds.includes("inbox") && itemLabels.includes("Inbox"), "Inbox stays");

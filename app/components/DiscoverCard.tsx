@@ -4,10 +4,15 @@ import { canShowOtherBiodataDownload } from "../../lib/biodata-share";
 import type { BrowseProfile } from "../../lib/profile-search";
 import { browseFactChips, browseMetaLine, browseVisaLabel } from "../../lib/profile-search";
 import {
+  BROWSE_CAROUSEL_PHOTO_HEIGHT,
+  BROWSE_CAROUSEL_PHOTO_WIDTH,
+} from "../../lib/browse-carousel";
+import {
   PROFILE_ACTION_MIN,
   PROFILE_BODY_PAD,
   PROFILE_CARD_RADIUS,
   PROFILE_PHOTO_BG,
+  PROFILE_PHOTO_FALLBACK,
   PROFILE_PHOTO_HEIGHT,
 } from "../../lib/profile-card";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
@@ -102,41 +107,63 @@ export default function DiscoverCard({
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "relative" }}>
-        {profile.photoUrl ? (
-          // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profile.photoUrl}
-            alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
-            style={{
-              width: "100%",
-              height: PROFILE_PHOTO_HEIGHT,
-              objectFit: "cover",
-              display: "block",
-              background: PROFILE_PHOTO_BG,
-            }}
-          />
-        ) : (
-          <ProfilePhotoSoon name={profile.name} />
-        )}
-        {profile.online ? (
-          <span
-            aria-hidden="true"
-            title="Online"
-            style={{
-              position: "absolute",
-              right: 14,
-              bottom: 14,
-              width: 16,
-              height: 16,
-              borderRadius: 999,
-              background: PRESENCE_ONLINE_COLOR,
-              border: "2px solid " + CREAM,
-              boxSizing: "border-box",
-            }}
-          />
-        ) : null}
+      <div
+        data-browse-photo-well="true"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          background: CREAM,
+          padding: "16px 16px 0",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: BROWSE_CAROUSEL_PHOTO_WIDTH,
+            maxWidth: BROWSE_CAROUSEL_PHOTO_WIDTH,
+            height: BROWSE_CAROUSEL_PHOTO_HEIGHT,
+            maxHeight: Math.min(BROWSE_CAROUSEL_PHOTO_HEIGHT, PROFILE_PHOTO_HEIGHT),
+            overflow: "hidden",
+            borderRadius: 16,
+            background: PROFILE_PHOTO_FALLBACK,
+          }}
+        >
+          {profile.photoUrl ? (
+            // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photoUrl}
+              alt={profile.name ? profile.name + " profile photo" : "Profile photo"}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center 18%",
+                display: "block",
+                background: PROFILE_PHOTO_BG,
+              }}
+            />
+          ) : (
+            <ProfilePhotoSoon name={profile.name} height={BROWSE_CAROUSEL_PHOTO_HEIGHT} />
+          )}
+          {profile.online ? (
+            <span
+              aria-hidden="true"
+              title="Online"
+              style={{
+                position: "absolute",
+                right: 10,
+                bottom: 10,
+                width: 16,
+                height: 16,
+                borderRadius: 999,
+                background: PRESENCE_ONLINE_COLOR,
+                border: "2px solid " + CREAM,
+                boxSizing: "border-box",
+              }}
+            />
+          ) : null}
+        </div>
       </div>
 
       <div style={{ padding: PROFILE_BODY_PAD }}>

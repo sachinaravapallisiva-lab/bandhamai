@@ -14,6 +14,9 @@ export const BROWSE_CAROUSEL_PREV = "Previous";
 export const BROWSE_CAROUSEL_NEXT = "Next";
 export const BROWSE_CAROUSEL_EMPTY_TITLE = "No matches yet.";
 export const BROWSE_CAROUSEL_EMPTY_BODY = "Photo coming soon. Live profiles will appear here when they are approved.";
+/** Contained shortlist photo. Not a full width landscape billboard. */
+export const BROWSE_CAROUSEL_PHOTO_HEIGHT = 200;
+export const BROWSE_CAROUSEL_PHOTO_WIDTH = 168;
 
 export function nextCarouselIndex(index: number, length: number) {
   if (!Number.isFinite(index) || !Number.isFinite(length) || length <= 0) return 0;

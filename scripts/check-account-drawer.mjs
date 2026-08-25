@@ -95,9 +95,10 @@ assert(labels.includes("Call us"), "call us item");
 assert(
   ACCOUNT_MENU_ITEMS.map(function (item) {
     return item.id;
-  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
-  "Inbox, Call us, and Block stay in the #48 order"
+  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
+  "Inbox, Call us, Block, and Plans stay in order"
 );
+assert(labels.includes("Plans"), "Plans item");
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
@@ -112,6 +113,8 @@ assert(hrefs.includes("/"), "browse route");
 assert(hrefs.includes("/meetup"), "meetup route");
 assert(hrefs.includes("/inbox"), "inbox route");
 assert(hrefs.includes("/account#verify"), "verify anchor");
+assert(hrefs.includes("/plans"), "plans route");
+assert(ALLOWED_NEXT_PATHS.includes("/plans"), "plans is a real next path");
 assert(hrefs.includes("/contact"), "support route");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");
