@@ -85,47 +85,6 @@ export default function SafetyActions({
 
   if (!profileId && !userId) return null;
 
-  if (!signedIn) {
-    return (
-      <div style={{ marginTop: 10 }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link
-            href={loginHref(nextPath)}
-            className="bm-sans bm-ghost bm-focus"
-            style={{
-              background: CREAM,
-              border: "1px solid " + LINE,
-              borderRadius: 999,
-              padding: "8px 14px",
-              color: VIOLET,
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Block
-          </Link>
-          <Link
-            href={loginHref(nextPath)}
-            className="bm-sans bm-ghost bm-focus"
-            style={{
-              background: CREAM,
-              border: "1px solid " + LINE,
-              borderRadius: 999,
-              padding: "8px 14px",
-              color: VIOLET,
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            {REPORT_COPY.action}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ marginTop: 10 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -383,6 +342,15 @@ export default function SafetyActions({
           }}
         >
           {note}
+        </p>
+      ) : null}
+
+      {!signedIn ? (
+        <p className="bm-sans" style={{ margin: "8px 0 0", fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+          <Link href={loginHref(nextPath)} className="bm-focus" style={{ color: VIOLET }}>
+            Sign in
+          </Link>
+          {" to finish a block or report."}
         </p>
       ) : null}
     </div>
