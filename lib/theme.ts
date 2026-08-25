@@ -22,6 +22,8 @@ export const BM_CSS =
   ".bm-menu{transition:background .18s ease,border-color .18s ease}" +
   ".bm-menu:hover{background:#F3EBE0}" +
   ".bm-drawer{transition:transform .2s ease}" +
+  ".bm-rail{width:240px;flex-shrink:0;box-sizing:border-box}" +
+  "@media (max-width:720px){.bm-rail{width:132px}}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +

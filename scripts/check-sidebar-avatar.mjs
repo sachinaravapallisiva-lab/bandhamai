@@ -5,6 +5,7 @@ import {
   ACCOUNT_MENU_PAID_CHIP,
   ACCOUNT_MENU_TITLE,
   ACCOUNT_MENU_UPGRADE,
+  SIDEBAR_ALWAYS_OPEN,
 } from "../lib/account-menu.ts";
 import {
   isOwnStoredPhotoUrl,
@@ -119,6 +120,20 @@ assert(/background: CREAM/.test(drawer), "sidebar sits on cream");
 assert(!/minHeight: "100vh", background: WASH/.test(home), "home dashboard is not a darker wash");
 assert(!/minHeight: "100vh", background: WASH/.test(chrome), "AppChrome dashboard is not a darker wash");
 assert(!/minHeight: "100vh", background: WASH/.test(meetup), "meetup dashboard is not a darker wash");
+assert(SIDEBAR_ALWAYS_OPEN === true, "always open lock");
+assert(drawer.includes('data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}') || drawer.includes('data-sidebar-always-open="true"'), "rail marks itself always open");
+assert(drawer.includes("<aside"), "sidebar is a persistent aside");
+assert(drawer.includes("bm-rail"), "sidebar uses the always visible rail");
+assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
+assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
+assert(!/<span>Menu<\/span>/.test(drawer), "no Menu hamburger");
+assert(!/<span>Close<\/span>/.test(drawer), "no Close control");
+assert(!/aria-modal/.test(drawer), "no overlay dialog");
+assert(!/bm-scrim/.test(drawer), "no dismiss overlay");
+assert(!/ACCOUNT_MENU_OPEN_LABEL/.test(drawer), "no open menu control");
+assert(read("lib/theme.ts").includes(".bm-rail"), "slim rail width lives in theme");
+assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
+assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
 const themeExports = read("lib/theme.ts").split("export const BM_CSS")[0];
 assert(themeExports.includes('export const CREAM = "#FDF8F1"'), "cream export stays");
 assert(themeExports.includes('export const WASH = "#F7F1E8"'), "wash export stays");

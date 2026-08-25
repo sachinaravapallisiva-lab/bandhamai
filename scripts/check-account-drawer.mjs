@@ -11,6 +11,7 @@ import {
   ACCOUNT_MENU_TITLE,
   ACCOUNT_MENU_UPGRADE,
   ACCOUNT_MENU_UPGRADE_HREF,
+  SIDEBAR_ALWAYS_OPEN,
   PREFERENCES_BODY,
   PREFERENCES_PATH,
   PREFERENCES_TITLE,
@@ -38,14 +39,15 @@ const theme = read("lib/theme.ts");
 const sources = [stripComments(drawer), stripComments(prefs), stripComments(chrome)];
 
 assert(chrome.includes("AccountDrawer"), "AppChrome hosts the account drawer");
-assert(home.includes("AccountDrawer"), "home masthead uses the same drawer, not a parallel nav");
+assert(home.includes("AccountDrawer"), "home uses the same sidebar, not a parallel nav");
 assert(drawer.includes("DownloadBiodata"), "own biodata reuses DownloadBiodata");
-assert(drawer.includes('role="dialog"'), "drawer is a dialog");
-assert(drawer.includes("aria-modal"), "drawer is modal");
-assert(drawer.includes('event.key === "Escape"'), "keyboard close for the drawer");
-assert(drawer.includes("FOCUSABLE") || drawer.includes("querySelectorAll"), "tab order stays inside the drawer");
-assert(drawer.includes("aria-label={ACCOUNT_MENU_OPEN_LABEL}"), "open control has an aria-label");
-assert(drawer.includes("minWidth: 44"), "touch target width");
+assert(SIDEBAR_ALWAYS_OPEN === true, "sidebar stays open");
+assert(drawer.includes("<aside"), "sidebar is a persistent aside");
+assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
+assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
+assert(!/aria-modal/.test(drawer), "sidebar is not a modal overlay");
+assert(!/<span>Menu<\/span>/.test(drawer), "no hamburger Menu");
+assert(drawer.includes("minWidth: 44") || drawer.includes("minHeight: 44"), "touch target height");
 assert(drawer.includes("minHeight: 44"), "touch target height");
 assert(drawer.includes("prefers-reduced-motion") || theme.includes(".bm-drawer"), "drawer motion is in the theme");
 assert(theme.includes("prefers-reduced-motion"), "reduced-motion lock stays");

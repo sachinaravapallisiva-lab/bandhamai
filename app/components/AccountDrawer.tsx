@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   ACCOUNT_MENU_BIODATA_ID,
-  ACCOUNT_MENU_CLOSE_LABEL,
   ACCOUNT_MENU_DIALOG_ID,
   ACCOUNT_MENU_FREE_CHIP,
   ACCOUNT_MENU_ITEMS,
-  ACCOUNT_MENU_OPEN_LABEL,
   ACCOUNT_MENU_PAID_CHIP,
   ACCOUNT_MENU_SIGN_IN,
   ACCOUNT_MENU_SIGN_OUT,
   ACCOUNT_MENU_TITLE,
   ACCOUNT_MENU_UPGRADE,
   ACCOUNT_MENU_UPGRADE_HREF,
+  SIDEBAR_ALWAYS_OPEN,
 } from "../../lib/account-menu";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { fetchEntitlement } from "../../lib/client-billing";
@@ -204,9 +203,6 @@ function iconForItem(id: string): IconName {
   return "profile";
 }
 
-const FOCUSABLE =
-  "a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex='-1'])";
-
 const ITEM_STYLE = {
   display: "flex",
   alignItems: "center",
@@ -221,7 +217,6 @@ const ITEM_STYLE = {
 };
 
 export default function AccountDrawer() {
-  const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [hasProfile, setHasProfile] = useState(false);
@@ -229,9 +224,6 @@ export default function AccountDrawer() {
   const [fullName, setFullName] = useState("");
   const [plan, setPlan] = useState<"free" | "paid" | null>(null);
   const titleId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
@@ -275,308 +267,162 @@ export default function AccountDrawer() {
     });
   }, []);
 
-  useEffect(
-    function () {
-      if (!open) return;
-
-      const previous = document.activeElement;
-      const trigger = triggerRef.current;
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      const toFocus = closeRef.current;
-      if (toFocus) toFocus.focus();
-
-      function onKey(event: KeyboardEvent) {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          setOpen(false);
-          return;
-        }
-        if (event.key !== "Tab") return;
-        const root = panelRef.current;
-        if (!root) return;
-        const nodes = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(function (node) {
-          return !node.hasAttribute("disabled") && node.tabIndex !== -1;
-        });
-        if (!nodes.length) return;
-        const first = nodes[0];
-        const last = nodes[nodes.length - 1];
-        const active = document.activeElement;
-        if (event.shiftKey && active === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && active === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-
-      document.addEventListener("keydown", onKey);
-      return function () {
-        document.removeEventListener("keydown", onKey);
-        document.body.style.overflow = previousOverflow;
-        if (previous instanceof HTMLElement) previous.focus();
-        else if (trigger) trigger.focus();
-      };
-    },
-    [open]
-  );
-
-  function close() {
-    setOpen(false);
-  }
-
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="bm-sans bm-ghost bm-focus"
-        aria-label={ACCOUNT_MENU_OPEN_LABEL}
-        aria-expanded={open}
-        aria-controls={ACCOUNT_MENU_DIALOG_ID}
-        onClick={function () {
-          setOpen(true);
-        }}
+    <aside
+      id={ACCOUNT_MENU_DIALOG_ID}
+      aria-labelledby={titleId}
+      data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}
+      className="bm-drawer bm-rail"
+      style={{
+        position: "sticky",
+        top: 0,
+        alignSelf: "stretch",
+        minHeight: "100vh",
+        height: "100vh",
+        background: CREAM,
+        borderRight: "1px solid " + LINE,
+        display: "flex",
+        flexDirection: "column",
+        overflowY: "auto",
+      }}
+    >
+      <div
         style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          minWidth: 44,
-          minHeight: 44,
-          padding: "8px 12px",
-          background: "transparent",
-          color: VIOLET,
-          border: "1px solid " + LINE,
-          borderRadius: 999,
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "pointer",
-          flexShrink: 0,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+          padding: "18px 16px 12px",
+          borderBottom: "1px solid " + LINE,
         }}
       >
-        <MenuIcon name="menu" />
-        <span>Menu</span>
-      </button>
-
-      {open ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 40,
-          }}
-        >
-          <button
-            type="button"
-            className="bm-scrim"
-            aria-label={ACCOUNT_MENU_CLOSE_LABEL}
-            onClick={close}
-            style={{
-              position: "absolute",
-              inset: 0,
-              border: "none",
-              background: "rgba(30, 27, 54, 0.28)",
-              cursor: "pointer",
-              opacity: 1,
-            }}
-          />
-          <div
-            ref={panelRef}
-            id={ACCOUNT_MENU_DIALOG_ID}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="bm-drawer"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              zIndex: 1,
-              height: "100%",
-              width: "min(340px, 88vw)",
-              background: CREAM,
-              borderRight: "1px solid " + LINE,
-              boxShadow: "8px 0 28px rgba(45,27,54,.10)",
-              display: "flex",
-              flexDirection: "column",
-              transform: "translateX(0)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 12,
-                padding: "18px 16px 12px",
-                borderBottom: "1px solid " + LINE,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-                {signedIn ? <SidebarAvatar photoUrl={photoUrl} name={fullName} /> : null}
-                <div>
-                  <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
-                    BANDHAM AI
-                  </p>
-                  <h2 id={titleId} className="bm-serif" style={{ margin: 0, fontSize: 24, fontWeight: 400, color: INK }}>
-                    {ACCOUNT_MENU_TITLE}
-                  </h2>
-                  {signedIn ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                      <span
-                        className="bm-sans"
-                        style={{
-                          fontSize: 12.5,
-                          color: MUTED,
-                          maxWidth: 170,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {email || "Signed in"}
-                      </span>
-                      {plan ? (
-                        <span
-                          className="bm-sans"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            minHeight: 24,
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            border: "1px solid " + LINE,
-                            background: WASH,
-                            color: plan === "paid" ? VIOLET_DEEP : MUTED,
-                            fontSize: 11,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {plan === "paid" ? ACCOUNT_MENU_PAID_CHIP : ACCOUNT_MENU_FREE_CHIP}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <button
-                ref={closeRef}
-                type="button"
-                className="bm-sans bm-ghost bm-focus"
-                aria-label={ACCOUNT_MENU_CLOSE_LABEL}
-                onClick={close}
+        {signedIn ? <SidebarAvatar photoUrl={photoUrl} name={fullName} /> : null}
+        <div>
+          <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
+            BANDHAM AI
+          </p>
+          <h2 id={titleId} className="bm-serif" style={{ margin: 0, fontSize: 24, fontWeight: 400, color: INK }}>
+            {ACCOUNT_MENU_TITLE}
+          </h2>
+          {signedIn ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <span
+                className="bm-sans"
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  minWidth: 44,
-                  minHeight: 44,
-                  padding: "8px 12px",
-                  background: "transparent",
-                  border: "1px solid " + LINE,
-                  borderRadius: 999,
-                  color: VIOLET,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  fontSize: 12.5,
+                  color: MUTED,
+                  maxWidth: 170,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                <MenuIcon name="close" />
-                <span>Close</span>
-              </button>
-            </div>
-
-            <nav aria-label={ACCOUNT_MENU_TITLE} style={{ padding: "12px 10px 18px", overflowY: "auto" }}>
-              {!signedIn ? (
-                <Link
-                  href={loginHref("/")}
-                  onClick={close}
-                  className="bm-sans bm-talk bm-focus"
+                {email || "Signed in"}
+              </span>
+              {plan ? (
+                <span
+                  className="bm-sans"
                   style={{
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    minHeight: 44,
-                    margin: "0 6px 12px",
-                    background: VIOLET,
-                    color: "#FFFFFF",
+                    minHeight: 24,
+                    padding: "2px 8px",
                     borderRadius: 999,
-                    fontSize: 14,
+                    border: "1px solid " + LINE,
+                    background: WASH,
+                    color: plan === "paid" ? VIOLET_DEEP : MUTED,
+                    fontSize: 11,
                     fontWeight: 600,
-                    textDecoration: "none",
                   }}
                 >
-                  {ACCOUNT_MENU_SIGN_IN}
-                </Link>
+                  {plan === "paid" ? ACCOUNT_MENU_PAID_CHIP : ACCOUNT_MENU_FREE_CHIP}
+                </span>
               ) : null}
-
-              {ACCOUNT_MENU_ITEMS.map(function (item) {
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onClick={close}
-                    className="bm-sans bm-menu bm-focus"
-                    style={ITEM_STYLE}
-                  >
-                    <MenuIcon name={iconForItem(item.id)} />
-                    <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                      <span style={{ fontSize: 14.5, fontWeight: 600 }}>{item.label}</span>
-                      {"hint" in item && item.hint ? (
-                        <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>{item.hint}</span>
-                      ) : null}
-                    </span>
-                  </Link>
-                );
-              })}
-
-              {signedIn ? (
-                <div
-                  className="bm-menu"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    minHeight: 44,
-                    padding: "8px 12px",
-                    borderRadius: 12,
-                  }}
-                >
-                  <MenuIcon name={ACCOUNT_MENU_BIODATA_ID} />
-                  <DownloadBiodata hasProfile={hasProfile} compact />
-                </div>
-              ) : null}
-
-              {signedIn && plan === "free" ? (
-                <Link
-                  href={ACCOUNT_MENU_UPGRADE_HREF}
-                  onClick={close}
-                  className="bm-sans bm-menu bm-focus"
-                  style={ITEM_STYLE}
-                >
-                  <MenuIcon name="upgrade" />
-                  <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ACCOUNT_MENU_UPGRADE}</span>
-                </Link>
-              ) : null}
-
-              {signedIn ? (
-                <Link
-                  href="/logout"
-                  onClick={close}
-                  className="bm-sans bm-menu bm-focus"
-                  style={{ ...ITEM_STYLE, color: MUTED, marginTop: 8 }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{ACCOUNT_MENU_SIGN_OUT}</span>
-                </Link>
-              ) : null}
-            </nav>
-          </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </>
+      </div>
+
+      <nav aria-label={ACCOUNT_MENU_TITLE} style={{ padding: "12px 10px 18px" }}>
+        {!signedIn ? (
+          <Link
+            href={loginHref("/")}
+            className="bm-sans bm-talk bm-focus"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              minHeight: 44,
+              margin: "0 6px 12px",
+              background: VIOLET,
+              color: "#FFFFFF",
+              borderRadius: 999,
+              fontSize: 14,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            {ACCOUNT_MENU_SIGN_IN}
+          </Link>
+        ) : null}
+
+        {ACCOUNT_MENU_ITEMS.map(function (item) {
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="bm-sans bm-menu bm-focus"
+              style={ITEM_STYLE}
+            >
+              <MenuIcon name={iconForItem(item.id)} />
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 14.5, fontWeight: 600 }}>{item.label}</span>
+                {"hint" in item && item.hint ? (
+                  <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>{item.hint}</span>
+                ) : null}
+              </span>
+            </Link>
+          );
+        })}
+
+        {signedIn ? (
+          <div
+            className="bm-menu"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              minHeight: 44,
+              padding: "8px 12px",
+              borderRadius: 12,
+            }}
+          >
+            <MenuIcon name={ACCOUNT_MENU_BIODATA_ID} />
+            <DownloadBiodata hasProfile={hasProfile} compact />
+          </div>
+        ) : null}
+
+        {signedIn && plan === "free" ? (
+          <Link
+            href={ACCOUNT_MENU_UPGRADE_HREF}
+            className="bm-sans bm-menu bm-focus"
+            style={ITEM_STYLE}
+          >
+            <MenuIcon name="upgrade" />
+            <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ACCOUNT_MENU_UPGRADE}</span>
+          </Link>
+        ) : null}
+
+        {signedIn ? (
+          <Link
+            href="/logout"
+            className="bm-sans bm-menu bm-focus"
+            style={{ ...ITEM_STYLE, color: MUTED, marginTop: 8 }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{ACCOUNT_MENU_SIGN_OUT}</span>
+          </Link>
+        ) : null}
+      </nav>
+    </aside>
   );
 }

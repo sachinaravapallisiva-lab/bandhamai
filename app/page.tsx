@@ -396,23 +396,22 @@ export default function Home() {
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
+      <AccountDrawer />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
 
       {/* masthead — keep the existing Bandham AI wordmark */}
       <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-              <AccountDrawer />
-              <div>
+            <div>
                 <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                   Bandham AI
                 </h1>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
                   Find your vibe match?
                 </p>
-              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
               {signedIn ? (
@@ -983,6 +982,7 @@ export default function Home() {
 
       <SiteFooter extraBottom={56} />
       <VoiceAssistant />
+      </div>
     </div>
   );
 }

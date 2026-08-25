@@ -168,14 +168,14 @@ export default function MeetupPage() {
   const partner = speedPartner || meetupSpeedPartner(meetup.id);
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
+      <AccountDrawer />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
       <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 960, margin: "0 auto", padding: "20px 20px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-              <AccountDrawer />
-              <div>
+            <div>
                 <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
                   <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                     Bandham AI
@@ -184,7 +184,6 @@ export default function MeetupPage() {
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED }}>
                   Find your vibe match?
                 </p>
-              </div>
             </div>
             <Link
               href="/"
@@ -454,6 +453,7 @@ export default function MeetupPage() {
         <MeetupGroupChat signedIn={signedIn} rsvped={rsvped} tableReady={tableReady === true} userId={userId} />
       </main>
       <SiteFooter />
+      </div>
     </div>
   );
 }

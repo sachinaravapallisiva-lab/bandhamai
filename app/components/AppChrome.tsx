@@ -12,13 +12,13 @@ export default function AppChrome({
   right?: ReactNode;
 }) {
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
-      <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
-        <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-              <AccountDrawer />
+      <AccountDrawer />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
+          <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
               <div>
                 <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
                   <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
@@ -29,15 +29,15 @@ export default function AppChrome({
                   Find your vibe match?
                 </p>
               </div>
+              {right}
             </div>
-            {right}
           </div>
-        </div>
-      </header>
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 28px" }}>
-        {children}
-      </main>
-      <SiteFooter />
+        </header>
+        <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 28px", width: "100%", boxSizing: "border-box" }}>
+          {children}
+        </main>
+        <SiteFooter />
+      </div>
     </div>
   );
 }
