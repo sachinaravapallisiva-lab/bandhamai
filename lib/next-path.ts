@@ -14,6 +14,7 @@ export const ALLOWED_NEXT_PATHS = [
   "/logout",
   "/terms",
   "/privacy",
+  "/about",
 ] as const;
 
 export type AllowedNextPath = (typeof ALLOWED_NEXT_PATHS)[number];

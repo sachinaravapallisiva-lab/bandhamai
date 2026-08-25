@@ -376,9 +376,13 @@ export default function LoginPage() {
         <Link href="/safety" className="bm-focus" style={{ color: VIOLET }}>
           Safety
         </Link>
-        {" and "}
+        {", "}
         <Link href="/terms" className="bm-focus" style={{ color: VIOLET }}>
           Terms
+        </Link>
+        {", and "}
+        <Link href="/about" className="bm-focus" style={{ color: VIOLET }}>
+          About
         </Link>
         . Email confirmation is whatever this Supabase project already uses — this page does not turn it on.
       </p>
