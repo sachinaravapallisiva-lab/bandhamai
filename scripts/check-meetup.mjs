@@ -200,6 +200,8 @@ assert(home.includes("MeetupCard"), "Browse/Matches show the meetup card");
 assert(home.includes("MeetupRail"), "right cream is a vertical meetup stack");
 assert(home.indexOf("<MeetupRail") > home.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
 assert(home.indexOf("<MeetupCard") > home.indexOf("<MeetupRail"), "this month card is in the right stack");
+assert(home.includes('data-home-shell="true"'), "Home marks the desktop right bar and phone column");
+assert(home.indexOf("<SiteFooter") > home.indexOf("<MeetupRail"), "phone web paints footer after meetup");
 assert(!home.includes("STRIPE_EVENT_PRICE_ID"), "home does not invent an event Price");
 const homeShell = home.match(/className="bm-shell"[^>]*>/);
 assert(homeShell && /flexWrap:\s*["']nowrap["']/.test(homeShell[0]), "desktop Home keeps meetup on the same row");
@@ -210,6 +212,9 @@ assert(theme.includes("[data-meetup-rail]{flex:1 1 0%"), "meetup rail fills left
 assert(theme.includes("position:sticky"), "theme sticks the desktop meetup rail");
 assert(theme.includes("width:100%!important"), "phone meetup is a full width column");
 assert(theme.includes("position:static!important"), "phone meetup is not a sticky side bar");
+assert(theme.includes("[data-home-shell]{display:grid!important"), "desktop Home grid keeps the right meetup bar");
+assert(theme.includes("[data-home-shell]{display:flex!important;flex-direction:column"), "phone website stacks one column");
+assert(theme.includes("[data-home-shell]>[data-site-footer]{grid-column:2;grid-row:2}"), "desktop footer stays under the dash");
 const meetupRail = read("app/components/MeetupRail.tsx");
 assert(meetupRail.includes("MEETUP_TEST_POSTS"), "rail stacks more code only test meetup posts");
 assert(meetupRail.includes("MEETUP_RAIL_DEMO_LABEL"), "rail labels the stack as this month demo");

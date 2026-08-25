@@ -55,10 +55,21 @@ export const BM_CSS =
   ".bm-account-toggle{position:relative;z-index:90}" +
   ".bm-shell{flex-wrap:nowrap}" +
   "[data-meetup-rail]{flex:1 1 0%;min-width:96px;position:sticky;top:0;align-self:flex-start;height:100vh;max-height:100vh;overflow-y:auto;box-sizing:border-box}" +
+  "[data-home-shell]{display:grid!important;grid-template-columns:" +
+  SIDEBAR_RAIL_BASIS +
+  "px minmax(0," +
+  SIDEBAR_DASH_MAX +
+  "px) minmax(96px,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:stretch}" +
+  "[data-home-shell]>.bm-rail{grid-column:1;grid-row:1 / span 2}" +
+  "[data-home-shell]>.bm-dash{grid-column:2;grid-row:1}" +
+  "[data-home-shell]>[data-meetup-rail]{grid-column:3;grid-row:1 / span 2}" +
+  "[data-home-shell]>[data-site-footer]{grid-column:2;grid-row:2}" +
   "@media (max-width:" +
   PHONE_ACCOUNT_BREAKPOINT +
   "px){" +
   ".bm-shell{flex-direction:column}" +
+  "[data-home-shell]{display:flex!important;flex-direction:column;flex-wrap:nowrap}" +
+  "[data-home-shell]>.bm-rail,[data-home-shell]>.bm-dash,[data-home-shell]>[data-meetup-rail],[data-home-shell]>[data-site-footer]{grid-column:auto;grid-row:auto}" +
   ".bm-rail{display:none!important}" +
   ".bm-account-phone{display:block}" +
   ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
