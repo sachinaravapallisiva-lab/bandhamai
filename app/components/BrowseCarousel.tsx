@@ -66,14 +66,15 @@ export default function BrowseCarousel({
   }, []);
 
   useLayoutEffect(function () {
-    const el = viewportRef.current;
-    if (!el) return;
     function measure() {
-      const width = el.clientWidth - BROWSE_CAROUSEL_PEEK * 2;
+      const node = viewportRef.current;
+      if (!node) return;
+      const width = node.clientWidth - BROWSE_CAROUSEL_PEEK * 2;
       setSlideWidth(width > 0 ? width : 0);
     }
     measure();
-    if (typeof ResizeObserver === "undefined") return;
+    const el = viewportRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return function () {
