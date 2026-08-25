@@ -7,9 +7,10 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
-/** Rail and dashboard grow from these bases by the same leftover space. */
-export const SIDEBAR_RAIL_BASIS = 280;
-export const SIDEBAR_DASH_BASIS = 680;
+/** Capped rail. Dashboard takes leftover space. A grow-1 rail fattens the pair. */
+export const SIDEBAR_RAIL_BASIS = 240;
+export const SIDEBAR_RAIL_MAX = 280;
+export const SIDEBAR_RAIL_MIN = 220;
 export const SIDEBAR_RAIL_SLIM = 148;
 
 export const BM_CSS =
@@ -27,18 +28,24 @@ export const BM_CSS =
   ".bm-menu{transition:background .18s ease,border-color .18s ease}" +
   ".bm-menu:hover{background:#F3EBE0}" +
   ".bm-drawer{transition:transform .2s ease}" +
-  ".bm-rail{flex:1 1 " +
+  ".bm-rail{flex:0 0 " +
   SIDEBAR_RAIL_BASIS +
-  "px;min-width:260px;box-sizing:border-box}" +
-  ".bm-dash{flex:1 1 " +
-  SIDEBAR_DASH_BASIS +
-  "px;min-width:0;display:flex;flex-direction:column}" +
+  "px;width:" +
+  SIDEBAR_RAIL_BASIS +
+  "px;min-width:" +
+  SIDEBAR_RAIL_MIN +
+  "px;max-width:" +
+  SIDEBAR_RAIL_MAX +
+  "px;box-sizing:border-box}" +
+  ".bm-dash{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}" +
   ".bm-dash-inner{width:100%;max-width:none;margin:0;box-sizing:border-box}" +
   "@media (max-width:720px){.bm-rail{flex:0 0 " +
   SIDEBAR_RAIL_SLIM +
   "px;width:" +
   SIDEBAR_RAIL_SLIM +
   "px;min-width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px;max-width:" +
   SIDEBAR_RAIL_SLIM +
   "px}}" +
   ".bm-scrim{transition:opacity .2s ease}" +

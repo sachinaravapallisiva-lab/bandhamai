@@ -53,8 +53,9 @@ assert(drawer.includes("prefers-reduced-motion") || theme.includes(".bm-drawer")
 assert(theme.includes("prefers-reduced-motion"), "reduced-motion lock stays");
 assert(theme.includes(".bm-drawer"), "drawer transition token");
 assert(theme.includes(".bm-menu"), "menu hover token");
-assert(theme.includes(".bm-rail{flex:1 1 ") && theme.includes(".bm-dash{flex:1 1 "), "rail and dashboard both grow");
-assert(chrome.includes('className="bm-dash"') && home.includes('className="bm-dash"'), "hosts use the growing dashboard canvas");
+assert(theme.includes(".bm-rail{flex:0 0 ") && theme.includes(".bm-dash{flex:1 1 auto"), "capped rail, dashboard takes the rest");
+assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fails");
+assert(chrome.includes('className="bm-dash"') && home.includes('className="bm-dash"'), "hosts use the leftover dashboard canvas");
 assert(theme.includes("VIOLET"), "violet token stays");
 assert(!theme.includes("#2563EB") && !theme.includes("#3B82F6"), "do not replace violet with blue");
 
@@ -92,8 +93,8 @@ assert(labels.includes("Call us"), "call us item");
 assert(
   ACCOUNT_MENU_ITEMS.map(function (item) {
     return item.id;
-  }).join(",") === "profile,preferences,browse,meetup,messages,verifyai,help,call,settings",
-  "Call us stays between Help and Settings"
+  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
+  "Inbox, Call us, and Block stay in the #48 order"
 );
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");

@@ -21,8 +21,9 @@ import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
 import {
   CREAM,
   LINE,
-  SIDEBAR_DASH_BASIS,
   SIDEBAR_RAIL_BASIS,
+  SIDEBAR_RAIL_MAX,
+  SIDEBAR_RAIL_MIN,
   SIDEBAR_RAIL_SLIM,
   VIOLET,
   VIOLET_DEEP,
@@ -59,14 +60,19 @@ const itemLabels = ACCOUNT_MENU_ITEMS.map(function (item) {
 });
 
 assert(
-  itemIds.join(",") === "profile,preferences,browse,meetup,messages,verifyai,help,call,settings",
-  "sidebar item order keeps Call us"
+  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
+  "sidebar item order keeps Inbox, Call us, and Block"
 );
 assert(
   itemLabels.join("|") ===
-    "My profile|Preferences|Browse / Matches|Meetup this month|Messages|VerifyAI|Help / Support|Call us|Settings / Account",
-  "sidebar labels keep Call us"
+    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Help / Support|Call us|Settings / Account|Block",
+  "sidebar labels keep Inbox, Call us, and Block"
 );
+assert(!itemIds.includes("messages"), "Messages item id is gone");
+assert(!itemLabels.includes("Messages"), "Messages label is gone");
+assert(itemIds.includes("inbox") && itemLabels.includes("Inbox"), "Inbox stays");
+assert(itemIds.includes("block") && itemLabels.includes("Block"), "Block stays");
+assert(itemIds.indexOf("help") + 1 === itemIds.indexOf("call"), "Help / Support then Call us");
 const callItem = ACCOUNT_MENU_ITEMS.find(function (item) {
   return item.id === "call";
 });
@@ -154,20 +160,19 @@ const theme = read("lib/theme.ts");
 assert(theme.includes(".bm-rail"), "rail width lives in theme");
 assert(theme.includes(".bm-dash"), "dashboard canvas lives in theme");
 assert(theme.includes(".bm-dash-inner"), "dashboard inner fills the canvas");
-assert(theme.includes(".bm-rail{flex:1 1 "), "rail grows into leftover space");
-assert(theme.includes(".bm-dash{flex:1 1 "), "dashboard grows into leftover space");
+assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fattens the pair and fails");
+assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
+assert(theme.includes(".bm-dash{flex:1 1 auto"), "dashboard takes leftover space");
 assert(theme.includes("max-width:none"), "dashboard is not a centered 640 strip");
-assert(SIDEBAR_RAIL_BASIS >= 260, "sidebar rail must be wider than the skinny 240 rail");
-assert(SIDEBAR_DASH_BASIS >= 660, "dashboard canvas must grow with the rail");
-assert(SIDEBAR_RAIL_BASIS !== SIDEBAR_DASH_BASIS, "rail and dash grow as a pair, not one equal clone");
+assert(SIDEBAR_RAIL_BASIS >= 240 && SIDEBAR_RAIL_BASIS <= 260, "desktop rail stays 240 to 260");
+assert(SIDEBAR_RAIL_MAX >= 260 && SIDEBAR_RAIL_MAX <= 280, "rail max-width stays 260 to 280");
+assert(SIDEBAR_RAIL_MIN >= 220 && SIDEBAR_RAIL_MIN <= 240, "rail min-width still fits labels");
 assert(SIDEBAR_RAIL_SLIM >= 140 && SIDEBAR_RAIL_SLIM <= 180, "phones keep a slimmer visible rail");
-assert(!theme.includes("flex:0 0 240"), "fixed skinny 240 rail fails");
-assert(!/\.bm-rail\{flex:0 0 (2[6-9]\d|[3-9]\d{2})/.test(theme.replace(/\s/g, "")), "do not only widen the rail as a fixed column");
 assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
 assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
-assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home dashboard grows with the rail");
-assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome dashboard grows with the rail");
-assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup dashboard grows with the rail");
+assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home dashboard takes leftover space");
+assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome dashboard takes leftover space");
+assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup dashboard takes leftover space");
 assert(!/maxWidth:\s*640/.test(chrome + home + meetup), "shell must not keep a 640 canvas beside the rail");
 assert(!/margin:\s*["']0 auto["']/.test(chrome + home + meetup), "shell must not leave a centered unused middle band");
 const themeExports = theme.split("export const BM_CSS")[0];
