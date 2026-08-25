@@ -168,14 +168,14 @@ export default function MeetupPage() {
   const partner = speedPartner || meetupSpeedPartner(meetup.id);
 
   return (
-    <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
+      <AccountDrawer />
+      <div className="bm-dash">
       <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "20px 20px 16px" }}>
+        <div className="bm-dash-inner" style={{ padding: "20px 20px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-              <AccountDrawer />
-              <div>
+            <div>
                 <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
                   <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                     Bandham AI
@@ -184,7 +184,6 @@ export default function MeetupPage() {
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED }}>
                   Find your vibe match?
                 </p>
-              </div>
             </div>
             <Link
               href="/"
@@ -206,15 +205,13 @@ export default function MeetupPage() {
       </header>
 
       <main
+        className="bm-dash-inner meetup-grid"
         style={{
-          maxWidth: 960,
-          margin: "0 auto",
           padding: "24px 20px 28px",
           display: "grid",
           gap: 18,
           gridTemplateColumns: "minmax(0, 1fr)",
         }}
-        className="meetup-grid"
       >
         <style>{`@media (min-width: 880px){ .meetup-grid{ grid-template-columns: minmax(0,1fr) 320px !important; align-items: start; } }`}</style>
 
@@ -454,6 +451,7 @@ export default function MeetupPage() {
         <MeetupGroupChat signedIn={signedIn} rsvped={rsvped} tableReady={tableReady === true} userId={userId} />
       </main>
       <SiteFooter />
+      </div>
     </div>
   );
 }

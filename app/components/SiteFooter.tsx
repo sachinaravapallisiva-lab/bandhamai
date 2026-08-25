@@ -16,9 +16,8 @@ export default function SiteFooter({
       }}
     >
       <div
+        className="bm-dash-inner"
         style={{
-          maxWidth: 640,
-          margin: "0 auto",
           padding: "14px 20px 18px",
         }}
       >

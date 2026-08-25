@@ -11,6 +11,7 @@ import {
   ACCOUNT_MENU_TITLE,
   ACCOUNT_MENU_UPGRADE,
   ACCOUNT_MENU_UPGRADE_HREF,
+  SIDEBAR_ALWAYS_OPEN,
   PREFERENCES_BODY,
   PREFERENCES_PATH,
   PREFERENCES_TITLE,
@@ -38,19 +39,25 @@ const theme = read("lib/theme.ts");
 const sources = [stripComments(drawer), stripComments(prefs), stripComments(chrome)];
 
 assert(chrome.includes("AccountDrawer"), "AppChrome hosts the account drawer");
-assert(home.includes("AccountDrawer"), "home masthead uses the same drawer, not a parallel nav");
+assert(home.includes("AccountDrawer"), "home uses the same sidebar, not a parallel nav");
 assert(drawer.includes("DownloadBiodata"), "own biodata reuses DownloadBiodata");
-assert(drawer.includes('role="dialog"'), "drawer is a dialog");
-assert(drawer.includes("aria-modal"), "drawer is modal");
-assert(drawer.includes('event.key === "Escape"'), "keyboard close for the drawer");
-assert(drawer.includes("FOCUSABLE") || drawer.includes("querySelectorAll"), "tab order stays inside the drawer");
-assert(drawer.includes("aria-label={ACCOUNT_MENU_OPEN_LABEL}"), "open control has an aria-label");
-assert(drawer.includes("minWidth: 44"), "touch target width");
+assert(SIDEBAR_ALWAYS_OPEN === true, "sidebar stays open");
+assert(drawer.includes("<aside"), "sidebar is a persistent aside");
+assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
+assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
+assert(!/aria-modal/.test(drawer), "sidebar is not a modal overlay");
+assert(!/<span>Menu<\/span>/.test(drawer), "no hamburger Menu");
+assert(drawer.includes("minWidth: 44") || drawer.includes("minHeight: 44"), "touch target height");
 assert(drawer.includes("minHeight: 44"), "touch target height");
 assert(drawer.includes("prefers-reduced-motion") || theme.includes(".bm-drawer"), "drawer motion is in the theme");
 assert(theme.includes("prefers-reduced-motion"), "reduced-motion lock stays");
 assert(theme.includes(".bm-drawer"), "drawer transition token");
 assert(theme.includes(".bm-menu"), "menu hover token");
+assert(theme.includes(".bm-rail{flex:0 0 ") && theme.includes(".bm-dash{flex:0 1 "), "capped rail, capped dash");
+assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fails");
+assert(!theme.includes("max-width:none"), "full-bleed dash inner fails");
+assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "640 dash max is the canyon and fails");
+assert(chrome.includes('className="bm-dash"') && home.includes('className="bm-dash"'), "hosts use the capped dashboard canvas");
 assert(theme.includes("VIOLET"), "violet token stays");
 assert(!theme.includes("#2563EB") && !theme.includes("#3B82F6"), "do not replace violet with blue");
 
@@ -85,6 +92,12 @@ assert(!labels.includes("Messages"), "Inbox replaces the Messages label");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
 assert(labels.includes("Call us"), "call us item");
+assert(
+  ACCOUNT_MENU_ITEMS.map(function (item) {
+    return item.id;
+  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
+  "Inbox, Call us, and Block stay in the #48 order"
+);
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");

@@ -1,5 +1,8 @@
 /** Account hub drawer: family-safe matrimony nav. Not a dating-app chrome. */
 
+/** The rail is in the page on first paint. A closed drawer fails this lock. */
+export const SIDEBAR_ALWAYS_OPEN = true;
+
 export const ACCOUNT_MENU_OPEN_LABEL = "Open account menu";
 export const ACCOUNT_MENU_CLOSE_LABEL = "Close account menu";
 export const ACCOUNT_MENU_TITLE = "Account";

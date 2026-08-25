@@ -7,6 +7,13 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
+/** Capped rail. Capped dash. Right cream at 1280 is small to medium, not a 640 canyon. */
+export const SIDEBAR_RAIL_BASIS = 240;
+export const SIDEBAR_RAIL_MAX = 280;
+export const SIDEBAR_RAIL_MIN = 220;
+export const SIDEBAR_RAIL_SLIM = 148;
+export const SIDEBAR_DASH_MAX = 920;
+
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
   ".bm-serif{font-family:'Newsreader',Georgia,serif}" +
@@ -22,6 +29,32 @@ export const BM_CSS =
   ".bm-menu{transition:background .18s ease,border-color .18s ease}" +
   ".bm-menu:hover{background:#F3EBE0}" +
   ".bm-drawer{transition:transform .2s ease}" +
+  ".bm-rail{flex:0 0 " +
+  SIDEBAR_RAIL_BASIS +
+  "px;width:" +
+  SIDEBAR_RAIL_BASIS +
+  "px;min-width:" +
+  SIDEBAR_RAIL_MIN +
+  "px;max-width:" +
+  SIDEBAR_RAIL_MAX +
+  "px;box-sizing:border-box}" +
+  ".bm-dash{flex:0 1 " +
+  SIDEBAR_DASH_MAX +
+  "px;max-width:" +
+  SIDEBAR_DASH_MAX +
+  "px;min-width:0;display:flex;flex-direction:column}" +
+  ".bm-dash-inner{width:100%;max-width:" +
+  SIDEBAR_DASH_MAX +
+  "px;margin:0;margin-right:auto;box-sizing:border-box}" +
+  "@media (max-width:720px){.bm-rail{flex:0 0 " +
+  SIDEBAR_RAIL_SLIM +
+  "px;width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px;min-width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px;max-width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px}}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
