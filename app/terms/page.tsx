@@ -43,7 +43,7 @@ export default function TermsPage() {
 
         <LegalSection title="Messaging">
           <p style={{ margin: 0 }}>
-            Chat is for respectful, marriage-minded conversation. Do not send threats, spam, or sexual messages the other person did not ask for. Do not keep writing after someone asked you to stop. Do not use chat to sell goods, loans, crypto, or a job. Sending messages requires an active $9.99/month subscription. Browse, search, Speed Match, and creating a profile stay free. The subscription is access to messaging. It is not a promise of a match, a meeting, or a marriage.
+            Chat is for respectful, marriage-minded conversation. Do not send threats, spam, or sexual messages the other person did not ask for. Do not keep writing after someone asked you to stop. Do not use chat to sell goods, loans, crypto, or a job. Bandham AI subscription is $9.99 a month. A subscription is not a promise of a match, a meeting, or a marriage.
           </p>
         </LegalSection>
 
@@ -85,7 +85,7 @@ export default function TermsPage() {
 
         <LegalSection title="Payments">
           <p style={{ margin: 0 }}>
-            Messaging is $9.99 per month, billed by Stripe through Checkout. VerifyAI is a separate $4.99 one-time Stripe Checkout. The price is shown before you pay. You can manage or cancel a messaging subscription in the Stripe customer portal. We do not store your full card number. Refunds, if any, follow Stripe and the card network rules that apply to you. A subscription does not guarantee that anyone will reply, that you will match, or that you will meet. Paying for VerifyAI does not guarantee a badge — VerifyAI still has to succeed. Browse stays free if you do not subscribe. This page is a working draft and should be reviewed by a lawyer before you rely on it as a price contract.
+            Bandham AI subscription is $9.99 a month, billed by Stripe through Checkout. VerifyAI is a separate $4.99 one time Stripe Checkout. The price is shown before you pay. You can manage or cancel in the Stripe customer portal. We do not store your full card number. Refunds, if any, follow Stripe and the card network rules that apply to you. A subscription does not guarantee that anyone will reply, that you will match, or that you will meet. Paying for VerifyAI does not guarantee a badge. VerifyAI still has to succeed. Browse stays free if you do not subscribe. This page is a working draft and should be reviewed by a lawyer before you rely on it as a price contract.
           </p>
         </LegalSection>
 

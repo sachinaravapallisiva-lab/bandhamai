@@ -1,6 +1,6 @@
 "use client";
 
-import { BILLING_COPY, MESSAGING_PRICE_LABEL, type Entitlement } from "../../lib/billing";
+import { BILLING_COPY, type Entitlement } from "../../lib/billing";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 
 export default function MessagePaywall({
@@ -35,7 +35,7 @@ export default function MessagePaywall({
       }}
     >
       <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 8px" }}>
-        MESSAGING
+        SUBSCRIPTION
       </p>
       <h3 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 400, color: INK }}>
         {configured ? BILLING_COPY.headline : "Billing is not configured"}
@@ -123,7 +123,7 @@ export default function MessagePaywall({
       ) : null}
 
       <p className="bm-sans" style={{ margin: "12px 0 0", fontSize: 11, color: MUTED }}>
-        {MESSAGING_PRICE_LABEL} · cancel anytime in the Stripe customer portal
+        $9.99 a month. Cancel anytime in the Stripe customer portal
       </p>
     </section>
   );

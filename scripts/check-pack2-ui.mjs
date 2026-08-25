@@ -115,8 +115,10 @@ const datingChrome = /\b(swipe|streaks?|hot near you|hot-near-you|for you tonigh
 assert(!datingChrome.test(stripComments(discover)), "DiscoverCard has no dating chrome strings");
 assert(!datingChrome.test(stripComments(matchCard)), "MatchCard has no dating chrome strings");
 assert(!datingChrome.test(stripComments(chips)), "shared chips have no dating chrome strings");
-assert(chrome.includes("Bandhamai"), "wordmark is still Bandhamai");
-assert(page.includes("Bandhamai"), "home wordmark is still Bandhamai");
+assert(chrome.includes("Bandham AI"), "wordmark is Bandham AI");
+assert(page.includes("Bandham AI"), "home wordmark is Bandham AI");
+assert(!/\bBandhamai\b/.test(chrome), "chrome wordmark is not Bandhamai");
+assert(!/\bBandhamai\b/.test(page.replace(/bandhamai\.vercel\.app/g, "")), "home wordmark is not Bandhamai");
 
 console.log("pack 2 ui ok", {
   title: GURU_TITLE,

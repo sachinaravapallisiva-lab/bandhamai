@@ -7,16 +7,16 @@ export const ACCOUNT_MENU_DIALOG_ID = "account-menu";
 export const ACCOUNT_MENU_SIGN_IN = "Sign in";
 export const ACCOUNT_MENU_SIGN_OUT = "Sign out";
 export const ACCOUNT_MENU_FREE_CHIP = "Free";
-export const ACCOUNT_MENU_PAID_CHIP = "Paid";
-export const ACCOUNT_MENU_MESSAGES_NOTE = "Paid";
-export const ACCOUNT_MENU_UPGRADE = "Upgrade";
+export const ACCOUNT_MENU_PAID_CHIP = "Bandham AI";
+export const ACCOUNT_MENU_MESSAGES_NOTE = "";
+export const ACCOUNT_MENU_UPGRADE = "Subscribe $9.99 a month";
 
 export const ACCOUNT_MENU_ITEMS = [
   { id: "profile", label: "My profile", href: "/profile/new" },
   { id: "preferences", label: "Preferences", hint: "Dealbreakers", href: "/preferences" },
   { id: "browse", label: "Browse / Matches", href: "/" },
   { id: "meetup", label: "Meetup this month", href: "/meetup" },
-  { id: "messages", label: "Messages", href: "/chat", note: ACCOUNT_MENU_MESSAGES_NOTE },
+  { id: "messages", label: "Messages", href: "/chat" },
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "help", label: "Help / Support", href: "/contact" },
   { id: "settings", label: "Settings / Account", href: "/account" },

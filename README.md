@@ -93,7 +93,7 @@ Use two signed-in accounts, A and B. Both should have live profiles. A has Insta
 
 ## Messaging subscription (Stripe)
 
-Browse, search, Speed Match, and profile create stay **free**. **Sending a message** needs an active **$9.99/month** Stripe subscription. The paywall copy is honest: messaging access only — not a match guarantee. There is no fake checkout, no countdown, and no “most people upgrade” line.
+Default paywall copy is product first: **Bandham AI subscription is $9.99 a month.** It does not list what the month includes. Browse, search, Speed Match, and profile create stay free. The lawyer line is not a match guarantee. There is no fake checkout, no countdown, and no “most people upgrade” line.
 
 If Stripe env vars are missing, the Chat paywall shows **“Billing is not configured”** and does not crash.
 
@@ -148,7 +148,7 @@ The app does not invent profile columns for this. Entitlement lives on `subscrip
 
 1. With Stripe env **missing**, open Chat → Send. You should see **Billing is not configured**, not a crash.
 2. Sign out → Chat → Send. You should be asked to sign in. Browse still works.
-3. After env + SQL + webhook are live: sign in, Chat → **Subscribe $9.99/mo** → Stripe Checkout (test card) → return `/?billing=success`.
+3. After env + SQL + webhook are live: sign in, Chat → **Subscribe $9.99 a month** → Stripe Checkout (test card) → return `/?billing=success`.
 4. Stripe Dashboard → Webhooks should show `checkout.session.completed` (and subscription events) succeeding.
 5. In Supabase, `subscriptions` should have your `user_id`, `stripe_customer_id`, `status` `active` (or `trialing`).
 6. Chat Send (or `POST /api/messages` with a Bearer token) should succeed. A second account without a row should get **402**.
@@ -161,7 +161,7 @@ A virtual matrimony meetup for members in the US, Australia, the UK, the EU, and
 
 ### Event ticket (separate from $9.99/mo)
 
-RSVP and group chat unlock only after a **paid event ticket**. That ticket is **not** included in the $9.99/mo messaging subscription. One to one Chat still uses `MessagePaywall` and `POST /api/messages`.
+RSVP and group chat unlock only after a **paid event ticket**. That ticket is **not** part of the Bandham AI subscription. One to one Chat still uses `MessagePaywall` and `POST /api/messages`.
 
 The dollar amount is **not named** in this repo. Checkout uses `STRIPE_EVENT_PRICE_ID` and **fails closed** if that env is missing. Do not invent a Price ID or an amount.
 
@@ -188,7 +188,7 @@ Authenticated clients cannot insert a free RSVP. The service role writes the RSV
 2. With `STRIPE_EVENT_PRICE_ID` **missing**: **Get a ticket** fails closed. No invented dollar amount. Group chat stays locked.
 3. Sign out: group chat asks you to sign in. No guest posting.
 4. After env + SQL: sign in → **Get a ticket** → Stripe Checkout (one time) → return `/meetup?ticket=paid`. You should be RSVPed.
-5. A second account with only the $9.99/mo messaging plan (no event ticket) cannot open group chat.
+5. A second account with only the Bandham AI subscription (no event ticket) cannot open group chat.
 6. After the ticket: **Begin Speed Match** is the existing 10 desi dealbreakers, 15 seconds, tap only, Don't want to answer. Then a shortlist of other RSVPs (up to three).
 7. From the group or shortlist, **Open Chat** goes to `/chat?to=…` and still hits the $9.99/mo paywall.
 8. Blocked people do not appear on the shortlist.

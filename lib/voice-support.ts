@@ -26,7 +26,11 @@ export const VOICE_SPOKEN_INTRO =
   "Hi, this is Bandham Support. I can help with the app, billing, or your account. I cannot search profiles or write dating messages.";
 
 export const VOICE_SPOKEN_PRICES =
-  "Messaging is 9.99 a month. VerifyAI is 4.99 one time. Meetup this month is a feature demo only, not a live paid event.";
+  "Bandham AI subscription is 9.99 a month. VerifyAI is 4.99 one time. Meetup this month is a feature demo only, not a live paid event.";
+
+/** Only if the caller asks what the subscription covers. Do not volunteer this. */
+export const VOICE_SPOKEN_INCLUDED_WHEN_ASKED =
+  "That unlocks messaging. Browse, search, Speed Match, and creating a profile stay free.";
 
 export const VOICE_SPOKEN_SAFETY =
   "Tickets are for app issues, not emergencies. If someone is harassing you, use Block or Report in the app. If you are in immediate danger, contact local authorities.";

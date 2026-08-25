@@ -49,7 +49,7 @@ export const MEETUP_COPY = {
   title: "Meetup this month",
   monthTitle: "August 2026",
   cardBody:
-    "A virtual matrimony meetup for members in the US, Australia, the UK, the EU, and Ireland. A separate event ticket is required. The $9.99/mo messaging plan does not include it.",
+    "A virtual matrimony meetup for members in the US, Australia, the UK, the EU, and Ireland. A separate event ticket is required. It is not part of the Bandham AI subscription.",
   pageBody:
     "This meetup is online. It is for serious matrimony, not a dating mixer. Buy a separate event ticket to RSVP. Then join Speed Match and the group chat on the side.",
   timeNote: "Saturday 29 August 2026 at 12:00 UTC. A time that can work across the US, Australia, the UK, the EU, and Ireland.",
@@ -60,13 +60,13 @@ export const MEETUP_COPY = {
   rsvpNeedSql: "Meetup storage is not applied yet. Run supabase/meetups.sql in the Supabase SQL editor.",
   ticketHeadline: "A separate event ticket",
   ticketBody:
-    "This meetup needs its own ticket. The $9.99/mo messaging plan does not include it. Group chat opens only after that paid ticket. One to one Chat still uses the messaging paywall.",
+    "This meetup needs its own ticket. It is not part of the Bandham AI subscription. One to one Chat still needs an active Bandham AI subscription.",
   ticketCta: "Get a ticket",
   ticketBusy: "Opening checkout",
   ticketNotConfigured:
     "Event ticket checkout is not configured. Set STRIPE_EVENT_PRICE_ID on Vercel. The dollar amount is not named in this app yet.",
   ticketWrongPrice:
-    "STRIPE_EVENT_PRICE_ID must be a one time event Price. Do not point it at the $9.99/mo messaging plan or VerifyAI.",
+    "STRIPE_EVENT_PRICE_ID must be a one time event Price. Do not point it at the Bandham AI subscription Price or VerifyAI.",
   ticketRequired: "Buy an event ticket to RSVP. Group chat opens after that paid ticket.",
   ticketPaidNote: "Ticket is on file. You RSVPed.",
   ticketCancel: "Checkout was canceled. No ticket was charged.",
@@ -94,7 +94,7 @@ export const MEETUP_COPY = {
   chatSend: "Send",
   chatEmpty: "No messages yet. Be kind and stay on matrimony.",
   openOneToOne: "Open Chat",
-  oneToOneNote: "One to one Chat still uses the $9.99/mo messaging paywall. A meetup ticket does not unlock it.",
+  oneToOneNote: "One to one Chat still needs an active Bandham AI subscription. A meetup ticket does not unlock it.",
   blockedNote: "You cannot open Chat with this person. One of you blocked the other.",
   tableMissing: "Meetup storage is not applied yet. Run supabase/meetups.sql in the Supabase SQL editor.",
   memberFallback: "Meetup member",
