@@ -16,6 +16,7 @@ import {
   sidebarAvatarInitial,
   sidebarOwnPhotoUrl,
 } from "../lib/sidebar-avatar.ts";
+import { CREAM, LINE, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -34,6 +35,7 @@ const avatar = read("app/components/SidebarAvatar.tsx");
 const helper = read("lib/sidebar-avatar.ts");
 const chrome = read("app/components/AppChrome.tsx");
 const home = read("app/page.tsx");
+const meetup = read("app/meetup/page.tsx");
 const menu = read("lib/account-menu.ts");
 const newUserCopy = SIDEBAR_AVATAR_ALT;
 const newSources = [stripComments(drawer), stripComments(avatar), stripComments(helper)];
@@ -104,6 +106,23 @@ assert(ACCOUNT_MENU_PAID_CHIP.split(" ").length === 2, "Bandham AI is two words"
 assert(!/crown|♛|👑/i.test(drawer + avatar + helper + menu), "do not add Crown");
 assert(avatar.includes(String(SIDEBAR_AVATAR_SIZE)) || avatar.includes("SIDEBAR_AVATAR_SIZE"), "component uses the locked size");
 assert(avatar.includes("SIDEBAR_AVATAR_MARK") || avatar.includes(SIDEBAR_AVATAR_MARK), "own photo mark is labeled");
+
+assert(CREAM === "#FDF8F1", "cream hex stays");
+assert(WASH === "#F7F1E8", "wash hex stays");
+assert(VIOLET === "#6D28D9", "violet hex stays");
+assert(VIOLET_DEEP === "#4C1D95", "deep violet hex stays");
+assert(LINE === "#E8DFD2", "line hex stays");
+assert(/minHeight: "100vh", background: CREAM/.test(home), "home dashboard sits on cream");
+assert(/minHeight: "100vh", background: CREAM/.test(chrome), "AppChrome dashboard sits on cream");
+assert(/minHeight: "100vh", background: CREAM/.test(meetup), "meetup dashboard sits on cream");
+assert(/background: CREAM/.test(drawer), "sidebar sits on cream");
+assert(!/minHeight: "100vh", background: WASH/.test(home), "home dashboard is not a darker wash");
+assert(!/minHeight: "100vh", background: WASH/.test(chrome), "AppChrome dashboard is not a darker wash");
+assert(!/minHeight: "100vh", background: WASH/.test(meetup), "meetup dashboard is not a darker wash");
+const themeExports = read("lib/theme.ts").split("export const BM_CSS")[0];
+assert(themeExports.includes('export const CREAM = "#FDF8F1"'), "cream export stays");
+assert(themeExports.includes('export const WASH = "#F7F1E8"'), "wash export stays");
+assert(!/export const \w+ = "#[0-9A-Fa-f]{6}"/.test(themeExports.replace(/export const (VIOLET|VIOLET_DEEP|INK|MUTED|LINE|WASH|CREAM|GOLD) = "#[0-9A-Fa-f]{6}";/g, "")), "do not invent a new palette token");
 
 assert(!/Start Speed Match/.test(drawer), "Speed Match stays off the sidebar");
 assert(!drawer.includes("About"), "footer About stays off the sidebar");

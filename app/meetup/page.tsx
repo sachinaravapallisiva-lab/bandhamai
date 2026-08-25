@@ -168,7 +168,7 @@ export default function MeetupPage() {
   const partner = speedPartner || meetupSpeedPartner(meetup.id);
 
   return (
-    <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK }}>
       <style>{BM_CSS}</style>
       <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
         <div style={{ maxWidth: 960, margin: "0 auto", padding: "20px 20px 16px" }}>

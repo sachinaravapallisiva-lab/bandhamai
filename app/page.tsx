@@ -396,7 +396,7 @@ export default function Home() {
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div style={{ minHeight: "100vh", background: WASH, color: INK }}>
+    <div style={{ minHeight: "100vh", background: CREAM, color: INK }}>
       <style>{BM_CSS}</style>
 
       {/* masthead — keep the existing Bandham AI wordmark */}
