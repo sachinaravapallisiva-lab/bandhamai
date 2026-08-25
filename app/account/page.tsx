@@ -18,6 +18,7 @@ import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
 import VerifyOffer from "../components/VerifyOffer";
 import MeetupCard from "../components/MeetupCard";
+import WhoViewedYou from "../components/WhoViewedYou";
 
 type BlockRow = {
   id: string;
@@ -286,7 +287,7 @@ export default function AccountPage() {
         Account
       </h2>
       <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-        Sign out, see who you blocked, or delete this account.
+        Sign out, see who viewed you, see who you blocked, or delete this account.
       </p>
 
       <MeetupCard compact />
@@ -317,6 +318,8 @@ export default function AccountPage() {
         </section>
       ) : (
         <>
+          <WhoViewedYou signedIn={signedIn} />
+
           <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
             <p className="bm-sans" style={{ margin: "0 0 6px", fontSize: 9.5, letterSpacing: ".14em", color: MUTED }}>
               SIGNED IN

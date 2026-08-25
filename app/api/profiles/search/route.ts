@@ -41,6 +41,8 @@ import {
   loadInstagramGrantedOwnerIds,
 } from "../../../../lib/instagram-shares-server";
 import { VERIFYAI_STATUS_COLUMN } from "../../../../lib/verifyai";
+import { attachSeen } from "../../../../lib/profile-views";
+import { loadOutgoingViewedIds, profileViewsReady } from "../../../../lib/profile-views-server";
 
 export const runtime = "nodejs";
 
@@ -313,7 +315,17 @@ export async function GET(request: Request) {
       rows = applyInstagramVisibility(rows, null, []);
     }
 
-    const profiles = pickShortlist(rows, criteria);
+    let profiles = pickShortlist(rows, criteria);
+    if (viewerId && (await profileViewsReady(supabase))) {
+      const viewed = await loadOutgoingViewedIds(
+        supabase,
+        viewerId,
+        profiles.map(function (profile) {
+          return profile.id;
+        })
+      );
+      profiles = attachSeen(profiles, viewed);
+    }
     const empty = profiles.length === 0 ? (liveCount === 0 ? "inventory" : "matches") : null;
     const matchCount = typeof count === "number" ? count : rows.length;
 

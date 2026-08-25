@@ -47,6 +47,8 @@ export type BrowseProfile = {
   instagram: string;
   /** True only when the member opted in to other-person biodata download. */
   biodataShare: boolean;
+  /** True when this signed-in viewer already opened the card. */
+  seen: boolean;
 };
 
 export type BrowseFactChip = {
@@ -435,6 +437,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     online: row.online === true || isRecentlySeen(row.last_seen_at),
     instagram: asText(row.instagram).replace(/^@+/, ""),
     biodataShare: parseBiodataShare(row.biodata_share),
+    seen: row.seen === true,
   };
 }
 
