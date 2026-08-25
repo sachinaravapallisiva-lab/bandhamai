@@ -230,15 +230,63 @@ const ITEM_STYLE = {
 };
 
 const ACCOUNT_PHONE_OVERLAY_ID = "account-menu-phone";
-const ACCOUNT_PHONE_OPEN_EVENT = "bm-account-open";
-const ACCOUNT_PHONE_CLOSE_EVENT = "bm-account-close";
-
-function openPhoneMenu() {
-  window.dispatchEvent(new Event(ACCOUNT_PHONE_OPEN_EVENT));
-}
 
 function closePhoneMenu() {
-  window.dispatchEvent(new Event(ACCOUNT_PHONE_CLOSE_EVENT));
+  const details = document.getElementById(ACCOUNT_PHONE_OVERLAY_ID)?.closest("details");
+  if (details) details.open = false;
+}
+
+function useAccountSession() {
+  const [signedIn, setSignedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [hasProfile, setHasProfile] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [plan, setPlan] = useState<"free" | "paid" | null>(null);
+
+  useEffect(function () {
+    supabase.auth.getSession().then(function (result) {
+      const session = result.data.session;
+      if (!session) {
+        setSignedIn(false);
+        setEmail("");
+        setPlan(null);
+        setHasProfile(false);
+        setPhotoUrl("");
+        setFullName("");
+        return;
+      }
+      setSignedIn(true);
+      setEmail(session.user.email || "");
+      const userId = session.user.id || "";
+      Promise.all([
+        fetchEntitlement(),
+        authJsonHeaders().then(function (headers) {
+          if (!headers) return null;
+          return fetch("/api/profiles", { headers }).then(function (res) {
+            return res.json();
+          });
+        }),
+      ])
+        .then(function (result) {
+          const entitlement = result[0];
+          const data = result[1];
+          const profile = data && data.profile;
+          setPlan(entitlement.canMessage ? "paid" : "free");
+          setHasProfile(!!(profile && profile.id));
+          setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
+          setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
+        })
+        .catch(function () {
+          setPlan("free");
+          setHasProfile(false);
+          setPhotoUrl("");
+          setFullName("");
+        });
+    });
+  }, []);
+
+  return { signedIn, email, hasProfile, photoUrl, fullName, plan };
 }
 
 type AccountPanelProps = {
@@ -413,234 +461,143 @@ function AccountPanel({
 }
 
 export function AccountMenuControl() {
-  const [overlayOpen, setOverlayOpen] = useState(false);
-
-  useEffect(function () {
-    function onOpen() {
-      setOverlayOpen(true);
-    }
-    function onClose() {
-      setOverlayOpen(false);
-    }
-    window.addEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
-    window.addEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
-    return function () {
-      window.removeEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
-      window.removeEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
-    };
-  }, []);
-
-  return (
-    <button
-      type="button"
-      className="bm-account-toggle bm-sans bm-ghost bm-focus"
-      data-account-toggle="true"
-      aria-expanded={overlayOpen}
-      aria-controls={ACCOUNT_PHONE_OVERLAY_ID}
-      aria-label={ACCOUNT_MENU_OPEN_LABEL}
-      onClick={openPhoneMenu}
-      style={{
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 44,
-        minWidth: 44,
-        padding: "0 14px",
-        borderRadius: 999,
-        border: "1px solid " + LINE,
-        background: WASH,
-        color: VIOLET_DEEP,
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: "pointer",
-      }}
-    >
-      Account
-    </button>
-  );
-}
-
-export default function AccountDrawer() {
-  const [signedIn, setSignedIn] = useState(false);
-  const [email, setEmail] = useState("");
-  const [hasProfile, setHasProfile] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [plan, setPlan] = useState<"free" | "paid" | null>(null);
-  const titleId = useId();
+  const panelProps = useAccountSession();
   const overlayTitleId = useId();
-  const [overlayOpen, setOverlayOpen] = useState(false);
 
   useEffect(function () {
-    function onOpen() {
-      setOverlayOpen(true);
-    }
-    function onClose() {
-      setOverlayOpen(false);
-    }
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") closePhoneMenu();
     }
     function onResize() {
       if (window.innerWidth > PHONE_ACCOUNT_BREAKPOINT) closePhoneMenu();
     }
-    window.addEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
-    window.addEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
     return function () {
-      window.removeEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
-      window.removeEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
     };
   }, []);
 
-  useEffect(function () {
-    supabase.auth.getSession().then(function (result) {
-      const session = result.data.session;
-      if (!session) {
-        setSignedIn(false);
-        setEmail("");
-        setPlan(null);
-        setHasProfile(false);
-        setPhotoUrl("");
-        setFullName("");
-        return;
-      }
-      setSignedIn(true);
-      setEmail(session.user.email || "");
-      const userId = session.user.id || "";
-      Promise.all([
-        fetchEntitlement(),
-        authJsonHeaders().then(function (headers) {
-          if (!headers) return null;
-          return fetch("/api/profiles", { headers }).then(function (res) {
-            return res.json();
-          });
-        }),
-      ])
-        .then(function (result) {
-          const entitlement = result[0];
-          const data = result[1];
-          const profile = data && data.profile;
-          setPlan(entitlement.canMessage ? "paid" : "free");
-          setHasProfile(!!(profile && profile.id));
-          setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
-          setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
-        })
-        .catch(function () {
-          setPlan("free");
-          setHasProfile(false);
-          setPhotoUrl("");
-          setFullName("");
-        });
-    });
-  }, []);
-
-  const panelProps = {
-    signedIn,
-    email,
-    hasProfile,
-    photoUrl,
-    fullName,
-    plan,
-  };
-
   return (
-    <>
-      <aside
-        id={ACCOUNT_MENU_DIALOG_ID}
-        aria-labelledby={titleId}
-        data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}
-        className="bm-drawer bm-rail"
+    <details className="bm-account-phone">
+      <summary
+        className="bm-account-toggle bm-sans bm-ghost bm-focus"
+        data-account-toggle="true"
+        aria-controls={ACCOUNT_PHONE_OVERLAY_ID}
+        aria-label={ACCOUNT_MENU_OPEN_LABEL}
         style={{
-          position: "sticky",
-          top: 0,
-          alignSelf: "stretch",
-          minHeight: "100vh",
-          height: "100vh",
-          background: CREAM,
-          borderRight: "1px solid " + LINE,
-          overflowY: "auto",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 44,
+          minWidth: 44,
+          padding: "0 14px",
+          borderRadius: 999,
+          border: "1px solid " + LINE,
+          background: WASH,
+          color: VIOLET_DEEP,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "pointer",
         }}
       >
-        <AccountPanel {...panelProps} titleId={titleId} />
-      </aside>
-      {overlayOpen ? (
-        <div
-          id={ACCOUNT_PHONE_OVERLAY_ID}
-          className="bm-account-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={overlayTitleId}
+        Account
+      </summary>
+      <div
+        id={ACCOUNT_PHONE_OVERLAY_ID}
+        className="bm-account-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={overlayTitleId}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 80,
+          display: "flex",
+        }}
+      >
+        <button
+          type="button"
+          aria-label={ACCOUNT_MENU_CLOSE_LABEL}
+          onClick={closePhoneMenu}
           style={{
-            position: "fixed",
+            position: "absolute",
             inset: 0,
-            zIndex: 80,
+            border: 0,
+            background: "rgba(30,27,54,.28)",
+            cursor: "pointer",
+          }}
+        />
+        <aside
+          className="bm-drawer"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            width: "min(240px, 86vw)",
+            maxWidth: 280,
+            height: "100%",
+            background: CREAM,
+            borderRight: "1px solid " + LINE,
             display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+            boxSizing: "border-box",
           }}
         >
-          <button
-            type="button"
-            aria-label={ACCOUNT_MENU_CLOSE_LABEL}
-            onClick={function () {
-              closePhoneMenu();
-            }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              border: 0,
-              background: "rgba(30,27,54,.28)",
-              cursor: "pointer",
-            }}
+          <AccountPanel
+            {...panelProps}
+            titleId={overlayTitleId}
+            closeControl={
+              <button
+                type="button"
+                className="bm-sans bm-ghost bm-focus"
+                aria-label={ACCOUNT_MENU_CLOSE_LABEL}
+                onClick={closePhoneMenu}
+                style={{
+                  flex: "0 0 auto",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: 44,
+                  minHeight: 44,
+                  border: "1px solid " + LINE,
+                  borderRadius: 999,
+                  background: WASH,
+                  cursor: "pointer",
+                }}
+              >
+                <MenuIcon name="close" />
+              </button>
+            }
           />
-          <aside
-            className="bm-drawer"
-            style={{
-              position: "relative",
-              zIndex: 1,
-              width: "min(240px, 86vw)",
-              maxWidth: 280,
-              height: "100%",
-              background: CREAM,
-              borderRight: "1px solid " + LINE,
-              display: "flex",
-              flexDirection: "column",
-              overflowY: "auto",
-              boxSizing: "border-box",
-            }}
-          >
-            <AccountPanel
-              {...panelProps}
-              titleId={overlayTitleId}
-              closeControl={
-                <button
-                  type="button"
-                  className="bm-sans bm-ghost bm-focus"
-                  aria-label={ACCOUNT_MENU_CLOSE_LABEL}
-                  onClick={function () {
-                    closePhoneMenu();
-                  }}
-                  style={{
-                    flex: "0 0 auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: 44,
-                    minHeight: 44,
-                    border: "1px solid " + LINE,
-                    borderRadius: 999,
-                    background: WASH,
-                    cursor: "pointer",
-                  }}
-                >
-                  <MenuIcon name="close" />
-                </button>
-              }
-            />
-          </aside>
-        </div>
-      ) : null}
-    </>
+        </aside>
+      </div>
+    </details>
+  );
+}
+
+export default function AccountDrawer() {
+  const panelProps = useAccountSession();
+  const titleId = useId();
+
+  return (
+    <aside
+      id={ACCOUNT_MENU_DIALOG_ID}
+      aria-labelledby={titleId}
+      data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" : "false"}
+      className="bm-drawer bm-rail"
+      style={{
+        position: "sticky",
+        top: 0,
+        alignSelf: "stretch",
+        minHeight: "100vh",
+        height: "100vh",
+        background: CREAM,
+        borderRight: "1px solid " + LINE,
+        overflowY: "auto",
+      }}
+    >
+      <AccountPanel {...panelProps} titleId={titleId} />
+    </aside>
   );
 }

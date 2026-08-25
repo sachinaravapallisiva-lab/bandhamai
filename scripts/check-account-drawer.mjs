@@ -47,6 +47,8 @@ assert(drawer.includes("bm-rail"), "desktop rail stays in the page");
 assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
 assert(!/{open \?/.test(drawer), "desktop rail is not gated on an open flag");
 assert(drawer.includes("bm-account-overlay"), "phones open the same items in an overlay");
+assert(drawer.includes("<details"), "phone Account control is a native drawer");
+assert(drawer.includes("bm-account-phone"), "phone drawer is marked for the 800px hide");
 assert(drawer.includes('aria-modal="true"'), "phone overlay is a dialog");
 assert(drawer.includes("AccountMenuControl"), "phones get a compact Account control");
 assert(!/<span>Menu<\/span>/.test(drawer), "no hamburger Menu");
