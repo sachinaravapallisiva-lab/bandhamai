@@ -1,17 +1,21 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
+  LOGIN_AGE_NOTE,
   LOGIN_CREATED_CONFIRM,
   LOGIN_CREATED_SESSION,
   LOGIN_EMPTY_FIELDS,
   LOGIN_FORGOT_LABEL,
+  LOGIN_FORGOT_SENT,
   LOGIN_PRODUCT,
   LOGIN_RESEND_LABEL,
+  LOGIN_RESEND_SENT,
   LOGIN_SIGN_IN_HEADING,
   LOGIN_SIGN_IN_HELP,
   LOGIN_SIGN_IN_LABEL,
   LOGIN_SIGN_UP_HEADING,
   LOGIN_SIGN_UP_HELP,
   LOGIN_SIGN_UP_LABEL,
+  LOGIN_SIGN_UP_PATH,
   LOGIN_SIGN_UP_PROMPT,
   LOGIN_TAGLINE,
   decideSignInIntent,
@@ -19,6 +23,7 @@ import {
   hasLoginCredentials,
   loginHeading,
   loginHelp,
+  loginPageModeFromSearch,
   loginUserCopy,
 } from "../lib/login-auth.ts";
 
@@ -57,6 +62,18 @@ assert(LOGIN_CREATED_SESSION.includes("signed in"), "session signup still contin
 assert(LOGIN_CREATED_CONFIRM.toLowerCase().includes("email"), "confirm signup still mentions email");
 assert(LOGIN_FORGOT_LABEL === "Forgot password", "forgot stays");
 assert(LOGIN_RESEND_LABEL === "Resend confirmation", "resend stays");
+assert(LOGIN_AGE_NOTE.includes("18 and over"), "age 18+ stays public");
+assert(LOGIN_AGE_NOTE.includes("Bandham AI"), "age note names Bandham AI");
+assert(!/Supabase|allow-list|this page does not turn it on/i.test(LOGIN_AGE_NOTE), "age note is member facing");
+assert(LOGIN_FORGOT_SENT.toLowerCase().includes("reset link"), "forgot success stays honest");
+assert(!/Supabase|allow-list/i.test(LOGIN_FORGOT_SENT), "forgot success hides internals");
+assert(LOGIN_RESEND_SENT.toLowerCase().includes("email"), "resend stays honest about email");
+assert(!/Supabase|this project|allow-list/i.test(LOGIN_RESEND_SENT), "resend hides internals");
+assert(LOGIN_SIGN_UP_PATH === "/login?mode=signup", "signup lives on login");
+assert(loginPageModeFromSearch("signup") === "signup", "mode=signup is Sign up");
+assert(loginPageModeFromSearch("reset") === "reset", "mode=reset stays reset");
+assert(loginPageModeFromSearch("signin") === "signin", "unknown mode is Sign in");
+assert(loginPageModeFromSearch(null) === "signin", "empty mode is Sign in");
 
 loginUserCopy().forEach(function (text) {
   assert(!/[-–—]/.test(text), "login copy has no hyphen or dash: " + text);
@@ -100,6 +117,18 @@ assert(src.includes("LOGIN_SIGN_IN_LABEL") && src.includes("LOGIN_SIGN_UP_LABEL"
 assert(/type=["']button["'][\s\S]*handleSignUp|onClick=\{handleSignUp\}/.test(src), "Sign up is its own button");
 assert(src.includes("onClick={handleSignIn}") || src.includes('type="submit"'), "Sign in stays a real control");
 assert(!/app\/signup/.test(src), "same /login page");
+assert(src.includes("loginPageModeFromSearch"), "login honors ?mode=signup");
+assert(src.includes("LOGIN_AGE_NOTE"), "age note is shared copy");
+assert(src.includes("LOGIN_FORGOT_SENT"), "forgot success is shared copy");
+assert(src.includes("LOGIN_RESEND_SENT"), "resend success is shared copy");
+assert(!/Supabase/.test(src), "login page has no public Supabase talk");
+assert(!/allow-list|this page does not turn it on/i.test(src), "login page drops leftover internals");
+assert(!/[—–]/.test(src), "login page has no em or en dash");
+
+const config = read("next.config.ts");
+assert(config.includes("/signup"), "signup redirect exists");
+assert(config.includes(LOGIN_SIGN_UP_PATH), "signup redirect lands on login Sign up");
+assert(!existsSync(new URL("../app/signup/route.ts", import.meta.url)), "do not invent a signup route handler");
 
 const signUpFn = src.slice(src.indexOf("function handleSignUp"), src.indexOf("function handleSignIn"));
 assert(signUpFn.includes('"switch-to-signup"'), "empty tap from sign in is a mode switch");

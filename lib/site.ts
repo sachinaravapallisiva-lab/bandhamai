@@ -17,9 +17,32 @@ export const SUPPORT_PHONE_TEL = "tel:+18032655233";
 export const SUPPORT_CALL_BODY =
   "This is Bandham Support for accounts, billing, and tickets. Not the love guru. Not an emergency line.";
 
-/**
- * TODO: replace with the public support inbox once one is published.
- * This repo does not list a support@ address today. Do not invent one in the UI.
- */
-export const SUPPORT_INBOX_TODO =
-  "TODO: add a public support inbox. None is published in this repository yet.";
+/** Guest contact: call or sign in. Do not invent a public support inbox. */
+export const CONTACT_GUEST_HINT = "Call us, or sign in to open a ticket.";
+export const CONTACT_SIGNED_HINT = "Signed in notes become a support ticket. We will look into it.";
+export const CONTACT_TICKET_SAVED = "Ticket saved. We will look into it.";
+export const CONTACT_TICKET_EMAILED = "Ticket saved. A notice was emailed. We will look into it.";
+export const CONTACT_TICKET_NEED_DETAIL = "Add a short subject and a note of at least a few words.";
+export const CONTACT_TICKET_FAILED = "Could not save the ticket. Try again or call us.";
+export const CONTACT_OPEN_TICKET = "Open ticket";
+export const CONTACT_SIGN_IN = "Sign in";
+export const CONTACT_DANGER =
+  "If someone is in immediate danger, contact local authorities. It is not an emergency service.";
+
+export function contactUserCopy() {
+  return [
+    SUPPORT_CALL_LABEL,
+    SUPPORT_CALL_HEADLINE,
+    SUPPORT_CALL_BODY,
+    SUPPORT_PHONE_DISPLAY,
+    CONTACT_GUEST_HINT,
+    CONTACT_SIGNED_HINT,
+    CONTACT_TICKET_SAVED,
+    CONTACT_TICKET_EMAILED,
+    CONTACT_TICKET_NEED_DETAIL,
+    CONTACT_TICKET_FAILED,
+    CONTACT_OPEN_TICKET,
+    CONTACT_SIGN_IN,
+    CONTACT_DANGER,
+  ];
+}
