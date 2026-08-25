@@ -3,6 +3,8 @@ import { isEntitledStatus } from "../lib/billing.ts";
 import {
   SUBSCRIBE_CALL_CADENCE_DAYS,
   SUBSCRIBE_CALL_EXAMPLE_OPENING,
+  SUBSCRIBE_CALL_EXAMPLE_OPENING_HI,
+  SUBSCRIBE_CALL_EXAMPLE_OPENING_TE,
   SUBSCRIBE_CALL_HINT,
   SUBSCRIBE_CALL_LABEL,
   SUBSCRIBE_CALL_LANGUAGES,
@@ -68,6 +70,13 @@ ui.forEach(function (text) {
   assert(!/Paid|Upgrade/i.test(text), "no Paid or Upgrade in new copy: " + text);
 });
 
+assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING, "Hello, my name is Sai.", "English opening is Sai");
+assertEq(SUBSCRIBE_CALL_EXAMPLE_OPENING_HI, "Hello, my name is Sai.", "Hindi intent opening is Sai");
+assertEq(
+  SUBSCRIBE_CALL_EXAMPLE_OPENING_TE,
+  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
+  "Telugu opening is Sai's sample"
+);
 assertEq(SUBSCRIBE_CALL_LABEL, "Call me about Bandham AI", "toggle label");
 assertEq(SUBSCRIBE_CALL_SQL_FILE, "supabase/subscribe_call_opt_in.sql", "sql file name");
 assertEq(SUBSCRIBE_CALL_PROMPT_FILE, "docs/subscribe-call-prompt.md", "prompt file");
@@ -227,7 +236,13 @@ assert(prompt.toLowerCase().includes("not a robocall") || prompt.toLowerCase().i
 assert(prompt.toLowerCase().includes("press 1") && prompt.toLowerCase().includes("never"), "forbids press 1");
 assert(prompt.toLowerCase().includes("telugu") && prompt.toLowerCase().includes("hindi"), "Telugu and Hindi");
 assert(prompt.toLowerCase().includes("mother tongue"), "can use mother tongue");
+assert(prompt.toLowerCase().includes("english is first class"), "English is first class");
 assert(prompt.toLowerCase().includes("never force english"), "never force English");
+assert(prompt.includes("Hello, my name is Sai."), "Sai English opening");
+assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్"), "Sai Telugu opening");
+assert(prompt.toLowerCase().includes("introduces itself as sai") || prompt.toLowerCase().includes("introduce yourself as sai"), "agent is Sai");
+assert(!/voice clone is live|already sounds like/i.test(prompt) || prompt.toLowerCase().includes("do not claim"), "no live voice clone claim");
+assert(prompt.toLowerCase().includes("vapi") && prompt.toLowerCase().includes("must not"), "no Vapi outbound");
 assert(prompt.includes("Bandham AI subscription is 9.99 a month"), "price lock");
 assert(prompt.toLowerCase().includes("regular") && prompt.toLowerCase().includes("premium"), "Regular vs Premium");
 assert(prompt.toLowerCase().includes("guru never writes sendable"), "guru lock");

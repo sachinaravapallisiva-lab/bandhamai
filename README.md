@@ -557,7 +557,7 @@ This is **not** Bandham Support and **not** the in app assistant / love guru. Su
 | [`supabase/subscribe_call_opt_in.sql`](supabase/subscribe_call_opt_in.sql) | Adds `phone` if missing, `call_subscribe_opt_in` (default false), `call_subscribe_opted_at`, `last_subscribe_call_at`. Revokes public phone reads. Members may update only their own phone and opt-in. |
 | Account | Toggle + phone field. Number shown with spaces, no hyphens. |
 | `GET` / `POST` `/api/voice/subscribe-reminders` | Secret-gated dry run. Returns `count` and masked members. Never dials. A dial action returns 400. |
-| [`docs/subscribe-call-prompt.md`](docs/subscribe-call-prompt.md) | Conversational voice agent prompt (not IVR, not a recitation). English, Hindi, Telugu, and other major Indian languages. |
+| [`docs/subscribe-call-prompt.md`](docs/subscribe-call-prompt.md) | Conversational voice agent prompt (not IVR, not a recitation). The agent is Sai. English is first class, plus Hindi, Telugu, and other major Indian languages. No live voice clone and no Vapi or Twilio outbound. |
 
 Auth is the same `BANDHAM_VOICE_SUPPORT_SECRET` header as inbound phone support. If the secret is unset, the list route **fails closed** (503). Wrong secret is 401.
 

@@ -43,9 +43,11 @@ export const SUBSCRIBE_CALL_LANGUAGES = [
   "Urdu",
 ] as const;
 
-/** Opening they may use. Not a recitation. No hyphens. */
+/** Openings they may use. Not a recitation. No hyphens. English is first class. */
 export const SUBSCRIBE_CALL_EXAMPLE_OPENING =
-  "Hi, this is Bandham AI. Thanks for your time. You asked for a quick check in. Is now alright?";
+  "Hello, my name is Sai.";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE = "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING_HI = "Hello, my name is Sai.";
 
 export const SUBSCRIBE_CALL_SPOKEN_PRICE =
   "Bandham AI subscription is 9.99 a month.";
