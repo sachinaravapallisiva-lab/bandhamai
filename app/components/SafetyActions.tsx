@@ -69,7 +69,7 @@ export default function SafetyActions({
         if (path === "/api/blocks") {
           setBlocked(true);
           setOpen("none");
-          setNote("Blocked. They will not show on your Browse list, and you will not see each other's messages.");
+          setNote("Blocked. They will not show on your Browse shortlist or Inbox, and you will not see each other's messages.");
           if (onBlocked) onBlocked();
           return;
         }
@@ -156,7 +156,7 @@ export default function SafetyActions({
           }}
         >
           <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 13, color: INK, lineHeight: 1.45 }}>
-            Block {who}? They will be hidden on your Browse and Matches. Neither of you should be able to message the other.
+            Block {who}? They will be hidden on your Browse shortlist, Matches, and Inbox. Neither of you should be able to message the other.
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <button

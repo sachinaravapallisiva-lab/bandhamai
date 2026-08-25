@@ -80,11 +80,15 @@ assert(labels.includes("My profile"), "my profile item");
 assert(labels.includes("Preferences"), "preferences item");
 assert(labels.includes("Browse / Matches"), "browse / matches item");
 assert(labels.includes("Meetup this month"), "meetup item");
-assert(labels.includes("Messages"), "messages item");
+assert(labels.includes("Inbox"), "inbox item");
+assert(!labels.includes("Messages"), "Inbox replaces the Messages label");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
 assert(labels.includes("Call us"), "call us item");
 assert(labels.includes("Settings / Account"), "settings item");
+assert(labels.includes("Block"), "block item");
+assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
+assert(labels.indexOf("Block") === labels.indexOf("Settings / Account") + 1, "Block is added after Settings");
 
 const hrefs = ACCOUNT_MENU_ITEMS.map(function (item) {
   return item.href;
@@ -93,11 +97,13 @@ assert(hrefs.includes("/profile/new"), "profile route");
 assert(hrefs.includes("/preferences"), "preferences route");
 assert(hrefs.includes("/"), "browse route");
 assert(hrefs.includes("/meetup"), "meetup route");
-assert(hrefs.includes("/chat"), "messages route");
+assert(hrefs.includes("/inbox"), "inbox route");
 assert(hrefs.includes("/account#verify"), "verify anchor");
 assert(hrefs.includes("/contact"), "support route");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");
+assert(hrefs.includes("/account#blocked"), "block route");
+assert(ALLOWED_NEXT_PATHS.includes("/inbox"), "inbox is a real next path");
 
 assert(prefs.includes(PREFERENCES_TITLE) || prefs.includes("PREFERENCES_TITLE"), "preferences page titled Preferences");
 assert(prefs.includes("AppChrome"), "preferences uses AppChrome");
