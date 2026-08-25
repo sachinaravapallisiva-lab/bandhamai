@@ -498,6 +498,8 @@ Do not commit secrets. Redeploy after saving env vars.
 
 This is **Bandham Support on the phone**. It is not the in-app Bandham assistant / love guru. The guru still never writes sendable dating text and never searches profiles.
 
+The public calling number lives on `/contact` (Call us). Show it as `+1 803 265 5233`. The tel link is `tel:+18032655233`. Do not invent another number.
+
 xAI Voice Agent Builder (or Speech-to-Speech SIP) calls a signed service API during the live call. Phone callers are **not** signed in. The existing `POST /api/support/tickets` route still requires a member Bearer token.
 
 ### What the API does

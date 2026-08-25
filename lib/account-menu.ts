@@ -19,6 +19,7 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "messages", label: "Messages", href: "/chat" },
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "help", label: "Help / Support", href: "/contact" },
+  { id: "call", label: "Call us", href: "/contact#call" },
   { id: "settings", label: "Settings / Account", href: "/account" },
 ] as const;
 

@@ -83,6 +83,7 @@ assert(labels.includes("Meetup this month"), "meetup item");
 assert(labels.includes("Messages"), "messages item");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
+assert(labels.includes("Call us"), "call us item");
 assert(labels.includes("Settings / Account"), "settings item");
 
 const hrefs = ACCOUNT_MENU_ITEMS.map(function (item) {
@@ -95,6 +96,7 @@ assert(hrefs.includes("/meetup"), "meetup route");
 assert(hrefs.includes("/chat"), "messages route");
 assert(hrefs.includes("/account#verify"), "verify anchor");
 assert(hrefs.includes("/contact"), "support route");
+assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");
 
 assert(prefs.includes(PREFERENCES_TITLE) || prefs.includes("PREFERENCES_TITLE"), "preferences page titled Preferences");

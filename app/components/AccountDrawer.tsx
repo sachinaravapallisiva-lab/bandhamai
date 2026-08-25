@@ -34,6 +34,7 @@ type IconName =
   | "verifyai"
   | "biodata"
   | "help"
+  | "call"
   | "settings"
   | "upgrade"
   | "signin";
@@ -136,6 +137,18 @@ function MenuIcon({ name }: { name: IconName }) {
       </svg>
     );
   }
+  if (name === "call") {
+    return (
+      <svg {...common}>
+        <path
+          d="M8.4 5.8c.4-.7 1.3-.9 2-.4l1.4 1c.6.4.7 1.2.4 1.8l-.5 1.2c-.2.4 0 .8.3 1.1 1 1 2.2 1.9 3.4 2.6.4.2.8.1 1.1-.2l1-1c.6-.6 1.6-.6 2.2 0l1.2 1.2c.7.7.6 1.8-.2 2.3-1.2.9-2.8 1.5-4.5 1.1-3.1-.7-6-3-7.9-5.9C6.8 9.2 6.8 7.2 8.4 5.8Z"
+          stroke={stroke}
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
   if (name === "settings") {
     return (
       <svg {...common}>
@@ -172,6 +185,7 @@ function iconForItem(id: string): IconName {
   if (id === "messages") return "messages";
   if (id === "verifyai") return "verifyai";
   if (id === "help") return "help";
+  if (id === "call") return "call";
   if (id === "settings") return "settings";
   return "profile";
 }
