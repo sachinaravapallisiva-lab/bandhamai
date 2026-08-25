@@ -1,0 +1,318 @@
+/** Regular-member subscribe reminder calls. Opt-in default off. No live dialer here. */
+
+export const SUBSCRIBE_CALL_SQL_FILE = "supabase/subscribe_call_opt_in.sql";
+export const SUBSCRIBE_CALL_PROMPT_FILE = "docs/subscribe-call-prompt.md";
+export const SUBSCRIBE_CALL_PATH = "/api/voice/subscribe-reminders";
+export const SUBSCRIBE_CALL_CADENCE_DAYS = 15;
+
+export const SUBSCRIBE_CALL_PHONE_COLUMN = "phone";
+export const SUBSCRIBE_CALL_OPT_IN_COLUMN = "call_subscribe_opt_in";
+export const SUBSCRIBE_CALL_OPTED_AT_COLUMN = "call_subscribe_opted_at";
+export const SUBSCRIBE_CALL_LAST_AT_COLUMN = "last_subscribe_call_at";
+
+export const SUBSCRIBE_CALL_SQL_HINT =
+  "Run supabase/subscribe_call_opt_in.sql in the Supabase SQL editor to add subscribe call opt-in.";
+
+export const SUBSCRIBE_CALL_LABEL = "Call me about Bandham AI";
+export const SUBSCRIBE_CALL_HINT =
+  "Regular members can get one voice call every 15 days about Bandham AI. You can turn this off anytime. Premium members are not called.";
+export const SUBSCRIBE_CALL_PHONE_LABEL = "PHONE";
+export const SUBSCRIBE_CALL_PHONE_HINT =
+  "Include the country code. Example: +1 470 962 0438. This number stays on your Bandham AI profile. We only call the number you save here.";
+export const SUBSCRIBE_CALL_PHONE_PLACEHOLDER = "+1 470 962 0438";
+export const SUBSCRIBE_CALL_SAVE_LABEL = "Save call choice";
+export const SUBSCRIBE_CALL_SAVING_LABEL = "Saving…";
+export const SUBSCRIBE_CALL_NEED_PHONE =
+  "Save a phone on your profile before turning this on.";
+export const SUBSCRIBE_CALL_NEED_COUNTRY =
+  "Add a country code before the number. Example: +1 470 962 0438.";
+export const SUBSCRIBE_CALL_NEED_PROFILE = "Create a profile first.";
+export const SUBSCRIBE_CALL_SAVED_ON = "We will only call if you stay Regular and opted in.";
+export const SUBSCRIBE_CALL_SAVED_OFF = "Subscribe reminder calls are off.";
+
+export const SUBSCRIBE_CALL_LANGUAGES = [
+  "English",
+  "Hindi",
+  "Telugu",
+  "Tamil",
+  "Kannada",
+  "Malayalam",
+  "Marathi",
+  "Gujarati",
+  "Bengali",
+  "Punjabi",
+  "Odia",
+  "Assamese",
+  "Urdu",
+] as const;
+
+/** Openings they may use. Not a recitation. No hyphens. English is first class. */
+export const SUBSCRIBE_CALL_AGENT_NAME = "Sai";
+export const SUBSCRIBE_CALL_PRODUCT = "Bandham AI";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING =
+  "Hello, my name is Sai.";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING_TE =
+  "\u0C39\u0C32\u0C4B \u0C28\u0C3E \u0C2A\u0C47\u0C30\u0C41 \u0C38\u0C3E\u0C2F\u0C4D. \u0C0F\u0C02 \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C28\u0C4D\u0C28\u0C3E\u0C30\u0C41?";
+export const SUBSCRIBE_CALL_EXAMPLE_OPENING_HI = "Hello, my name is Sai.";
+
+export const SUBSCRIBE_CALL_IDENTITY_LOCKS = {
+  name: "Sai",
+  product: "Bandham AI",
+  notSupport: "Not Bandham Support.",
+  notUnnamedBot: "Not an unnamed bot.",
+  notBandhamai: "Not Bandhamai.",
+  noLiveVoiceClone: "Do not claim this already sounds like Sai's real voice.",
+  voiceCloneLater: "A voice clone is a later step after he provides a recording.",
+  inboundFirst: "This is inbound first.",
+  futureOutbound: "Any future outbound is Regular members only, explicit opt-in.",
+} as const;
+
+export const SUBSCRIBE_CALL_ENGLISH_FIRST =
+  "English is first class, not only a fallback.";
+
+export const SUBSCRIBE_CALL_AFTER_OPEN = "Then listen.";
+
+/** Locked openings from Sai. English and Hindi share the same English sentence. Then listen. */
+export function subscribeCallOpening(motherTongue?: string | null) {
+  const lang = defaultSubscribeCallOpenLanguage(motherTongue);
+  if (lang === "Telugu") return SUBSCRIBE_CALL_EXAMPLE_OPENING_TE;
+  if (lang === "Hindi") return SUBSCRIBE_CALL_EXAMPLE_OPENING_HI;
+  return SUBSCRIBE_CALL_EXAMPLE_OPENING;
+}
+
+const OPEN_LANGUAGE_ALIASES: Record<string, (typeof SUBSCRIBE_CALL_LANGUAGES)[number]> = {
+  english: "English",
+  en: "English",
+  hindi: "Hindi",
+  hin: "Hindi",
+  hi: "Hindi",
+  telugu: "Telugu",
+  te: "Telugu",
+  tel: "Telugu",
+  tamil: "Tamil",
+  ta: "Tamil",
+  kannada: "Kannada",
+  kn: "Kannada",
+  malayalam: "Malayalam",
+  ml: "Malayalam",
+  marathi: "Marathi",
+  mr: "Marathi",
+  gujarati: "Gujarati",
+  gu: "Gujarati",
+  bengali: "Bengali",
+  bangla: "Bengali",
+  bn: "Bengali",
+  punjabi: "Punjabi",
+  pa: "Punjabi",
+  odia: "Odia",
+  oriya: "Odia",
+  or: "Odia",
+  assamese: "Assamese",
+  as: "Assamese",
+  urdu: "Urdu",
+  ur: "Urdu",
+};
+
+/** Open in English when mother tongue is unknown or English. Named Indian languages stay first class too. */
+export function defaultSubscribeCallOpenLanguage(motherTongue?: string | null) {
+  const raw = typeof motherTongue === "string" ? motherTongue.trim().toLowerCase() : "";
+  if (!raw) return "English";
+  const exact = OPEN_LANGUAGE_ALIASES[raw];
+  if (exact) return exact;
+  for (const lang of SUBSCRIBE_CALL_LANGUAGES) {
+    if (raw.includes(lang.toLowerCase())) return lang;
+  }
+  return "English";
+}
+
+export const SUBSCRIBE_CALL_SPOKEN_PRICE =
+  "Bandham AI subscription is 9.99 a month.";
+
+export const SUBSCRIBE_CALL_SPOKEN_TAGLINE = "Find your vibe match?";
+
+export const SUBSCRIBE_CALL_SPOKEN_FREE =
+  "Browse, search, Speed Match, and creating a profile stay free.";
+
+export const SUBSCRIBE_CALL_SPOKEN_STOP =
+  "I can stop these calls. Say the word and I will turn them off.";
+
+export type SubscribeCallProfileRow = {
+  id?: string | null;
+  user_id?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  mother_tongue?: string | null;
+  dob?: string | Date | null;
+  status?: string | null;
+  call_subscribe_opt_in?: unknown;
+  call_subscribe_opted_at?: string | null;
+  last_subscribe_call_at?: string | null;
+};
+
+export type SubscribeCallReason =
+  | "missing_phone"
+  | "missing_opt_in"
+  | "entitled"
+  | "recent_call"
+  | "under_18"
+  | "demo_or_preview"
+  | "no_profile";
+
+export type SubscribeCallDecision = {
+  eligible: boolean;
+  reasons: SubscribeCallReason[];
+};
+
+/** True only for an explicit tap. Everything else stays off. */
+export function parseCallSubscribeOptIn(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const raw = value.trim().toLowerCase();
+    return raw === "true" || raw === "1" || raw === "on" || raw === "yes";
+  }
+  return false;
+}
+
+/** E.164 only. Leading +, country code (first digit 1 to 9), then the rest. Never invent +1. */
+export function normalizeSubscribePhone(value: unknown) {
+  if (typeof value !== "string") return "";
+  const raw = value.trim();
+  if (!raw.startsWith("+")) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits || digits.startsWith("0")) return "";
+  if (digits.length < 8 || digits.length > 15) return "";
+  return "+" + digits;
+}
+
+export function isE164SubscribePhone(value: unknown) {
+  return Boolean(normalizeSubscribePhone(value));
+}
+
+export function subscribeCallPhoneError(value: unknown) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return SUBSCRIBE_CALL_NEED_PHONE;
+  const compact = raw.replace(/\s/g, "");
+  if (!compact.startsWith("+") || compact.startsWith("+0") || compact.startsWith("0")) {
+    return SUBSCRIBE_CALL_NEED_COUNTRY;
+  }
+  return SUBSCRIBE_CALL_NEED_PHONE;
+}
+
+export function displayPhoneWithSpaces(value: string) {
+  const trimmed = (value || "").replace(/[-–—]/g, " ").replace(/\s+/g, " ").trim();
+  const plus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return plus ? "+" : "";
+
+  if (plus && digits.startsWith("1") && digits.length >= 11) {
+    return ("+1 " + groupNational(digits.slice(1))).trim();
+  }
+  if (plus && digits.length > 10) {
+    const ccLen = digits.length >= 12 ? 2 : 1;
+    const cc = digits.startsWith("353") ? 3 : ccLen;
+    return ("+" + digits.slice(0, cc) + " " + groupNational(digits.slice(cc))).trim();
+  }
+  return (plus ? "+" : "") + groupNational(digits);
+}
+
+function groupNational(digits: string) {
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 7) return digits.slice(0, 3) + " " + digits.slice(3);
+  if (digits.length <= 10) {
+    return digits.slice(0, 3) + " " + digits.slice(3, 6) + " " + digits.slice(6);
+  }
+  return digits.slice(0, 3) + " " + digits.slice(3, 6) + " " + digits.slice(6, 10) + " " + digits.slice(10);
+}
+
+export function maskPhoneForList(phone: string) {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (digits.length < 4) return "saved";
+  return "saved ending " + digits.slice(-4);
+}
+
+export function adultAgeYears(dob: unknown, now = new Date()): number | null {
+  let raw = "";
+  if (typeof dob === "string") raw = dob.trim();
+  else if (dob instanceof Date && !Number.isNaN(dob.getTime())) {
+    raw = dob.toISOString().slice(0, 10);
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const todayY = now.getUTCFullYear();
+  const todayM = now.getUTCMonth() + 1;
+  const todayD = now.getUTCDate();
+  let age = todayY - year;
+  if (todayM < month || (todayM === month && todayD < day)) age -= 1;
+  if (age < 0 || age > 120) return null;
+  return age;
+}
+
+/** Missing dob is allowed: signup already asks for 18 and over. A stored under 18 fails closed. */
+export function isAdultMember(dob: unknown, now = new Date()) {
+  if (dob == null || (typeof dob === "string" && !dob.trim())) return true;
+  const age = adultAgeYears(dob, now);
+  if (age == null) return true;
+  return age >= 18;
+}
+
+export function isDemoOrPreviewProfile(row: SubscribeCallProfileRow) {
+  const userId = typeof row.user_id === "string" ? row.user_id.trim() : "";
+  if (!userId) return true;
+  const status = typeof row.status === "string" ? row.status.trim().toLowerCase() : "";
+  return (
+    status === "removed" ||
+    status === "demo" ||
+    status === "preview" ||
+    status === "layout" ||
+    status === "layout_preview"
+  );
+}
+
+export function calledWithinCadence(lastAt: string | null | undefined, now = new Date()) {
+  if (!lastAt) return false;
+  const stamp = Date.parse(lastAt);
+  if (Number.isNaN(stamp)) return false;
+  const windowMs = SUBSCRIBE_CALL_CADENCE_DAYS * 24 * 60 * 60 * 1000;
+  return now.getTime() - stamp < windowMs;
+}
+
+export function firstNameFromProfile(fullName: unknown) {
+  if (typeof fullName !== "string") return "";
+  const token = fullName.trim().split(/\s+/)[0] || "";
+  return token.replace(/[^A-Za-z.']/g, "").slice(0, 40);
+}
+
+export function decideSubscribeCallEligibility(
+  row: SubscribeCallProfileRow | null | undefined,
+  options: { entitled: boolean; now?: Date }
+): SubscribeCallDecision {
+  const reasons: SubscribeCallReason[] = [];
+  if (!row || !(typeof row.id === "string" && row.id.trim())) {
+    return { eligible: false, reasons: ["no_profile"] };
+  }
+  if (isDemoOrPreviewProfile(row)) reasons.push("demo_or_preview");
+  if (!normalizeSubscribePhone(row.phone || "")) reasons.push("missing_phone");
+  if (!parseCallSubscribeOptIn(row.call_subscribe_opt_in)) reasons.push("missing_opt_in");
+  if (options.entitled) reasons.push("entitled");
+  if (calledWithinCadence(row.last_subscribe_call_at, options.now)) reasons.push("recent_call");
+  if (!isAdultMember(row.dob, options.now)) reasons.push("under_18");
+  return { eligible: reasons.length === 0, reasons };
+}
+
+export function publicEligibleMember(row: SubscribeCallProfileRow) {
+  const motherTongue = typeof row.mother_tongue === "string" ? row.mother_tongue.trim() : "";
+  return {
+    profile_id: typeof row.id === "string" ? row.id : "",
+    user_id: typeof row.user_id === "string" ? row.user_id : "",
+    first_name: firstNameFromProfile(row.full_name),
+    mother_tongue: motherTongue,
+    open_language: defaultSubscribeCallOpenLanguage(motherTongue),
+    opening: subscribeCallOpening(motherTongue),
+    phone_masked: maskPhoneForList(typeof row.phone === "string" ? row.phone : ""),
+    last_subscribe_call_at: row.last_subscribe_call_at || null,
+  };
+}

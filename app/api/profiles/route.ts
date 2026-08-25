@@ -23,6 +23,16 @@ import {
 } from "../../../lib/biodata-share";
 import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
+import {
+  SUBSCRIBE_CALL_LAST_AT_COLUMN,
+  SUBSCRIBE_CALL_OPT_IN_COLUMN,
+  SUBSCRIBE_CALL_OPTED_AT_COLUMN,
+  SUBSCRIBE_CALL_PHONE_COLUMN,
+  SUBSCRIBE_CALL_SQL_HINT,
+  normalizeSubscribePhone,
+  parseCallSubscribeOptIn,
+  subscribeCallPhoneError,
+} from "../../../lib/subscribe-call";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -208,7 +218,7 @@ export async function POST(request: Request) {
   }
 }
 
-/** Own-profile edit. v1 writes Instagram and biodata_share — not a full re-review. */
+/** Own-profile edit. Instagram, biodata_share, phone, and subscribe call opt-in — not a full re-review. */
 export async function PATCH(request: Request) {
   try {
     if (!hasBearerToken(request)) {
@@ -224,7 +234,9 @@ export async function PATCH(request: Request) {
 
     const hasInstagram = Object.prototype.hasOwnProperty.call(body, "instagram");
     const hasShare = Object.prototype.hasOwnProperty.call(body, "biodata_share");
-    if (!hasInstagram && !hasShare) {
+    const hasPhone = Object.prototype.hasOwnProperty.call(body, SUBSCRIBE_CALL_PHONE_COLUMN);
+    const hasCallOptIn = Object.prototype.hasOwnProperty.call(body, SUBSCRIBE_CALL_OPT_IN_COLUMN);
+    if (!hasInstagram && !hasShare && !hasPhone && !hasCallOptIn) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
 
@@ -259,15 +271,28 @@ export async function PATCH(request: Request) {
     if (hasShare && !(await tableHasColumn(supabase, "profiles", BIODATA_SHARE_COLUMN))) {
       return NextResponse.json({ error: BIODATA_SHARE_SQL_HINT }, { status: 503 });
     }
+    if (
+      (hasPhone || hasCallOptIn) &&
+      !(
+        (await tableHasColumn(supabase, "profiles", SUBSCRIBE_CALL_PHONE_COLUMN)) &&
+        (await tableHasColumn(supabase, "profiles", SUBSCRIBE_CALL_OPT_IN_COLUMN))
+      )
+    ) {
+      return NextResponse.json({ error: SUBSCRIBE_CALL_SQL_HINT }, { status: 503 });
+    }
 
     const linked = await tableHasColumn(supabase, "profiles", "user_id");
     if (!linked) {
       return NextResponse.json({ error: "This profile is not linked to an account." }, { status: 400 });
     }
 
+    const existingSelect =
+      hasPhone || hasCallOptIn
+        ? "id, " + SUBSCRIBE_CALL_PHONE_COLUMN + ", " + SUBSCRIBE_CALL_OPT_IN_COLUMN
+        : "id";
     const existing = await supabase
       .from("profiles")
-      .select("id")
+      .select(existingSelect)
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle();
@@ -275,7 +300,13 @@ export async function PATCH(request: Request) {
     if (existing.error) {
       return NextResponse.json({ error: existing.error.message }, { status: 400 });
     }
-    if (!existing.data) {
+    const existingRow = (existing.data || null) as {
+      id?: string;
+      phone?: string | null;
+      call_subscribe_opt_in?: unknown;
+    } | null;
+    const existingId = existingRow && typeof existingRow.id === "string" ? existingRow.id.trim() : "";
+    if (!existingRow || !existingId) {
       return NextResponse.json({ error: "Create a profile first." }, { status: 404 });
     }
 
@@ -283,10 +314,42 @@ export async function PATCH(request: Request) {
     if (hasInstagram) patch.instagram = instagramHandle ?? null;
     if (hasShare) patch[BIODATA_SHARE_COLUMN] = parseBiodataShare(body.biodata_share);
 
+    if (hasPhone || hasCallOptIn) {
+      const current = existingRow;
+      const nextPhone = hasPhone
+        ? normalizeSubscribePhone(body.phone)
+        : normalizeSubscribePhone(current.phone || "");
+      if (hasPhone && typeof body.phone === "string" && body.phone.trim() && !nextPhone) {
+        return NextResponse.json({ error: subscribeCallPhoneError(body.phone) }, { status: 400 });
+      }
+
+      const wantsOptIn = hasCallOptIn
+        ? parseCallSubscribeOptIn(body.call_subscribe_opt_in)
+        : parseCallSubscribeOptIn(current.call_subscribe_opt_in);
+
+      if (wantsOptIn && !nextPhone) {
+        return NextResponse.json(
+          { error: subscribeCallPhoneError(hasPhone ? body.phone : current.phone) },
+          { status: 400 }
+        );
+      }
+
+      if (hasPhone) patch[SUBSCRIBE_CALL_PHONE_COLUMN] = nextPhone || null;
+      if (hasCallOptIn || (hasPhone && !nextPhone && parseCallSubscribeOptIn(current.call_subscribe_opt_in))) {
+        patch[SUBSCRIBE_CALL_OPT_IN_COLUMN] = wantsOptIn && !!nextPhone;
+        if (wantsOptIn && nextPhone && !parseCallSubscribeOptIn(current.call_subscribe_opt_in)) {
+          if (await tableHasColumn(supabase, "profiles", SUBSCRIBE_CALL_OPTED_AT_COLUMN)) {
+            patch[SUBSCRIBE_CALL_OPTED_AT_COLUMN] = new Date().toISOString();
+          }
+        }
+      }
+      delete patch[SUBSCRIBE_CALL_LAST_AT_COLUMN];
+    }
+
     const updated = await supabase
       .from("profiles")
       .update(patch)
-      .eq("id", existing.data.id)
+      .eq("id", existingId)
       .select()
       .maybeSingle();
 
