@@ -9,6 +9,7 @@ export default function SiteFooter({
 }) {
   return (
     <footer
+      data-site-footer="true"
       style={{
         background: CREAM,
         borderTop: "1px solid " + LINE,

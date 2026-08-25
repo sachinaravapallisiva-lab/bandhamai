@@ -29,7 +29,12 @@ import {
   BROWSE_PRIORITY_MARK,
   PIN_CHECKOUT_PATH,
 } from "../lib/browse-pin.ts";
-import { MEETUP_TEST_POSTS, MEETUP_TEST_SEED_ENABLED } from "../lib/meetup-test-pond.ts";
+import {
+  MEETUP_RAIL_DEMO_LABEL,
+  MEETUP_TEST_KICKER,
+  MEETUP_TEST_POSTS,
+  MEETUP_TEST_SEED_ENABLED,
+} from "../lib/meetup-test-pond.ts";
 import {
   BROWSE_TEST_PINNED_IDS,
   BROWSE_TEST_PROFILES,
@@ -256,8 +261,25 @@ assert(plansPanel.includes("WASH"), "Priority card is visually distinct");
 assert(page.includes("MeetupRail"), "right cream is the meetup stack");
 assert(page.indexOf("<MeetupRail") > page.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
 assert(page.indexOf("<MeetupCard") > page.indexOf("<MeetupRail"), "this month card is in the right stack");
+assert(page.includes('data-home-shell="true"'), "Home shell is marked for desktop grid and phone column");
+assert(page.indexOf("<SiteFooter") > page.indexOf("<MeetupRail"), "footer stays after meetup so phone paints it last");
+const homeShell = page.match(/className="bm-shell"[^>]*>/);
+assert(homeShell && /flexWrap:\s*["']nowrap["']/.test(homeShell[0]), "desktop Home keeps the meetup rail on one row");
+assert(homeShell && !/flexWrap:\s*["']wrap["']/.test(homeShell[0]), "desktop Home must not wrap the meetup rail under the shortlist");
+assert(theme.includes(".bm-shell{flex-wrap:nowrap}"), "desktop shell nowrap lives in theme");
+assert(theme.includes("[data-meetup-rail]{flex:1 1 0%"), "meetup rail fills leftover cream");
+assert(theme.includes("position:sticky"), "meetup rail sticks in the right strip");
+assert(theme.includes("position:static!important"), "phone meetup is not a sticky side bar");
+assert(MEETUP_RAIL_DEMO_LABEL === "This month demo", "rail demo label lock");
+assert(MEETUP_TEST_KICKER === "SAMPLE", "sample kicker lock");
 assert(MEETUP_TEST_SEED_ENABLED === true, "meetup test posts are on for this PR");
 assert(MEETUP_TEST_POSTS.length >= 3, "right stack has more than this month");
+assert(
+  MEETUP_TEST_POSTS.every(function (post) {
+    return post.kicker === MEETUP_TEST_KICKER;
+  }),
+  "mock meetup posts stay labeled SAMPLE"
+);
 assert(
   MEETUP_TEST_POSTS.every(function (post) {
     return post.body && !/\$\d/.test(post.body) && !/price_/i.test(post.body + post.title);
@@ -300,6 +322,7 @@ assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body name
     MEETUP_TEST_POSTS.flatMap(function (post) {
       return [post.kicker, post.monthLabel, post.title, post.body];
     })
+    .concat([MEETUP_RAIL_DEMO_LABEL, MEETUP_TEST_KICKER])
   )
   .forEach(function (value) {
     assert(!copyHasDash(value), "new copy must not use a hyphen or dash: " + value);
@@ -350,6 +373,13 @@ assert(theme.includes(".bm-shortlist-photo{width:140px"), "shortlist photo shrin
 assert(theme.includes("[data-meetup-rail]{display:block"), "meetup stays on phone under the shortlist");
 assert(theme.includes("width:100%!important"), "phone meetup is a full width column");
 assert(!theme.includes("[data-meetup-rail]{display:none"), "do not hide the meetup stack on phone");
+assert(theme.includes("[data-home-shell]{display:grid!important"), "desktop Home keeps meetup in the leftover right strip");
+assert(theme.includes("[data-home-shell]{display:flex!important;flex-direction:column"), "phone web is one column, not a right bar");
+assert(theme.includes("[data-home-shell]>[data-site-footer]{grid-column:2;grid-row:2}"), "desktop footer stays under the dash");
+const footer = read("app/components/SiteFooter.tsx");
+assert(footer.includes('data-site-footer="true"'), "footer is marked so phone can keep it last");
+assert(!read("capacitor.config.ts").includes("data-meetup-rail"), "Capacitor iOS shell is unchanged");
+assert(!read("ios-shell/index.html").includes("MeetupRail"), "iOS shell files stay untouched");
 assert(pinnedRow.includes("bm-pin-card") && pinnedRow.includes("bm-pin-photo"), "pin cards accept the phone size");
 assert(discover.includes("bm-shortlist-photo"), "shortlist photo accepts the phone size");
 assert(BROWSE_PIN_PHOTO_HEIGHT === 150, "desktop pin photo stays 150");
