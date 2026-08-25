@@ -4,6 +4,9 @@
  */
 
 export const BROWSE_CAROUSEL_ADVANCE_MS = 5200;
+/** Sideways slideshow only. Not a fade. Not an instant swap. */
+export const BROWSE_CAROUSEL_SLIDE_MS = 560;
+export const BROWSE_CAROUSEL_MOTION = "sideways";
 export const BROWSE_CAROUSEL_PEEK = 22;
 export const BROWSE_CAROUSEL_GAP = 12;
 export const BROWSE_CAROUSEL_ARIA = "Live profiles";

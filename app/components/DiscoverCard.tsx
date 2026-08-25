@@ -76,6 +76,7 @@ export default function DiscoverCard({
   onPass,
   onSave,
   onBlocked,
+  showHeart = true,
 }: {
   profile: BrowseProfile;
   saved: boolean;
@@ -85,6 +86,7 @@ export default function DiscoverCard({
   onPass: () => void;
   onSave: () => void;
   onBlocked: () => void;
+  showHeart?: boolean;
 }) {
   const chips = browseFactChips(profile);
   const meta = browseMetaLine(profile);
@@ -200,7 +202,7 @@ export default function DiscoverCard({
               border: "none",
             }}
           >
-            <HeartIcon />
+            {showHeart ? <HeartIcon /> : null}
             Interested
           </button>
 

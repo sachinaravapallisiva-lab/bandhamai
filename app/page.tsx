@@ -8,6 +8,7 @@ import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
 import BrowseCarousel from "./components/BrowseCarousel";
+import PinnedRow from "./components/PinnedRow";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
@@ -27,6 +28,7 @@ import {
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
 import { emptyCriteria } from "../lib/profile-search";
+import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-test-pond";
 import {
   BROWSE_EMPTY_INVENTORY_BODY,
   BROWSE_EMPTY_INVENTORY_TITLE,
@@ -390,7 +392,9 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
-  const hasProfiles = profiles.length > 0;
+  const pond = browseShortlistPond(profiles);
+  const pinned = browsePinnedPreview();
+  const hasProfiles = pond.length > 0;
   const searched = query.trim().length > 0;
   const searchChips = [criteria.city, criteria.gender].concat(criteria.keywords).filter(Boolean) as string[];
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
@@ -779,8 +783,10 @@ export default function Home() {
                 ) : null}
               </>
             ) : hasProfiles ? (
+              <>
+              <PinnedRow profiles={pinned} />
               <BrowseCarousel
-                profiles={profiles}
+                profiles={pond}
                 saved={saved}
                 signedIn={signedIn}
                 onInterested={markInterested}
@@ -799,6 +805,7 @@ export default function Home() {
                   });
                 }}
               />
+              </>
             ) : null}
           </>
         )}

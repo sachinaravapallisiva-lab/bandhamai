@@ -14,7 +14,7 @@
     "check:guru-search": "node --experimental-strip-types scripts/check-guru-search.mjs",
     "check:pack2-ui": "node --experimental-strip-types scripts/check-pack2-ui.mjs",
     "check:browse-search": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-browse-search.mjs",
-    "check:browse-carousel": "node --experimental-strip-types scripts/check-browse-carousel.mjs",
+    "check:browse-carousel": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-browse-carousel.mjs",
     "check:visa-status": "node --experimental-strip-types scripts/check-visa-status.mjs",
     "check:profile-gender": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-profile-gender.mjs",
     "check:presence": "node --experimental-strip-types scripts/check-presence.mjs",

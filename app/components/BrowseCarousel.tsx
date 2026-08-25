@@ -8,9 +8,11 @@ import {
   BROWSE_CAROUSEL_EMPTY_BODY,
   BROWSE_CAROUSEL_EMPTY_TITLE,
   BROWSE_CAROUSEL_GAP,
+  BROWSE_CAROUSEL_MOTION,
   BROWSE_CAROUSEL_NEXT,
   BROWSE_CAROUSEL_PEEK,
   BROWSE_CAROUSEL_PREV,
+  BROWSE_CAROUSEL_SLIDE_MS,
   clampCarouselIndex,
   nextCarouselIndex,
   prevCarouselIndex,
@@ -112,6 +114,7 @@ export default function BrowseCarousel({
   return (
     <section
       data-browse-carousel="pond"
+      data-slide-motion={BROWSE_CAROUSEL_MOTION}
       data-auto-advance={shouldAutoAdvance({ reduceMotion, count: profiles.length, paused }) ? "on" : "off"}
       aria-roledescription="carousel"
       aria-label={BROWSE_CAROUSEL_ARIA}
@@ -143,7 +146,7 @@ export default function BrowseCarousel({
             display: "flex",
             gap: BROWSE_CAROUSEL_GAP,
             transform: "translateX(" + offset + "px)",
-            transition: reduceMotion ? "none" : "transform 560ms ease",
+            transition: reduceMotion ? "none" : "transform " + BROWSE_CAROUSEL_SLIDE_MS + "ms ease",
             willChange: reduceMotion ? "auto" : "transform",
           }}
         >
@@ -157,8 +160,6 @@ export default function BrowseCarousel({
                 style={{
                   flex: slideWidth ? "0 0 " + slideWidth + "px" : "0 0 100%",
                   minWidth: 0,
-                  opacity: active ? 1 : 0.42,
-                  transition: reduceMotion ? "none" : "opacity 560ms ease",
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
@@ -169,6 +170,7 @@ export default function BrowseCarousel({
                   })}
                   signedIn={signedIn}
                   nextPath={nextPath}
+                  showHeart={false}
                   onInterested={function () {
                     onInterested(profile);
                   }}
