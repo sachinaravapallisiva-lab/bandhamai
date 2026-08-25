@@ -234,6 +234,8 @@ assertEq(toBrowseProfile({ id: "ig2", full_name: "A" })?.instagram, "", "missing
 assertEq(toBrowseProfile({ id: "bd1", full_name: "A", biodata_share: true })?.biodataShare, true, "opt-in maps on");
 assertEq(toBrowseProfile({ id: "bd2", full_name: "A" })?.biodataShare, false, "missing opt-in stays off");
 assertEq(toBrowseProfile({ id: "bd3", full_name: "A", biodata_share: "false" })?.biodataShare, false, "string false stays off");
+assertEq(toBrowseProfile({ id: "seen1", full_name: "A" })?.seen, false, "missing seen stays off");
+assertEq(toBrowseProfile({ id: "seen2", full_name: "A", seen: true })?.seen, true, "prior open maps seen");
 assert(
   !browseSelectColumns({ photo_url: false, diet: false }).includes("biodata_share"),
   "browse select omits biodata_share until the column exists"

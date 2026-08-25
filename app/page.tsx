@@ -12,6 +12,7 @@ import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
+import WhoViewedYou from "./components/WhoViewedYou";
 import { supabase } from "../lib/supabase";
 import { MEETUP_PATH } from "../lib/meetup";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
@@ -69,6 +70,7 @@ export default function Home() {
   const [note, setNote] = useState("");
   const [liked, setLiked] = useState<BrowseProfile[]>([]);
   const [saved, setSaved] = useState<BrowseProfile[]>([]);
+  const [viewedIds, setViewedIds] = useState<string[]>([]);
   const [speedPartner, setSpeedPartner] = useState<BrowseProfile | null>(null);
   const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
   const [emptyKind, setEmptyKind] = useState<"inventory" | "matches" | null>(null);
@@ -784,6 +786,11 @@ export default function Home() {
                 profile={current}
                 saved={saved.some(function (x) { return x.id === current.id; })}
                 signedIn={signedIn}
+                onViewed={function (id) {
+                  setViewedIds(function (prev) {
+                    return prev.indexOf(id) >= 0 ? prev : prev.concat(id);
+                  });
+                }}
                 onInterested={function () { markInterested(current); }}
                 onPass={function () { passProfile(current.id); }}
                 onSave={function () { toggleSave(current); }}
@@ -812,7 +819,10 @@ export default function Home() {
                 signedIn={signedIn}
                 onClose={function () { setSpeedPartner(null); }}
               />
-            ) : matches.length === 0 ? (
+            ) : (
+              <>
+            {signedIn ? <WhoViewedYou signedIn={signedIn} compact /> : null}
+            {matches.length === 0 ? (
               <EmptyState
                 eyebrow="MATCHES"
                 title={MATCHES_EMPTY_TITLE}
@@ -837,7 +847,7 @@ export default function Home() {
                     return (
                       <MatchCard
                         key={p.id}
-                        profile={p}
+                        profile={{ ...p, seen: p.seen || viewedIds.indexOf(p.id) >= 0 }}
                         signedIn={signedIn}
                         onSpeedMatch={function () { setSpeedPartner(p); }}
                         onMessage={function () {
@@ -860,6 +870,8 @@ export default function Home() {
                   })}
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
         )}

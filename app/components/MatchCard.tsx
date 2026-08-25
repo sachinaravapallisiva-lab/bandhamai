@@ -18,6 +18,7 @@ import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
 import { ProfilePhotoSoon } from "./ProfilePhoto";
 import SafetyActions from "./SafetyActions";
+import SeenChip from "./SeenChip";
 import VerifyBadge from "./VerifyBadge";
 
 function ClockIcon() {
@@ -136,6 +137,7 @@ export default function MatchCard({
             {profile.name || "Profile"}
           </h2>
           <VerifyBadge verified={profile.verified} />
+          <SeenChip seen={profile.seen} />
           <PresenceMark online={profile.online} compact />
         </div>
         {meta ? (

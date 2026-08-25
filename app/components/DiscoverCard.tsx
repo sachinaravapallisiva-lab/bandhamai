@@ -17,7 +17,9 @@ import InstagramShareControls from "./InstagramShareControls";
 import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
 import { ProfilePhotoSoon } from "./ProfilePhoto";
+import RecordProfileView from "./RecordProfileView";
 import SafetyActions from "./SafetyActions";
+import SeenChip from "./SeenChip";
 import VerifyBadge from "./VerifyBadge";
 
 function HeartIcon() {
@@ -76,6 +78,7 @@ export default function DiscoverCard({
   onPass,
   onSave,
   onBlocked,
+  onViewed,
 }: {
   profile: BrowseProfile;
   saved: boolean;
@@ -85,6 +88,7 @@ export default function DiscoverCard({
   onPass: () => void;
   onSave: () => void;
   onBlocked: () => void;
+  onViewed?: (profileId: string) => void;
 }) {
   const chips = browseFactChips(profile);
   const meta = browseMetaLine(profile);
@@ -100,6 +104,7 @@ export default function DiscoverCard({
         overflow: "hidden",
       }}
     >
+      <RecordProfileView profileId={profile.id} signedIn={signedIn} onRecorded={onViewed} />
       <div style={{ position: "relative" }}>
         {profile.photoUrl ? (
           // Processed by our API (WebP). next/image remote config is not wired for Storage yet.
@@ -143,6 +148,7 @@ export default function DiscoverCard({
             {profile.name || "Profile"}
           </h2>
           <VerifyBadge verified={profile.verified} />
+          <SeenChip seen={profile.seen} />
           <PresenceMark online={profile.online} compact />
         </div>
 
