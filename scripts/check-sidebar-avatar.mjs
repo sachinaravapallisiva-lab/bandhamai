@@ -165,8 +165,12 @@ assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fatte
 assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
 assert(!/\.bm-dash-inner\{[^}]*max-width:none/.test(theme.replace(/\s/g, "")), "full-bleed dash inner fails");
 assert(!theme.includes("max-width:none"), "dash inner must not drop its max-width");
-assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner stays near the old 640 cap");
-assert(SIDEBAR_DASH_MAX >= 640 && SIDEBAR_DASH_MAX <= 720, "dash inner is a small bump only, not full bleed");
+assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner uses the locked dash max");
+assert(SIDEBAR_DASH_MAX >= 880 && SIDEBAR_DASH_MAX <= 992, "dash inner is high enough that 1280 is not a canyon");
+assert(SIDEBAR_DASH_MAX !== 640, "640 dash max is the canyon and fails");
+assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "do not lock the 640 canyon");
+const rightGap1280 = 1280 - SIDEBAR_RAIL_BASIS - SIDEBAR_DASH_MAX;
+assert(rightGap1280 >= 48 && rightGap1280 <= 160, "right cream at 1280 stays small to medium");
 assert(!/\.bm-dash\{flex:1 1/.test(theme.replace(/\s/g, "")), "do not grow the dash into the right cream");
 assert(theme.includes(".bm-dash{flex:0 1 "), "dash column stays next to the rail");
 assert(!/\.bm-dash-inner\{[^}]*margin:0 auto/.test(theme.replace(/\s/g, "")), "do not center a gap between rail and dash");

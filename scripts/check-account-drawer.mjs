@@ -56,6 +56,7 @@ assert(theme.includes(".bm-menu"), "menu hover token");
 assert(theme.includes(".bm-rail{flex:0 0 ") && theme.includes(".bm-dash{flex:0 1 "), "capped rail, capped dash");
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fails");
 assert(!theme.includes("max-width:none"), "full-bleed dash inner fails");
+assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "640 dash max is the canyon and fails");
 assert(chrome.includes('className="bm-dash"') && home.includes('className="bm-dash"'), "hosts use the capped dashboard canvas");
 assert(theme.includes("VIOLET"), "violet token stays");
 assert(!theme.includes("#2563EB") && !theme.includes("#3B82F6"), "do not replace violet with blue");

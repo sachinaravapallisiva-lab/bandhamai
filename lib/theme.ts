@@ -7,12 +7,12 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
-/** Capped rail. Capped dash column. Leftover cream stays on the right. */
+/** Capped rail. Capped dash. Right cream at 1280 is small to medium, not a 640 canyon. */
 export const SIDEBAR_RAIL_BASIS = 240;
 export const SIDEBAR_RAIL_MAX = 280;
 export const SIDEBAR_RAIL_MIN = 220;
 export const SIDEBAR_RAIL_SLIM = 148;
-export const SIDEBAR_DASH_MAX = 640;
+export const SIDEBAR_DASH_MAX = 920;
 
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
