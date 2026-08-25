@@ -1,13 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import { safeNextPath } from "../../lib/next-path";
+import {
+  LOGIN_CREATED_CONFIRM,
+  LOGIN_CREATED_SESSION,
+  LOGIN_CREATING,
+  LOGIN_EMPTY_FIELDS,
+  LOGIN_FORGOT_LABEL,
+  LOGIN_RESEND_LABEL,
+  LOGIN_SIGN_IN_LABEL,
+  LOGIN_SIGN_UP_LABEL,
+  LOGIN_SIGN_UP_PROMPT,
+  LOGIN_SIGN_UP_UNREACHABLE,
+  decideSignInIntent,
+  decideSignUpIntent,
+  loginAuthMode,
+  loginHeading,
+  loginHelp,
+  type LoginPageMode,
+} from "../../lib/login-auth";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
-
-type Mode = "signin" | "reset";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,10 +31,11 @@ export default function LoginPage() {
   const [nextPassword, setNextPassword] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<Mode>(function () {
+  const [mode, setMode] = useState<LoginPageMode>(function () {
     if (typeof window === "undefined") return "signin";
     return new URLSearchParams(window.location.search).get("mode") === "reset" ? "reset" : "signin";
   });
+  const emailRef = useRef<HTMLInputElement>(null);
 
   function nextTarget() {
     return safeNextPath(new URLSearchParams(window.location.search).get("next"));
@@ -50,33 +67,47 @@ export default function LoginPage() {
   }
 
   function handleSignUp() {
-    if (!email.trim() || !password) {
-      setStatus("Enter an email and password.");
+    const intent = decideSignUpIntent(loginAuthMode(mode), email, password);
+    if (intent === "switch-to-signup") {
+      setMode("signup");
+      setStatus(LOGIN_SIGN_UP_PROMPT);
+      window.requestAnimationFrame(function () {
+        emailRef.current?.focus();
+      });
       return;
     }
-    setBusy(true);
-    setStatus("Creating account...");
-    supabase.auth.signUp({ email: email.trim(), password: password }).then(function (result) {
-      setBusy(false);
-      if (result.error) {
-        setStatus(result.error.message);
-        return;
-      }
-      if (result.data.session) {
-        setStatus("Account created and signed in.");
-        goNext();
-        return;
-      }
-      setStatus("Account created. Check your email if confirmation is required, then sign in.");
-    }).catch(function () {
-      setBusy(false);
-      setStatus("Could not reach sign-up. Try again.");
-    });
+    if (intent === "need-fields") {
+      setStatus(LOGIN_EMPTY_FIELDS);
+      emailRef.current?.focus();
+      return;
+    }
+    if (intent === "create-account") {
+      setBusy(true);
+      setStatus(LOGIN_CREATING);
+      supabase.auth.signUp({ email: email.trim(), password: password }).then(function (result) {
+        setBusy(false);
+        if (result.error) {
+          setStatus(result.error.message);
+          return;
+        }
+        if (result.data.session) {
+          setStatus(LOGIN_CREATED_SESSION);
+          goNext();
+          return;
+        }
+        setStatus(LOGIN_CREATED_CONFIRM);
+      }).catch(function () {
+        setBusy(false);
+        setStatus(LOGIN_SIGN_UP_UNREACHABLE);
+      });
+    }
   }
 
   function handleSignIn() {
-    if (!email.trim() || !password) {
-      setStatus("Enter an email and password.");
+    if (mode === "signup") setMode("signin");
+    const intent = decideSignInIntent(email, password);
+    if (intent === "need-fields") {
+      setStatus(LOGIN_EMPTY_FIELDS);
       return;
     }
     setBusy(true);
@@ -176,18 +207,17 @@ export default function LoginPage() {
         ACCOUNT
       </p>
       <h2 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 400 }}>
-        {mode === "reset" ? "New password" : "Sign in"}
+        {loginHeading(mode)}
       </h2>
       <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-        {mode === "reset"
-          ? "This form is for the reset link from your email."
-          : "Use the same email and password to create a profile."}
+        {loginHelp(mode)}
       </p>
 
       <form
         onSubmit={function (e) {
           e.preventDefault();
           if (mode === "reset") handleUpdatePassword();
+          else if (mode === "signup") handleSignUp();
           else handleSignIn();
         }}
         className="bm-card"
@@ -252,11 +282,16 @@ export default function LoginPage() {
           </>
         ) : (
           <>
+            <button type="submit" hidden>
+              {mode === "signup" ? LOGIN_SIGN_UP_LABEL : LOGIN_SIGN_IN_LABEL}
+            </button>
             <label className="bm-sans" style={{ display: "block", fontSize: 9.5, letterSpacing: ".14em", color: MUTED, marginBottom: 6 }}>
               EMAIL
             </label>
             <input
+              ref={emailRef}
               type="email"
+              name="email"
               autoComplete="email"
               placeholder="you@email.com"
               value={email}
@@ -272,7 +307,8 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
-              autoComplete="current-password"
+              name="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               placeholder="Password"
               value={password}
               onChange={function (e) {
@@ -284,8 +320,9 @@ export default function LoginPage() {
 
             <div style={{ display: "flex", gap: 9 }}>
               <button
-                type="submit"
+                type="button"
                 disabled={busy}
+                onClick={handleSignIn}
                 className="bm-sans bm-talk bm-focus"
                 style={{
                   flex: 1,
@@ -300,7 +337,7 @@ export default function LoginPage() {
                   opacity: busy ? 0.7 : 1,
                 }}
               >
-                Sign in
+                {LOGIN_SIGN_IN_LABEL}
               </button>
               <button
                 type="button"
@@ -319,7 +356,7 @@ export default function LoginPage() {
                   cursor: busy ? "default" : "pointer",
                 }}
               >
-                Sign up
+                {LOGIN_SIGN_UP_LABEL}
               </button>
             </div>
 
@@ -340,7 +377,7 @@ export default function LoginPage() {
                   textDecoration: "underline",
                 }}
               >
-                Forgot password
+                {LOGIN_FORGOT_LABEL}
               </button>
               <button
                 type="button"
@@ -358,7 +395,7 @@ export default function LoginPage() {
                   textDecoration: "underline",
                 }}
               >
-                Resend confirmation
+                {LOGIN_RESEND_LABEL}
               </button>
             </div>
           </>
