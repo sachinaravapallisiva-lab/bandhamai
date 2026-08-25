@@ -45,6 +45,7 @@ const callItem = ACCOUNT_MENU_ITEMS.find(function (item) {
   return item.id === "call" || item.label === "Call us";
 });
 assert(!!callItem, "account menu has Call us");
+assert(callItem.label === SUPPORT_CALL_LABEL, "drawer Call us label lock");
 assert(callItem.href === SUPPORT_CALL_PATH, "drawer Call us goes to contact hash");
 
 const help = ACCOUNT_MENU_ITEMS.find(function (item) {

@@ -1,5 +1,3 @@
-import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "./site";
-
 /** Account hub drawer: family-safe matrimony nav. Not a dating-app chrome. */
 
 export const ACCOUNT_MENU_OPEN_LABEL = "Open account menu";
@@ -21,7 +19,7 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "messages", label: "Messages", href: "/chat", note: ACCOUNT_MENU_MESSAGES_NOTE },
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "help", label: "Help / Support", href: "/contact" },
-  { id: "call", label: SUPPORT_CALL_LABEL, href: SUPPORT_CALL_PATH },
+  { id: "call", label: "Call us", href: "/contact#call" },
   { id: "settings", label: "Settings / Account", href: "/account" },
 ] as const;
 
