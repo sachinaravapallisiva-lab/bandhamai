@@ -5,12 +5,15 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import { safeNextPath } from "../../lib/next-path";
 import {
+  LOGIN_AGE_NOTE,
   LOGIN_CREATED_CONFIRM,
   LOGIN_CREATED_SESSION,
   LOGIN_CREATING,
   LOGIN_EMPTY_FIELDS,
   LOGIN_FORGOT_LABEL,
+  LOGIN_FORGOT_SENT,
   LOGIN_RESEND_LABEL,
+  LOGIN_RESEND_SENT,
   LOGIN_SIGN_IN_LABEL,
   LOGIN_SIGN_UP_LABEL,
   LOGIN_SIGN_UP_PROMPT,
@@ -20,6 +23,7 @@ import {
   loginAuthMode,
   loginHeading,
   loginHelp,
+  loginPageModeFromSearch,
   type LoginPageMode,
 } from "../../lib/login-auth";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
@@ -33,7 +37,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<LoginPageMode>(function () {
     if (typeof window === "undefined") return "signin";
-    return new URLSearchParams(window.location.search).get("mode") === "reset" ? "reset" : "signin";
+    return loginPageModeFromSearch(new URLSearchParams(window.location.search).get("mode"));
   });
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -140,7 +144,7 @@ export default function LoginPage() {
         setStatus(result.error.message);
         return;
       }
-      setStatus("If that email has an account, a reset link is on its way. Add this site’s login URL to Supabase redirect allow-list if the mail never arrives.");
+      setStatus(LOGIN_FORGOT_SENT);
     }).catch(function () {
       setBusy(false);
       setStatus("Could not start a password reset. Try again.");
@@ -160,7 +164,7 @@ export default function LoginPage() {
         setStatus(result.error.message);
         return;
       }
-      setStatus("If confirmation is turned on for this project, another email was sent. If signup already signed you in, you do not need this.");
+      setStatus(LOGIN_RESEND_SENT);
     }).catch(function () {
       setBusy(false);
       setStatus("Could not resend confirmation. Try again.");
@@ -409,7 +413,7 @@ export default function LoginPage() {
       </form>
 
       <p className="bm-sans" style={{ margin: "16px 0 0", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-        Bandham AI is for people 18 and over. By signing in or signing up, you confirm you meet that age. See{" "}
+        {LOGIN_AGE_NOTE} See{" "}
         <Link href="/safety" className="bm-focus" style={{ color: VIOLET }}>
           Safety
         </Link>
@@ -417,7 +421,7 @@ export default function LoginPage() {
         <Link href="/terms" className="bm-focus" style={{ color: VIOLET }}>
           Terms
         </Link>
-        . Email confirmation is whatever this Supabase project already uses — this page does not turn it on.
+        .
       </p>
     </AppChrome>
   );

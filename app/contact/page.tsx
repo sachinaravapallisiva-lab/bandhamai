@@ -3,10 +3,10 @@ import Link from "next/link";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import ContactForm from "../components/ContactForm";
 import {
+  CONTACT_DANGER,
   LEGAL_UPDATED,
   SUPPORT_CALL_BODY,
   SUPPORT_CALL_HEADLINE,
-  SUPPORT_INBOX_TODO,
   SUPPORT_PHONE_DISPLAY,
   SUPPORT_PHONE_TEL,
 } from "../../lib/site";
@@ -46,7 +46,7 @@ export default function ContactPage() {
         .
       </p>
       <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-        Last updated {LEGAL_UPDATED}. {SUPPORT_INBOX_TODO}
+        Last updated {LEGAL_UPDATED}.
       </p>
       <section
         id="call"
@@ -85,7 +85,7 @@ export default function ContactPage() {
       </section>
       <ContactForm />
       <p className="bm-sans" style={{ margin: "18px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-        If someone is in immediate danger, contact local authorities. This form still does not send email. It is not an emergency service.
+        {CONTACT_DANGER}
       </p>
     </AppChrome>
   );

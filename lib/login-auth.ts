@@ -29,6 +29,19 @@ export const LOGIN_RESEND_LABEL = "Resend confirmation";
 export const LOGIN_SIGN_IN_LABEL = "Sign in";
 export const LOGIN_SIGN_UP_LABEL = "Sign up";
 
+export const LOGIN_AGE_NOTE =
+  "Bandham AI is for people 18 and over. By signing in or signing up, you confirm you meet that age.";
+export const LOGIN_FORGOT_SENT = "If that email has an account, a reset link is on its way.";
+export const LOGIN_RESEND_SENT =
+  "If that email needs confirmation, another email was sent. If you already signed in, you do not need this.";
+export const LOGIN_SIGN_UP_PATH = "/login?mode=signup";
+
+export function loginPageModeFromSearch(raw: string | null | undefined): LoginPageMode {
+  if (raw === "reset") return "reset";
+  if (raw === "signup") return "signup";
+  return "signin";
+}
+
 export function hasLoginCredentials(email: string, password: string) {
   return Boolean(email.trim() && password);
 }
@@ -80,5 +93,8 @@ export function loginUserCopy() {
     LOGIN_RESEND_LABEL,
     LOGIN_SIGN_IN_LABEL,
     LOGIN_SIGN_UP_LABEL,
+    LOGIN_AGE_NOTE,
+    LOGIN_FORGOT_SENT,
+    LOGIN_RESEND_SENT,
   ];
 }
