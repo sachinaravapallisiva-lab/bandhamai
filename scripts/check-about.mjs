@@ -47,11 +47,15 @@ assert(about.includes("talk to her parents"), "parents goal");
 assert(about.includes("Guru"), "guru coaches");
 assert(about.includes("never writes sendable dating text"), "guru never writes dating text");
 assert(about.includes("Browse, search, Speed Match, and creating a profile stay free"), "free surfaces");
+assert(about.includes("two profile kinds"), "Regular and Premium are the two kinds");
+assert(about.includes("Regular means no Bandham AI subscription"), "Regular means no subscription");
+assert(about.includes("Premium means a Bandham AI subscription"), "Premium means a subscription");
 assert(about.includes("$9.99 a month"), "subscription price wording");
 assert(about.includes("VerifyAI and meetup are separate"), "VerifyAI and meetup stay separate");
 
 assert(!/Bandhamai|bandhamAI|Bandhan\b/.test(about), "never Bandhamai, bandhamAI, or Bandhan");
 assert(!/LLC|headquarters|founding year|investor|members worldwide/i.test(about), "do not invent a company story");
+assert(!/\bPaid\b|\bUpgrade\b/.test(about), "do not say Paid or Upgrade");
 assert(!/subscription is \$9\.99 .{0,40}messaging|\$9\.99 .{0,20}for messaging|messaging is \$9\.99/i.test(about), "do not say the subscription is $9.99 for messaging");
 assert(!/\$9\.99\/mo|\$9\.99 per month|\$9\.99\/month/.test(about), "say $9.99 a month, not a slash price");
 

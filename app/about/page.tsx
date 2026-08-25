@@ -25,8 +25,11 @@ export default function AboutPage() {
           <p style={{ margin: "0 0 8px" }}>
             We help people find a vibe match. We help them talk to her parents. Guru coaches those talks and never writes sendable dating text.
           </p>
+          <p style={{ margin: "0 0 8px" }}>
+            There are two profile kinds. Regular means no Bandham AI subscription. Premium means a Bandham AI subscription. A Bandham AI subscription is $9.99 a month.
+          </p>
           <p style={{ margin: 0 }}>
-            Browse, search, Speed Match, and creating a profile stay free. A Bandham AI subscription is $9.99 a month. VerifyAI and meetup are separate.
+            Browse, search, Speed Match, and creating a profile stay free. VerifyAI and meetup are separate.
           </p>
         </LegalSection>
       </LegalArticle>
