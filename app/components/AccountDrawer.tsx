@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import {
   ACCOUNT_MENU_BIODATA_ID,
   ACCOUNT_MENU_CLOSE_LABEL,
@@ -230,32 +230,15 @@ const ITEM_STYLE = {
 };
 
 const ACCOUNT_PHONE_OVERLAY_ID = "account-menu-phone";
+const ACCOUNT_PHONE_OPEN_EVENT = "bm-account-open";
+const ACCOUNT_PHONE_CLOSE_EVENT = "bm-account-close";
 
-let phoneMenuOpen = false;
-const phoneMenuListeners = new Set<() => void>();
-
-function subscribePhoneMenu(listener: () => void) {
-  phoneMenuListeners.add(listener);
-  return function () {
-    phoneMenuListeners.delete(listener);
-  };
+function openPhoneMenu() {
+  window.dispatchEvent(new Event(ACCOUNT_PHONE_OPEN_EVENT));
 }
 
-function getPhoneMenuOpen() {
-  return phoneMenuOpen;
-}
-
-function setPhoneMenuOpen(next: boolean) {
-  phoneMenuOpen = next;
-  phoneMenuListeners.forEach(function (listener) {
-    listener();
-  });
-}
-
-function usePhoneMenuOpen() {
-  return useSyncExternalStore(subscribePhoneMenu, getPhoneMenuOpen, function () {
-    return false;
-  });
+function closePhoneMenu() {
+  window.dispatchEvent(new Event(ACCOUNT_PHONE_CLOSE_EVENT));
 }
 
 type AccountPanelProps = {
@@ -372,9 +355,7 @@ function AccountPanel({
               href={item.href}
               className="bm-sans bm-menu bm-focus"
               style={ITEM_STYLE}
-              onClick={function () {
-                setPhoneMenuOpen(false);
-              }}
+              onClick={closePhoneMenu}
             >
               <MenuIcon name={iconForItem(item.id)} />
               <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
@@ -409,9 +390,7 @@ function AccountPanel({
             href={ACCOUNT_MENU_UPGRADE_HREF}
             className="bm-sans bm-menu bm-focus"
             style={ITEM_STYLE}
-            onClick={function () {
-              setPhoneMenuOpen(false);
-            }}
+            onClick={closePhoneMenu}
           >
             <MenuIcon name="upgrade" />
             <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ACCOUNT_MENU_UPGRADE}</span>
@@ -423,9 +402,7 @@ function AccountPanel({
             href="/logout"
             className="bm-sans bm-menu bm-focus"
             style={{ ...ITEM_STYLE, color: MUTED, marginTop: 8 }}
-            onClick={function () {
-              setPhoneMenuOpen(false);
-            }}
+            onClick={closePhoneMenu}
           >
             <span style={{ fontSize: 14, fontWeight: 600 }}>{ACCOUNT_MENU_SIGN_OUT}</span>
           </Link>
@@ -436,7 +413,23 @@ function AccountPanel({
 }
 
 export function AccountMenuControl() {
-  const overlayOpen = usePhoneMenuOpen();
+  const [overlayOpen, setOverlayOpen] = useState(false);
+
+  useEffect(function () {
+    function onOpen() {
+      setOverlayOpen(true);
+    }
+    function onClose() {
+      setOverlayOpen(false);
+    }
+    window.addEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
+    window.addEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
+    return function () {
+      window.removeEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
+      window.removeEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
+    };
+  }, []);
+
   return (
     <button
       type="button"
@@ -445,9 +438,7 @@ export function AccountMenuControl() {
       aria-expanded={overlayOpen}
       aria-controls={ACCOUNT_PHONE_OVERLAY_ID}
       aria-label={ACCOUNT_MENU_OPEN_LABEL}
-      onClick={function () {
-        setPhoneMenuOpen(true);
-      }}
+      onClick={openPhoneMenu}
       style={{
         alignItems: "center",
         justifyContent: "center",
@@ -477,18 +468,28 @@ export default function AccountDrawer() {
   const [plan, setPlan] = useState<"free" | "paid" | null>(null);
   const titleId = useId();
   const overlayTitleId = useId();
-  const overlayOpen = usePhoneMenuOpen();
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   useEffect(function () {
+    function onOpen() {
+      setOverlayOpen(true);
+    }
+    function onClose() {
+      setOverlayOpen(false);
+    }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setPhoneMenuOpen(false);
+      if (event.key === "Escape") closePhoneMenu();
     }
     function onResize() {
-      if (window.innerWidth > PHONE_ACCOUNT_BREAKPOINT) setPhoneMenuOpen(false);
+      if (window.innerWidth > PHONE_ACCOUNT_BREAKPOINT) closePhoneMenu();
     }
+    window.addEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
+    window.addEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
     return function () {
+      window.removeEventListener(ACCOUNT_PHONE_OPEN_EVENT, onOpen);
+      window.removeEventListener(ACCOUNT_PHONE_CLOSE_EVENT, onClose);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
     };
@@ -583,7 +584,7 @@ export default function AccountDrawer() {
             type="button"
             aria-label={ACCOUNT_MENU_CLOSE_LABEL}
             onClick={function () {
-              setPhoneMenuOpen(false);
+              closePhoneMenu();
             }}
             style={{
               position: "absolute",
@@ -618,7 +619,7 @@ export default function AccountDrawer() {
                   className="bm-sans bm-ghost bm-focus"
                   aria-label={ACCOUNT_MENU_CLOSE_LABEL}
                   onClick={function () {
-                    setPhoneMenuOpen(false);
+                    closePhoneMenu();
                   }}
                   style={{
                     flex: "0 0 auto",
