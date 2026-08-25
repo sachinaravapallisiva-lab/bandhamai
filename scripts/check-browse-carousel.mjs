@@ -344,6 +344,15 @@ assert(theme.includes(".bm-rail{display:none"), "phones hide the always-open rai
 assert(theme.includes(".bm-account-toggle{display:none}"), "desktop has no hamburger");
 assert(page.includes("AccountMenuControl"), "Home phones open Account from one control");
 assert(!/<span>Menu<\/span>/.test(page + theme), "do not restore the old Menu drawer label");
+assert(theme.includes(".bm-shell{flex-direction:column}"), "phone Home is one column");
+assert(theme.includes(".bm-pin-card{flex:0 0 122px"), "pin cards shrink on phone only");
+assert(theme.includes(".bm-shortlist-photo{width:140px"), "shortlist photo shrinks on phone only");
+assert(theme.includes("[data-meetup-rail]{display:block"), "meetup stays on phone under the shortlist");
+assert(!theme.includes("[data-meetup-rail]{display:none"), "do not hide the meetup stack on phone");
+assert(pinnedRow.includes("bm-pin-card") && pinnedRow.includes("bm-pin-photo"), "pin cards accept the phone size");
+assert(discover.includes("bm-shortlist-photo"), "shortlist photo accepts the phone size");
+assert(BROWSE_PIN_PHOTO_HEIGHT === 150, "desktop pin photo stays 150");
+assert(BROWSE_PIN_CARD_WIDTH === 168, "desktop pin card stays 168");
 
 const menu = read("lib/account-menu.ts");
 assert(menu.includes("Inbox"), "Inbox stays");

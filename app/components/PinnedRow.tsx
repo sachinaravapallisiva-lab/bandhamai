@@ -45,6 +45,7 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
         {GET_PRIORITY}
       </Link>
       <div
+        className="bm-pin-line"
         data-browse-pinned-line="true"
         style={{
           display: "flex",
@@ -63,7 +64,7 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
           return (
             <article
               key={profile.id}
-              className="bm-card"
+              className="bm-card bm-pin-card"
               data-priority-mark="true"
               style={{
                 flex: "0 0 " + BROWSE_PIN_CARD_WIDTH + "px",
@@ -76,6 +77,7 @@ export default function PinnedRow({ profiles }: { profiles: BrowseProfile[] }) {
               }}
             >
               <div
+                className="bm-pin-photo"
                 data-pin-photo-well="true"
                 style={{
                   height: BROWSE_PIN_PHOTO_HEIGHT,

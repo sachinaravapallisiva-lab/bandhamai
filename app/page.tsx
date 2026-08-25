@@ -403,7 +403,7 @@ export default function Home() {
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "wrap", alignItems: "stretch" }}>
+    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "wrap", alignItems: "stretch" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">
@@ -415,10 +415,10 @@ export default function Home() {
             <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AccountMenuControl />
-                  <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                  <h1 className="bm-serif bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                     Bandham AI
                   </h1>
-                  <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} />
+                  <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} className="bm-header-mark" />
                 </div>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
                   Find your vibe match?

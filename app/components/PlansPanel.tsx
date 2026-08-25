@@ -78,7 +78,7 @@ export default function PlansPanel() {
         <p className="bm-sans" style={{ margin: "0 0 8px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
           {PLANS_SUBSCRIBE_KICKER}
         </p>
-        <h3 className="bm-serif" style={{ margin: "0 0 10px", fontSize: 24, fontWeight: 400, color: VIOLET_DEEP }}>
+        <h3 className="bm-serif bm-plan-headline" style={{ margin: "0 0 10px", fontSize: 24, fontWeight: 400, color: VIOLET_DEEP }}>
           {PLANS_SUBSCRIBE_HEADLINE}
         </h3>
         <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 14, color: MUTED, lineHeight: 1.55 }}>

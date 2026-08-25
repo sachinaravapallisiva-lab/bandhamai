@@ -117,6 +117,7 @@ export default function DiscoverCard({
         }}
       >
         <div
+          className="bm-shortlist-photo"
           style={{
             position: "relative",
             width: BROWSE_CAROUSEL_PHOTO_WIDTH,
@@ -168,7 +169,7 @@ export default function DiscoverCard({
 
       <div style={{ padding: PROFILE_BODY_PAD }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <h2 className="bm-serif" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: VIOLET_DEEP, letterSpacing: "-.015em" }}>
+          <h2 className="bm-serif bm-shortlist-name" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: VIOLET_DEEP, letterSpacing: "-.015em" }}>
             {profile.name || "Profile"}
           </h2>
           <VerifyBadge verified={profile.verified} />

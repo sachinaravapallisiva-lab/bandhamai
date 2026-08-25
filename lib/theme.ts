@@ -52,9 +52,28 @@ export const BM_CSS =
   ".bm-account-phone{display:none}" +
   ".bm-account-phone>summary{list-style:none}" +
   ".bm-account-phone>summary::-webkit-details-marker{display:none}" +
+  ".bm-account-toggle{position:relative;z-index:90}" +
   "@media (max-width:" +
   PHONE_ACCOUNT_BREAKPOINT +
-  "px){.bm-rail{display:none!important}.bm-account-phone{display:block}.bm-account-toggle{display:inline-flex!important}[data-meetup-rail]{display:none!important}}" +
+  "px){" +
+  ".bm-shell{flex-direction:column}" +
+  ".bm-rail{display:none!important}" +
+  ".bm-account-phone{display:block}" +
+  ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
+  ".bm-dash{flex:0 1 100%;width:100%;max-width:100%}" +
+  ".bm-dash-inner{max-width:100%;padding-left:14px;padding-right:14px}" +
+  ".bm-home-wordmark{font-size:22px!important}" +
+  ".bm-header-mark{width:44px!important;height:44px!important}" +
+  ".bm-pin-line{min-height:0!important;gap:8px}" +
+  ".bm-pin-card{flex:0 0 122px!important;width:122px!important;max-width:122px!important}" +
+  ".bm-pin-photo,.bm-pin-photo img{height:110px!important;min-height:110px!important}" +
+  ".bm-shortlist-photo{width:140px!important;max-width:140px!important;height:168px!important;max-height:168px!important}" +
+  ".bm-shortlist-name{font-size:20px!important}" +
+  ".bm-plan-headline{font-size:20px!important}" +
+  "[data-plan-card]{padding:16px 14px!important}" +
+  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%;min-width:0;max-width:100%;padding:8px 14px 28px;overflow:visible}" +
+  "[data-meetup-test-post] h2{font-size:18px!important}" +
+  "}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +

@@ -501,7 +501,8 @@ export function AccountMenuControl() {
           cursor: "pointer",
         }}
       >
-        Account
+        <MenuIcon name="menu" />
+        Menu
       </summary>
       <div
         id={ACCOUNT_PHONE_OVERLAY_ID}
@@ -519,12 +520,13 @@ export function AccountMenuControl() {
         <button
           type="button"
           aria-label={ACCOUNT_MENU_CLOSE_LABEL}
+          data-account-cream="true"
           onClick={closePhoneMenu}
           style={{
             position: "absolute",
             inset: 0,
             border: 0,
-            background: "rgba(30,27,54,.28)",
+            background: "rgba(253,248,241,.82)",
             cursor: "pointer",
           }}
         />

@@ -168,7 +168,7 @@ export default function MeetupPage() {
   const partner = speedPartner || meetupSpeedPartner(meetup.id);
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
+    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">
@@ -179,7 +179,7 @@ export default function MeetupPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AccountMenuControl />
                   <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
-                    <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                    <h1 className="bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                       Bandham AI
                     </h1>
                   </Link>
