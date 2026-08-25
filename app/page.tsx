@@ -403,7 +403,7 @@ export default function Home() {
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "wrap", alignItems: "stretch" }}>
+    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "nowrap", alignItems: "stretch" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">

@@ -53,10 +53,12 @@ export const BM_CSS =
   ".bm-account-phone>summary{list-style:none}" +
   ".bm-account-phone>summary::-webkit-details-marker{display:none}" +
   ".bm-account-toggle{position:relative;z-index:90}" +
+  ".bm-shell{flex-wrap:nowrap}" +
+  "[data-meetup-rail]{flex:1 1 0%;min-width:96px;position:sticky;top:0;align-self:flex-start;height:100vh;max-height:100vh;overflow-y:auto;box-sizing:border-box}" +
   "@media (max-width:" +
   PHONE_ACCOUNT_BREAKPOINT +
   "px){" +
-  ".bm-shell{flex-direction:column}" +
+  ".bm-shell{flex-direction:column;flex-wrap:nowrap}" +
   ".bm-rail{display:none!important}" +
   ".bm-account-phone{display:block}" +
   ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
@@ -71,7 +73,7 @@ export const BM_CSS =
   ".bm-shortlist-name{font-size:20px!important}" +
   ".bm-plan-headline{font-size:20px!important}" +
   "[data-plan-card]{padding:16px 14px!important}" +
-  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible}" +
+  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible;position:static!important;top:auto;align-self:stretch;height:auto!important;max-height:none!important;border-left:none!important}" +
   "[data-meetup-test-post] h2{font-size:18px!important}" +
   "}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +
