@@ -7,11 +7,12 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
-/** Capped rail. Dashboard takes leftover space. A grow-1 rail fattens the pair. */
+/** Capped rail. Capped dash column. Leftover cream stays on the right. */
 export const SIDEBAR_RAIL_BASIS = 240;
 export const SIDEBAR_RAIL_MAX = 280;
 export const SIDEBAR_RAIL_MIN = 220;
 export const SIDEBAR_RAIL_SLIM = 148;
+export const SIDEBAR_DASH_MAX = 640;
 
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
@@ -37,8 +38,14 @@ export const BM_CSS =
   "px;max-width:" +
   SIDEBAR_RAIL_MAX +
   "px;box-sizing:border-box}" +
-  ".bm-dash{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}" +
-  ".bm-dash-inner{width:100%;max-width:none;margin:0;box-sizing:border-box}" +
+  ".bm-dash{flex:0 1 " +
+  SIDEBAR_DASH_MAX +
+  "px;max-width:" +
+  SIDEBAR_DASH_MAX +
+  "px;min-width:0;display:flex;flex-direction:column}" +
+  ".bm-dash-inner{width:100%;max-width:" +
+  SIDEBAR_DASH_MAX +
+  "px;margin:0;margin-right:auto;box-sizing:border-box}" +
   "@media (max-width:720px){.bm-rail{flex:0 0 " +
   SIDEBAR_RAIL_SLIM +
   "px;width:" +

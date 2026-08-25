@@ -21,6 +21,7 @@ import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
 import {
   CREAM,
   LINE,
+  SIDEBAR_DASH_MAX,
   SIDEBAR_RAIL_BASIS,
   SIDEBAR_RAIL_MAX,
   SIDEBAR_RAIL_MIN,
@@ -159,22 +160,26 @@ assert(!/ACCOUNT_MENU_OPEN_LABEL/.test(drawer), "no open menu control");
 const theme = read("lib/theme.ts");
 assert(theme.includes(".bm-rail"), "rail width lives in theme");
 assert(theme.includes(".bm-dash"), "dashboard canvas lives in theme");
-assert(theme.includes(".bm-dash-inner"), "dashboard inner fills the canvas");
+assert(theme.includes(".bm-dash-inner"), "dashboard inner is the capped column");
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fattens the pair and fails");
 assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
-assert(theme.includes(".bm-dash{flex:1 1 auto"), "dashboard takes leftover space");
-assert(theme.includes("max-width:none"), "dashboard is not a centered 640 strip");
+assert(!/\.bm-dash-inner\{[^}]*max-width:none/.test(theme.replace(/\s/g, "")), "full-bleed dash inner fails");
+assert(!theme.includes("max-width:none"), "dash inner must not drop its max-width");
+assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner stays near the old 640 cap");
+assert(SIDEBAR_DASH_MAX >= 640 && SIDEBAR_DASH_MAX <= 720, "dash inner is a small bump only, not full bleed");
+assert(!/\.bm-dash\{flex:1 1/.test(theme.replace(/\s/g, "")), "do not grow the dash into the right cream");
+assert(theme.includes(".bm-dash{flex:0 1 "), "dash column stays next to the rail");
+assert(!/\.bm-dash-inner\{[^}]*margin:0 auto/.test(theme.replace(/\s/g, "")), "do not center a gap between rail and dash");
 assert(SIDEBAR_RAIL_BASIS >= 240 && SIDEBAR_RAIL_BASIS <= 260, "desktop rail stays 240 to 260");
 assert(SIDEBAR_RAIL_MAX >= 260 && SIDEBAR_RAIL_MAX <= 280, "rail max-width stays 260 to 280");
 assert(SIDEBAR_RAIL_MIN >= 220 && SIDEBAR_RAIL_MIN <= 240, "rail min-width still fits labels");
 assert(SIDEBAR_RAIL_SLIM >= 140 && SIDEBAR_RAIL_SLIM <= 180, "phones keep a slimmer visible rail");
 assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
 assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
-assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home dashboard takes leftover space");
-assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome dashboard takes leftover space");
-assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup dashboard takes leftover space");
-assert(!/maxWidth:\s*640/.test(chrome + home + meetup), "shell must not keep a 640 canvas beside the rail");
-assert(!/margin:\s*["']0 auto["']/.test(chrome + home + meetup), "shell must not leave a centered unused middle band");
+assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home uses the capped dash column");
+assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome uses the capped dash column");
+assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup uses the capped dash column");
+assert(!/margin:\s*["']0 auto["']/.test(chrome + home + meetup), "hosts must not center a gap between rail and dash");
 const themeExports = theme.split("export const BM_CSS")[0];
 assert(themeExports.includes('export const CREAM = "#FDF8F1"'), "cream export stays");
 assert(themeExports.includes('export const WASH = "#F7F1E8"'), "wash export stays");
