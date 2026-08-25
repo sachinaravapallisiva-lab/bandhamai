@@ -13,6 +13,8 @@ export const SIDEBAR_RAIL_MAX = 280;
 export const SIDEBAR_RAIL_MIN = 220;
 export const SIDEBAR_RAIL_SLIM = 148;
 export const SIDEBAR_DASH_MAX = 920;
+/** Phones and tablets hide the always-open rail. Desktop above this stays locked. */
+export const PHONE_ACCOUNT_BREAKPOINT = 800;
 
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
@@ -37,7 +39,7 @@ export const BM_CSS =
   SIDEBAR_RAIL_MIN +
   "px;max-width:" +
   SIDEBAR_RAIL_MAX +
-  "px;box-sizing:border-box}" +
+  "px;box-sizing:border-box;display:flex;flex-direction:column}" +
   ".bm-dash{flex:0 1 " +
   SIDEBAR_DASH_MAX +
   "px;max-width:" +
@@ -46,17 +48,35 @@ export const BM_CSS =
   ".bm-dash-inner{width:100%;max-width:" +
   SIDEBAR_DASH_MAX +
   "px;margin:0;margin-right:auto;box-sizing:border-box}" +
-  "@media (max-width:720px){.bm-rail{flex:0 0 " +
-  SIDEBAR_RAIL_SLIM +
-  "px;width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px;min-width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px;max-width:" +
-  SIDEBAR_RAIL_SLIM +
-  "px}}" +
+  ".bm-account-toggle{display:none}" +
+  ".bm-account-phone{display:none}" +
+  ".bm-account-phone>summary{list-style:none}" +
+  ".bm-account-phone>summary::-webkit-details-marker{display:none}" +
+  ".bm-account-toggle{position:relative;z-index:90}" +
+  "@media (max-width:" +
+  PHONE_ACCOUNT_BREAKPOINT +
+  "px){" +
+  ".bm-shell{flex-direction:column}" +
+  ".bm-rail{display:none!important}" +
+  ".bm-account-phone{display:block}" +
+  ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
+  ".bm-dash{flex:0 1 100%;width:100%;max-width:100%}" +
+  ".bm-dash-inner{max-width:100%;padding-left:14px;padding-right:14px}" +
+  ".bm-home-wordmark{font-size:22px!important}" +
+  ".bm-header-mark{width:44px!important;height:44px!important}" +
+  ".bm-pin-line{min-height:0!important;gap:8px}" +
+  ".bm-pin-card{flex:0 0 122px!important;width:122px!important;max-width:122px!important}" +
+  ".bm-pin-photo,.bm-pin-photo img{height:110px!important;min-height:110px!important}" +
+  ".bm-shortlist-photo{width:140px!important;max-width:140px!important;height:168px!important;max-height:168px!important}" +
+  ".bm-shortlist-name{font-size:20px!important}" +
+  ".bm-plan-headline{font-size:20px!important}" +
+  "[data-plan-card]{padding:16px 14px!important}" +
+  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible}" +
+  "[data-meetup-test-post] h2{font-size:18px!important}" +
+  "}" +
+  ".bm-account-overlay{transition:opacity .2s ease}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
   ".bm-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +
-  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab,.bm-menu,.bm-drawer,.bm-scrim{transition:none!important}}";
+  "@media (prefers-reduced-motion:reduce){.bm-card,.bm-talk,.bm-ghost,.bm-tab,.bm-menu,.bm-drawer,.bm-scrim,.bm-account-overlay{transition:none!important}}";

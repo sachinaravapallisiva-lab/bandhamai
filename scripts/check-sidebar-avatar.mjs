@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import {
   ACCOUNT_MENU_FREE_CHIP,
   ACCOUNT_MENU_ITEMS,
@@ -10,6 +10,7 @@ import {
 import {
   isOwnStoredPhotoUrl,
 } from "../lib/profile-photos.ts";
+import { BANDHAM_MARK_HEADER_SIZE, BANDHAM_MARK_SIZE } from "../lib/bandham-mark.ts";
 import {
   SIDEBAR_AVATAR_ALT,
   SIDEBAR_AVATAR_MARK,
@@ -21,6 +22,7 @@ import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
 import {
   CREAM,
   LINE,
+  PHONE_ACCOUNT_BREAKPOINT,
   SIDEBAR_DASH_MAX,
   SIDEBAR_RAIL_BASIS,
   SIDEBAR_RAIL_MAX,
@@ -61,14 +63,15 @@ const itemLabels = ACCOUNT_MENU_ITEMS.map(function (item) {
 });
 
 assert(
-  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
-  "sidebar item order keeps Inbox, Call us, and Block"
+  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
+  "sidebar item order keeps Inbox, Call us, Block, and Plans"
 );
 assert(
   itemLabels.join("|") ===
-    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Help / Support|Call us|Settings / Account|Block",
-  "sidebar labels keep Inbox, Call us, and Block"
+    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Plans|Help / Support|Call us|Settings / Account|Block",
+  "sidebar labels keep Inbox, Call us, Block, and Plans"
 );
+assert(itemIds.includes("plans") && itemLabels.includes("Plans"), "Plans is in the sidebar");
 assert(!itemIds.includes("messages"), "Messages item id is gone");
 assert(!itemLabels.includes("Messages"), "Messages label is gone");
 assert(itemIds.includes("inbox") && itemLabels.includes("Inbox"), "Inbox stays");
@@ -95,6 +98,27 @@ assert(SIDEBAR_AVATAR_SIZE >= 28 && SIDEBAR_AVATAR_SIZE <= 32, "avatar is a 28 t
 assert(avatar.includes("borderRadius: 999"), "avatar is circular");
 assert(drawer.includes("SidebarAvatar"), "drawer hosts the signed in mark");
 assert(drawer.includes("BANDHAM AI"), "Bandham AI kicker stays two words");
+assert(drawer.includes("BandhamMark"), "rail shows the garland couple mark beside Bandham AI");
+const mark = read("app/components/BandhamMark.tsx");
+assert(mark.includes("BANDHAM_MARK_SRC"), "mark uses the shared src");
+assert(mark.includes('objectFit: "contain"'), "rail mark uses contain so the full couple is visible");
+assert(!/objectFit:\s*["']cover["']/.test(mark), "cover crops the couple into a cream speck");
+assert(read("lib/bandham-mark.ts").includes("/brand/bandham-garland.png"), "rail uses the full garland couple artwork");
+assert(BANDHAM_MARK_SIZE >= 48 && BANDHAM_MARK_SIZE <= 56, "rail mark stays 48 to 56px");
+assert(BANDHAM_MARK_SIZE === 52, "rail mark lock is 52");
+assert(BANDHAM_MARK_HEADER_SIZE >= 72 && BANDHAM_MARK_HEADER_SIZE <= 88, "Home wordmark mark is a bit larger than the rail");
+assert(BANDHAM_MARK_HEADER_SIZE > BANDHAM_MARK_SIZE, "header mark is larger than the rail mark");
+assert(home.includes("BandhamMark"), "Home wordmark shows the garland couple mark");
+assert(home.includes("BANDHAM_MARK_HEADER_SIZE"), "Home uses the larger header mark size");
+assert(home.indexOf("Bandham AI") < home.indexOf("<BandhamMark"), "couple mark sits to the right of Bandham AI");
+assert(drawer.includes("<BandhamMark />"), "rail still uses the small default mark");
+assert(!drawer.includes("BANDHAM_MARK_HEADER_SIZE"), "do not enlarge the rail mark");
+assert(chrome.includes("BandhamMark"), "AppChrome shows the garland couple next to Bandham AI");
+assert(existsSync(new URL("../public/brand/bandham-garland.png", import.meta.url)), "full garland couple artwork is present");
+assert(existsSync(new URL("../public/brand/bandham-mark.png", import.meta.url)), "cropped garland mark PNG is present");
+assert(statSync(new URL("../public/icons/icon-192.png", import.meta.url)).size > 2000, "favicon is no longer the old circle placeholder");
+assert(statSync(new URL("../public/icons/icon-512.png", import.meta.url)).size > 2000, "512 icon is the garland couple");
+assert(statSync(new URL("../public/icons/apple-touch-icon.png", import.meta.url)).size > 2000, "apple touch icon is the garland couple");
 assert(drawer.includes("ACCOUNT_MENU_TITLE"), "Account row stays");
 assert(drawer.includes("{signedIn ? <SidebarAvatar"), "avatar only when signed in");
 assert(!/signedIn \? null/.test(drawer) || drawer.includes("{signedIn ? <SidebarAvatar"), "no fake signed out avatar");
@@ -151,18 +175,23 @@ assert(drawer.includes('data-sidebar-always-open={SIDEBAR_ALWAYS_OPEN ? "true" :
 assert(drawer.includes("<aside"), "sidebar is a persistent aside");
 assert(drawer.includes("bm-rail"), "sidebar uses the always visible rail");
 assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
-assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
+assert(!/{open \?/.test(drawer), "desktop rail is not gated on an open flag");
 assert(!/<span>Menu<\/span>/.test(drawer), "no Menu hamburger");
 assert(!/<span>Close<\/span>/.test(drawer), "no Close control");
-assert(!/aria-modal/.test(drawer), "no overlay dialog");
-assert(!/bm-scrim/.test(drawer), "no dismiss overlay");
-assert(!/ACCOUNT_MENU_OPEN_LABEL/.test(drawer), "no open menu control");
+assert(drawer.includes("bm-account-overlay"), "phones use an overlay, not a desktop Menu drawer");
+assert(drawer.includes("ACCOUNT_MENU_OPEN_LABEL"), "phones get an Account control");
+assert(!/bm-scrim/.test(drawer), "do not restore the old desktop scrim drawer");
 const theme = read("lib/theme.ts");
 assert(theme.includes(".bm-rail"), "rail width lives in theme");
 assert(theme.includes(".bm-dash"), "dashboard canvas lives in theme");
 assert(theme.includes(".bm-dash-inner"), "dashboard inner is the capped column");
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fattens the pair and fails");
 assert(theme.includes(".bm-rail{flex:0 0 "), "rail is a capped column");
+assert(PHONE_ACCOUNT_BREAKPOINT === 800, "phone breakpoint is 800");
+assert(theme.includes("PHONE_ACCOUNT_BREAKPOINT"), "phone breakpoint is named");
+assert(theme.includes(".bm-rail{display:none"), "phones hide the 240 rail");
+assert(theme.includes(".bm-account-toggle{display:none}"), "desktop keeps the rail, no hamburger");
+assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/\.bm-dash-inner\{[^}]*max-width:none/.test(theme.replace(/\s/g, "")), "full-bleed dash inner fails");
 assert(!theme.includes("max-width:none"), "dash inner must not drop its max-width");
 assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner uses the locked dash max");
@@ -180,6 +209,7 @@ assert(SIDEBAR_RAIL_MIN >= 220 && SIDEBAR_RAIL_MIN <= 240, "rail min-width still
 assert(SIDEBAR_RAIL_SLIM >= 140 && SIDEBAR_RAIL_SLIM <= 180, "phones keep a slimmer visible rail");
 assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
 assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
+assert(home.includes("AccountMenuControl") && chrome.includes("AccountMenuControl") && meetup.includes("AccountMenuControl"), "same Account control on Home, chrome, and meetup");
 assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home uses the capped dash column");
 assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome uses the capped dash column");
 assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup uses the capped dash column");

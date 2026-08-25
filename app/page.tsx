@@ -7,14 +7,18 @@ import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
-import DiscoverCard from "./components/DiscoverCard";
+import BrowseCarousel from "./components/BrowseCarousel";
+import PinnedRow from "./components/PinnedRow";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
 import MatchCard from "./components/MatchCard";
-import AccountDrawer from "./components/AccountDrawer";
+import AccountDrawer, { AccountMenuControl } from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
+import MeetupRail from "./components/MeetupRail";
+import BandhamMark from "./components/BandhamMark";
 import { supabase } from "../lib/supabase";
 import { INBOX_PATH, INBOX_PREVIEW_NOTE, INBOX_PREVIEW_OPEN } from "../lib/inbox";
 import { MEETUP_PATH } from "../lib/meetup";
+import { BANDHAM_MARK_HEADER_SIZE } from "../lib/bandham-mark";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
 import { homeTabFromSearch, loginHref } from "../lib/next-path";
@@ -27,6 +31,7 @@ import {
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
 import { emptyCriteria } from "../lib/profile-search";
+import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-test-pond";
 import {
   BROWSE_EMPTY_INVENTORY_BODY,
   BROWSE_EMPTY_INVENTORY_TITLE,
@@ -390,13 +395,15 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
-  const current = profiles[0] || null;
+  const pond = browseShortlistPond(profiles);
+  const pinned = browsePinnedPreview();
+  const hasProfiles = pond.length > 0;
   const searched = query.trim().length > 0;
   const searchChips = [criteria.city, criteria.gender].concat(criteria.keywords).filter(Boolean) as string[];
   const showMatchCount = loadedOnce && !searching && searched && matchCount !== null;
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
+    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex", flexWrap: "wrap", alignItems: "stretch" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">
@@ -406,9 +413,13 @@ export default function Home() {
         <div className="bm-dash-inner" style={{ padding: "20px 20px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-                <h1 className="bm-serif" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                  Bandham AI
-                </h1>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <AccountMenuControl />
+                  <h1 className="bm-serif bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                    Bandham AI
+                  </h1>
+                  <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} className="bm-header-mark" />
+                </div>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
                   Find your vibe match?
                 </p>
@@ -469,9 +480,6 @@ export default function Home() {
                     {userEmail}
                   </span>
                   <div style={{ display: "flex", gap: 10 }}>
-                    <Link href="/account#verify" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
-                      Get verified · $4.99
-                    </Link>
                     <Link href="/account" className="bm-sans bm-focus" style={{ fontSize: 11, color: VIOLET, fontWeight: 600, textDecoration: "none" }}>
                       Account
                     </Link>
@@ -588,8 +596,6 @@ export default function Home() {
                 </p>
               </section>
             ) : null}
-
-            <MeetupCard />
 
             <section
               style={{
@@ -744,7 +750,7 @@ export default function Home() {
               </div>
             ) : null}
 
-            {showMatchCount && current && matchCount !== null && matchCount > 0 ? (
+            {showMatchCount && hasProfiles && matchCount !== null && matchCount > 0 ? (
               <div style={{ margin: "0 0 14px" }}>
                 <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED }}>
                   {browseMatchCountCopy(matchCount)}
@@ -759,7 +765,7 @@ export default function Home() {
               </div>
             ) : null}
 
-            {!searching && !current ? (
+            {!searching && !hasProfiles ? (
               <>
                 <EmptyState
                   eyebrow="BROWSE"
@@ -778,17 +784,20 @@ export default function Home() {
                   </p>
                 ) : null}
               </>
-            ) : current ? (
-              <DiscoverCard
-                key={current.id}
-                profile={current}
-                saved={saved.some(function (x) { return x.id === current.id; })}
+            ) : hasProfiles ? (
+              <>
+              <PinnedRow profiles={pinned} />
+              <BrowseCarousel
+                profiles={pond}
+                saved={saved}
                 signedIn={signedIn}
-                onInterested={function () { markInterested(current); }}
-                onPass={function () { passProfile(current.id); }}
-                onSave={function () { toggleSave(current); }}
-                onBlocked={function () {
-                  const blockedId = current.id;
+                onInterested={markInterested}
+                onPass={function (profile) {
+                  passProfile(profile.id);
+                }}
+                onSave={toggleSave}
+                onBlocked={function (profile) {
+                  const blockedId = profile.id;
                   passProfile(blockedId);
                   setLiked(function (prev) {
                     return prev.filter(function (x) { return x.id !== blockedId; });
@@ -798,6 +807,7 @@ export default function Home() {
                   });
                 }}
               />
+              </>
             ) : null}
           </>
         )}
@@ -805,7 +815,6 @@ export default function Home() {
         {/* ---------------- MATCHES ---------------- */}
         {tab === "matches" && (
           <div>
-            {speedPartner ? null : <MeetupCard />}
             {speedPartner ? (
               <SpeedMatch
                 partner={speedPartner}
@@ -983,6 +992,11 @@ export default function Home() {
       <SiteFooter extraBottom={56} />
       <VoiceAssistant />
       </div>
+      {tab === "browse" || tab === "matches" ? (
+        <MeetupRail>
+          <MeetupCard compact />
+        </MeetupRail>
+      ) : null}
     </div>
   );
 }

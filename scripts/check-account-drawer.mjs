@@ -43,9 +43,14 @@ assert(home.includes("AccountDrawer"), "home uses the same sidebar, not a parall
 assert(drawer.includes("DownloadBiodata"), "own biodata reuses DownloadBiodata");
 assert(SIDEBAR_ALWAYS_OPEN === true, "sidebar stays open");
 assert(drawer.includes("<aside"), "sidebar is a persistent aside");
+assert(drawer.includes("bm-rail"), "desktop rail stays in the page");
 assert(!/const \[open,\s*setOpen\] = useState\(\s*false\s*\)/.test(drawer), "closed by default drawer fails");
-assert(!/{open \?/.test(drawer), "sidebar is not gated on an open flag");
-assert(!/aria-modal/.test(drawer), "sidebar is not a modal overlay");
+assert(!/{open \?/.test(drawer), "desktop rail is not gated on an open flag");
+assert(drawer.includes("bm-account-overlay"), "phones open the same items in an overlay");
+assert(drawer.includes("<details"), "phone Account control is a native drawer");
+assert(drawer.includes("bm-account-phone"), "phone drawer is marked for the 800px hide");
+assert(drawer.includes('aria-modal="true"'), "phone overlay is a dialog");
+assert(drawer.includes("AccountMenuControl"), "phones get a compact Account control");
 assert(!/<span>Menu<\/span>/.test(drawer), "no hamburger Menu");
 assert(drawer.includes("minWidth: 44") || drawer.includes("minHeight: 44"), "touch target height");
 assert(drawer.includes("minHeight: 44"), "touch target height");
@@ -56,6 +61,16 @@ assert(theme.includes(".bm-menu"), "menu hover token");
 assert(theme.includes(".bm-rail{flex:0 0 ") && theme.includes(".bm-dash{flex:0 1 "), "capped rail, capped dash");
 assert(!/\.bm-rail\{flex:1 1/.test(theme.replace(/\s/g, "")), "grow-1 rail fails");
 assert(!theme.includes("max-width:none"), "full-bleed dash inner fails");
+assert(theme.includes("PHONE_ACCOUNT_BREAKPOINT"), "phone breakpoint lives in theme");
+assert(theme.includes(".bm-rail{display:none"), "phones hide the always-open rail");
+assert(theme.includes(".bm-account-toggle{display:none}"), "desktop has no Account hamburger");
+assert(theme.includes(".bm-account-toggle{display:inline-flex"), "phones show the Account control");
+assert(theme.includes(".bm-shell{flex-direction:column}"), "phone pages stack one column");
+assert(theme.includes("[data-meetup-rail]{display:block"), "meetup sits under Home on phone");
+assert(drawer.includes("Menu"), "phone tap control is Menu");
+assert(drawer.includes('data-account-cream="true"'), "tap cream closes the phone drawer");
+assert(chrome.includes("AccountMenuControl") && home.includes("AccountMenuControl"), "hosts expose the same Account control");
+assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");
 assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "640 dash max is the canyon and fails");
 assert(chrome.includes('className="bm-dash"') && home.includes('className="bm-dash"'), "hosts use the capped dashboard canvas");
 assert(theme.includes("VIOLET"), "violet token stays");
@@ -95,9 +110,10 @@ assert(labels.includes("Call us"), "call us item");
 assert(
   ACCOUNT_MENU_ITEMS.map(function (item) {
     return item.id;
-  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,help,call,settings,block",
-  "Inbox, Call us, and Block stay in the #48 order"
+  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
+  "Inbox, Call us, Block, and Plans stay in order"
 );
+assert(labels.includes("Plans"), "Plans item");
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
@@ -112,6 +128,8 @@ assert(hrefs.includes("/"), "browse route");
 assert(hrefs.includes("/meetup"), "meetup route");
 assert(hrefs.includes("/inbox"), "inbox route");
 assert(hrefs.includes("/account#verify"), "verify anchor");
+assert(hrefs.includes("/plans"), "plans route");
+assert(ALLOWED_NEXT_PATHS.includes("/plans"), "plans is a real next path");
 assert(hrefs.includes("/contact"), "support route");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");

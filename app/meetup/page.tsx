@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import AccountDrawer from "../components/AccountDrawer";
+import AccountDrawer, { AccountMenuControl } from "../components/AccountDrawer";
 import MeetupGroupChat from "../components/MeetupGroupChat";
 import MatchCard from "../components/MatchCard";
 import SpeedMatch from "../components/SpeedMatch";
@@ -168,7 +168,7 @@ export default function MeetupPage() {
   const partner = speedPartner || meetupSpeedPartner(meetup.id);
 
   return (
-    <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
+    <div className="bm-shell" style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
       <div className="bm-dash">
@@ -176,11 +176,14 @@ export default function MeetupPage() {
         <div className="bm-dash-inner" style={{ padding: "20px 20px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-                <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
-                  <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                    Bandham AI
-                  </h1>
-                </Link>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <AccountMenuControl />
+                  <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
+                    <h1 className="bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                      Bandham AI
+                    </h1>
+                  </Link>
+                </div>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED }}>
                   Find your vibe match?
                 </p>

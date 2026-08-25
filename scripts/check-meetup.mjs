@@ -197,6 +197,22 @@ assert(card.includes("VIOLET") || card.includes("6D28D9"), "violet card");
 
 const home = read("app/page.tsx");
 assert(home.includes("MeetupCard"), "Browse/Matches show the meetup card");
+assert(home.includes("MeetupRail"), "right cream is a vertical meetup stack");
+assert(home.indexOf("<MeetupRail") > home.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
+assert(home.indexOf("<MeetupCard") > home.indexOf("<MeetupRail"), "this month card is in the right stack");
+assert(!home.includes("STRIPE_EVENT_PRICE_ID"), "home does not invent an event Price");
+const meetupRail = read("app/components/MeetupRail.tsx");
+assert(meetupRail.includes("MEETUP_TEST_POSTS"), "rail stacks more code only test meetup posts");
+assert(meetupRail.includes("flexDirection: \"column\"") || meetupRail.includes("data-meetup-stack"), "meetup posts stack vertically");
+assert(!/\$\d/.test(meetupRail), "meetup rail names no ticket dollar amount");
+assert(!/STRIPE_EVENT_PRICE_ID/.test(meetupRail), "meetup rail does not invent an event Price");
+assert(!/STRIPE_PIN_PRICE_ID/.test(meetupRail), "meetup rail does not invent a pin Price");
+const meetupPond = read("lib/meetup-test-pond.ts");
+assert(meetupPond.includes("TEST ONLY"), "meetup test posts are labeled test in code");
+assert(!/price_[a-zA-Z0-9]+/.test(meetupPond), "test meetup posts do not invent a Price ID");
+assert(!/\$\d/.test(meetupPond), "test meetup posts name no ticket dollar amount");
+const datingRail = /\b(swipe|hot near you|hot-near-you|for you tonight|super[\s-]?like|boost now|vibe check|crush|hook-?up|drinks tonight|nightlife|mixer|hot singles)\b/i;
+assert(!datingRail.test(meetupPond + meetupRail), "meetup stack is not dating events");
 const account = read("app/account/page.tsx");
 assert(account.includes("MeetupCard"), "account shows the meetup card");
 const chat = read("app/chat/page.tsx");
@@ -206,6 +222,8 @@ assert(chat.includes('params.get("to")'), "meetup can open a 1:1 recipient");
 const env = read(".env.example");
 assert(env.includes("STRIPE_EVENT_PRICE_ID="), "env stub exists");
 assert(!/STRIPE_EVENT_PRICE_ID=price_/.test(env), "do not invent a live Price ID");
+assert(!/STRIPE_PIN_PRICE_ID=/.test(env), "do not invent STRIPE_PIN_PRICE_ID");
+assert(!/price_[a-zA-Z0-9]+/.test(env), "env example does not invent a live Price ID");
 
 const sources = [stripComments(page), stripComments(card), stripComments(group)];
 sources.forEach(function (src) {
