@@ -67,6 +67,16 @@ export const SUBSCRIBE_CALL_IDENTITY_LOCKS = {
 export const SUBSCRIBE_CALL_ENGLISH_FIRST =
   "English is first class, not only a fallback.";
 
+export const SUBSCRIBE_CALL_AFTER_OPEN = "Then listen.";
+
+/** Locked openings from Sai. English and Hindi share the same English sentence. Then listen. */
+export function subscribeCallOpening(motherTongue?: string | null) {
+  const lang = defaultSubscribeCallOpenLanguage(motherTongue);
+  if (lang === "Telugu") return SUBSCRIBE_CALL_EXAMPLE_OPENING_TE;
+  if (lang === "Hindi") return SUBSCRIBE_CALL_EXAMPLE_OPENING_HI;
+  return SUBSCRIBE_CALL_EXAMPLE_OPENING;
+}
+
 const OPEN_LANGUAGE_ALIASES: Record<string, (typeof SUBSCRIBE_CALL_LANGUAGES)[number]> = {
   english: "English",
   en: "English",
@@ -284,6 +294,7 @@ export function publicEligibleMember(row: SubscribeCallProfileRow) {
     first_name: firstNameFromProfile(row.full_name),
     mother_tongue: motherTongue,
     open_language: defaultSubscribeCallOpenLanguage(motherTongue),
+    opening: subscribeCallOpening(motherTongue),
     phone_masked: maskPhoneForList(typeof row.phone === "string" ? row.phone : ""),
     last_subscribe_call_at: row.last_subscribe_call_at || null,
   };

@@ -29,6 +29,7 @@ import {
   decideSubscribeCallEligibility,
   defaultSubscribeCallOpenLanguage,
   displayPhoneWithSpaces,
+  subscribeCallOpening,
   isAdultMember,
   isDemoOrPreviewProfile,
   maskPhoneForList,
@@ -188,10 +189,23 @@ assertEq(defaultSubscribeCallOpenLanguage("Telugu"), "Telugu", "Telugu tongue op
 assertEq(defaultSubscribeCallOpenLanguage("Hindi"), "Hindi", "Hindi tongue opens Hindi");
 assertEq(defaultSubscribeCallOpenLanguage("something unknown"), "English", "unrecognized tongue opens English");
 assertEq(publicEligibleMember(base).open_language, "English", "list default open language is English");
+assertEq(publicEligibleMember(base).opening, "Hello, my name is Sai.", "unknown tongue uses Sai English open");
 assertEq(
   publicEligibleMember({ ...base, mother_tongue: "Telugu" }).open_language,
   "Telugu",
   "list respects Telugu mother tongue"
+);
+assertEq(
+  subscribeCallOpening("Telugu"),
+  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
+  "Telugu uses Sai sample"
+);
+assertEq(subscribeCallOpening("Hindi"), "Hello, my name is Sai.", "Hindi uses Sai English sample");
+assertEq(subscribeCallOpening(""), "Hello, my name is Sai.", "English first class open");
+assertEq(
+  publicEligibleMember({ ...base, mother_tongue: "Telugu" }).opening,
+  "హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?",
+  "list carries Telugu opening"
 );
 
 const prev = process.env.BANDHAM_VOICE_SUPPORT_SECRET;
@@ -233,14 +247,14 @@ assert(route.includes("listEligibleSubscribeCalls"), "lists eligible");
 assert(route.includes("dry_run: true"), "marks dry run");
 assert(route.includes("dialed: false"), "never claims a dial");
 assert(route.includes("This route does not place calls"), "rejects dial actions");
-assert(!/twilio|vonage|telnyx|whatsapp/i.test(route), "no carrier or WhatsApp");
+assert(!/twilio|vonage|telnyx|whatsapp|vapi/i.test(route), "no carrier, Vapi, or WhatsApp");
 assert(!/\.update\(.*last_subscribe_call_at|last_subscribe_call_at\s*:/.test(route), "list does not stamp last call");
 assert(route.includes("optOutSubscribeCall"), "stop can opt out");
 
 const server = read("lib/subscribe-call-server.ts");
 assert(server.includes("loadEntitledUserIds"), "loads Premium to exclude");
 assert(server.includes("ENTITLED_STATUSES"), "uses active and trialing");
-assert(!/twilio|dial|whatsapp/i.test(server), "server helper does not dial");
+assert(!/twilio|vapi|whatsapp/i.test(server), "server helper does not dial");
 
 const profiles = read("app/api/profiles/route.ts");
 assert(profiles.includes("SUBSCRIBE_CALL_OPT_IN_COLUMN") || profiles.includes("call_subscribe_opt_in"), "PATCH writes opt in");
@@ -273,7 +287,8 @@ assert(prompt.toLowerCase().includes("default open in english"), "default open i
 assert(prompt.toLowerCase().includes("same professional, pleasing, soft marketing tone"), "same tone in every language");
 assert(prompt.toLowerCase().includes("never force english"), "never force English");
 assert(prompt.includes("Hello, my name is Sai."), "Sai English opening");
-assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్"), "Sai Telugu opening");
+assert(prompt.includes("హలో నా పేరు సాయ్ సచ్చన్. ఏం చేస్తున్నారు?"), "Sai Telugu opening exact");
+assert(prompt.toLowerCase().includes("then listen"), "then listen");
 assert(prompt.toLowerCase().includes("introduces itself as sai") || prompt.toLowerCase().includes("introduce yourself as sai"), "agent is Sai");
 assert(prompt.toLowerCase().includes("first name only"), "first name only");
 assert(prompt.toLowerCase().includes("unnamed bot"), "forbids unnamed bot");
