@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET } from "../../lib/theme";
 import AccountDrawer from "./AccountDrawer";
+import BandhamMark from "./BandhamMark";
 import SiteFooter from "./SiteFooter";
 
 export default function AppChrome({
@@ -20,7 +21,8 @@ export default function AppChrome({
           <div className="bm-dash-inner" style={{ padding: "20px 20px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
               <div>
-                <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
+                <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK, display: "flex", alignItems: "center", gap: 10 }}>
+                  <BandhamMark />
                   <h1 style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                     Bandham AI
                   </h1>

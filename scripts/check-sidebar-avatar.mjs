@@ -10,6 +10,7 @@ import {
 import {
   isOwnStoredPhotoUrl,
 } from "../lib/profile-photos.ts";
+import { BANDHAM_MARK_SIZE } from "../lib/bandham-mark.ts";
 import {
   SIDEBAR_AVATAR_ALT,
   SIDEBAR_AVATAR_MARK,
@@ -96,9 +97,15 @@ assert(avatar.includes("borderRadius: 999"), "avatar is circular");
 assert(drawer.includes("SidebarAvatar"), "drawer hosts the signed in mark");
 assert(drawer.includes("BANDHAM AI"), "Bandham AI kicker stays two words");
 assert(drawer.includes("BandhamMark"), "rail shows the garland couple mark beside Bandham AI");
-assert(read("app/components/BandhamMark.tsx").includes("BANDHAM_MARK_SRC"), "mark uses the shared src");
-assert(read("lib/bandham-mark.ts").includes("/brand/bandham-mark.png"), "mark file is the garland couple");
-assert(existsSync(new URL("../public/brand/bandham-mark.png", import.meta.url)), "garland mark PNG is present");
+const mark = read("app/components/BandhamMark.tsx");
+assert(mark.includes("BANDHAM_MARK_SRC"), "mark uses the shared src");
+assert(mark.includes('objectFit: "contain"'), "rail mark uses contain so the full couple is visible");
+assert(!/objectFit:\s*["']cover["']/.test(mark), "cover crops the couple into a cream speck");
+assert(read("lib/bandham-mark.ts").includes("/brand/bandham-garland.png"), "rail uses the full garland couple artwork");
+assert(BANDHAM_MARK_SIZE >= 48 && BANDHAM_MARK_SIZE <= 56, "mark is 48 to 56px so a person can see the couple");
+assert(chrome.includes("BandhamMark"), "AppChrome shows the garland couple next to Bandham AI");
+assert(existsSync(new URL("../public/brand/bandham-garland.png", import.meta.url)), "full garland couple artwork is present");
+assert(existsSync(new URL("../public/brand/bandham-mark.png", import.meta.url)), "cropped garland mark PNG is present");
 assert(statSync(new URL("../public/icons/icon-192.png", import.meta.url)).size > 2000, "favicon is no longer the old circle placeholder");
 assert(statSync(new URL("../public/icons/icon-512.png", import.meta.url)).size > 2000, "512 icon is the garland couple");
 assert(statSync(new URL("../public/icons/apple-touch-icon.png", import.meta.url)).size > 2000, "apple touch icon is the garland couple");

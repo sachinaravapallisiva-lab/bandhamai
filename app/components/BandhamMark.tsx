@@ -18,7 +18,8 @@ export default function BandhamMark({
       style={{
         width: size,
         height: size,
-        objectFit: "cover",
+        objectFit: "contain",
+        objectPosition: "center",
         display: "block",
         flexShrink: 0,
         background: "#FDF8F1",
