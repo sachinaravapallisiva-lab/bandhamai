@@ -92,7 +92,7 @@ export const BM_CSS =
   ".bm-shortlist-name{font-size:20px!important}" +
   ".bm-plan-headline{font-size:20px!important}" +
   "[data-plan-card]{padding:16px 14px!important}" +
-  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible;position:static!important;top:auto;align-self:stretch;height:auto!important;max-height:none!important;border-left:none!important}" +
+  "[data-meetup-rail]{display:block;flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible;position:static!important;top:auto;align-self:stretch;height:auto!important;max-height:none!important;border-left:none!important}" +
   "[data-meetup-test-post] h2{font-size:18px!important}" +
   "}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +

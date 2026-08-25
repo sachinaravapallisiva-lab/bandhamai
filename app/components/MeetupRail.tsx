@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { MEETUP_RAIL_DEMO_LABEL, MEETUP_TEST_POSTS } from "../../lib/meetup-test-pond";
-import { CREAM, LINE, MUTED, SIDEBAR_RAIL_BASIS, VIOLET_DEEP } from "../../lib/theme";
+import { CREAM, LINE, MUTED, VIOLET_DEEP } from "../../lib/theme";
 
 export default function MeetupRail({ children }: { children?: ReactNode }) {
   return (
@@ -10,9 +10,6 @@ export default function MeetupRail({ children }: { children?: ReactNode }) {
       data-meetup-rail="true"
       aria-label="Meetup this month"
       style={{
-        flex: "0 0 " + SIDEBAR_RAIL_BASIS + "px",
-        width: SIDEBAR_RAIL_BASIS,
-        minWidth: SIDEBAR_RAIL_BASIS,
         alignSelf: "flex-start",
         position: "sticky",
         top: 0,
