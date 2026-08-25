@@ -7,7 +7,7 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
-/** Capped rail. Capped dash. Right cream at 1280 is small to medium, not a 640 canyon. */
+/** Capped rail. Capped dash. Desktop meetup rail is the same 240 bar as Account. */
 export const SIDEBAR_RAIL_BASIS = 240;
 export const SIDEBAR_RAIL_MAX = 280;
 export const SIDEBAR_RAIL_MIN = 220;
@@ -54,12 +54,20 @@ export const BM_CSS =
   ".bm-account-phone>summary::-webkit-details-marker{display:none}" +
   ".bm-account-toggle{position:relative;z-index:90}" +
   ".bm-shell{flex-wrap:nowrap}" +
-  "[data-meetup-rail]{flex:1 1 0%;min-width:96px;position:sticky;top:0;align-self:flex-start;height:100vh;max-height:100vh;overflow-y:auto;box-sizing:border-box}" +
+  "[data-meetup-rail]{flex:0 0 " +
+  SIDEBAR_RAIL_BASIS +
+  "px;width:" +
+  SIDEBAR_RAIL_BASIS +
+  "px;min-width:" +
+  SIDEBAR_RAIL_BASIS +
+  "px;position:sticky;top:0;align-self:flex-start;height:100vh;max-height:100vh;overflow-y:auto;box-sizing:border-box}" +
   "[data-home-shell]{display:grid!important;grid-template-columns:" +
   SIDEBAR_RAIL_BASIS +
   "px minmax(0," +
   SIDEBAR_DASH_MAX +
-  "px) minmax(96px,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:stretch}" +
+  "px) " +
+  SIDEBAR_RAIL_BASIS +
+  "px;grid-template-rows:minmax(0,1fr) auto;align-items:stretch}" +
   "[data-home-shell]>.bm-rail{grid-column:1;grid-row:1 / span 2}" +
   "[data-home-shell]>.bm-dash{grid-column:2;grid-row:1}" +
   "[data-home-shell]>[data-meetup-rail]{grid-column:3;grid-row:1 / span 2}" +
@@ -84,7 +92,7 @@ export const BM_CSS =
   ".bm-shortlist-name{font-size:20px!important}" +
   ".bm-plan-headline{font-size:20px!important}" +
   "[data-plan-card]{padding:16px 14px!important}" +
-  "[data-meetup-rail]{display:block;flex:0 0 auto;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible;position:static!important;top:auto;align-self:stretch;height:auto!important;max-height:none!important;border-left:none!important}" +
+  "[data-meetup-rail]{display:block;flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:8px 14px 28px;overflow:visible;position:static!important;top:auto;align-self:stretch;height:auto!important;max-height:none!important;border-left:none!important}" +
   "[data-meetup-test-post] h2{font-size:18px!important}" +
   "}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +

@@ -199,8 +199,11 @@ assert(/max-width:" \+\s*SIDEBAR_DASH_MAX/.test(theme), "dash inner uses the loc
 assert(SIDEBAR_DASH_MAX >= 880 && SIDEBAR_DASH_MAX <= 992, "dash inner is high enough that 1280 is not a canyon");
 assert(SIDEBAR_DASH_MAX !== 640, "640 dash max is the canyon and fails");
 assert(!/SIDEBAR_DASH_MAX\s*=\s*640/.test(theme), "do not lock the 640 canyon");
-const rightGap1280 = 1280 - SIDEBAR_RAIL_BASIS - SIDEBAR_DASH_MAX;
-assert(rightGap1280 >= 48 && rightGap1280 <= 160, "right cream at 1280 stays small to medium");
+const dashAt1280 = 1280 - SIDEBAR_RAIL_BASIS - SIDEBAR_RAIL_BASIS;
+assert(dashAt1280 < SIDEBAR_DASH_MAX, "at 1280 the dash gives way so both rails stay 240");
+assert(dashAt1280 >= 700, "dash still has room at 1280");
+assert(theme.includes("[data-meetup-rail]{flex:0 0 "), "meetup rail matches the Account bar");
+assert(!theme.includes("minmax(96px,1fr)"), "meetup is not leftover scraps after the dash");
 assert(!/\.bm-dash\{flex:1 1/.test(theme.replace(/\s/g, "")), "do not grow the dash into the right cream");
 assert(theme.includes(".bm-dash{flex:0 1 "), "dash column stays next to the rail");
 assert(!/\.bm-dash-inner\{[^}]*margin:0 auto/.test(theme.replace(/\s/g, "")), "do not center a gap between rail and dash");

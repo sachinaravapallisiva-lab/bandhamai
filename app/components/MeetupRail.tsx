@@ -10,8 +10,6 @@ export default function MeetupRail({ children }: { children?: ReactNode }) {
       data-meetup-rail="true"
       aria-label="Meetup this month"
       style={{
-        flex: "1 1 0%",
-        minWidth: 96,
         alignSelf: "flex-start",
         position: "sticky",
         top: 0,

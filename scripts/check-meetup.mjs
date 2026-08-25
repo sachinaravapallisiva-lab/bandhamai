@@ -32,6 +32,7 @@ import {
   meetupPartnerId,
   monthLabelFromKey,
 } from "../lib/meetup.ts";
+import { SIDEBAR_DASH_MAX, SIDEBAR_RAIL_BASIS } from "../lib/theme.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -208,7 +209,12 @@ assert(homeShell && /flexWrap:\s*["']nowrap["']/.test(homeShell[0]), "desktop Ho
 assert(homeShell && !/flexWrap:\s*["']wrap["']/.test(homeShell[0]), "desktop Home must not wrap meetup under the shortlist");
 const theme = read("lib/theme.ts");
 assert(theme.includes(".bm-shell{flex-wrap:nowrap}"), "desktop shell nowrap lives in theme");
-assert(theme.includes("[data-meetup-rail]{flex:1 1 0%"), "meetup rail fills leftover cream");
+assert(SIDEBAR_RAIL_BASIS === 240, "Account rail stays 240");
+assert(SIDEBAR_DASH_MAX === 920, "dash max stays 920");
+assert(theme.includes("[data-meetup-rail]{flex:0 0 "), "meetup rail is a capped 240 bar");
+assert(/SIDEBAR_DASH_MAX\s*\+\s*"px\) "\s*\+\s*SIDEBAR_RAIL_BASIS/.test(theme), "desktop grid third column is the 240 meetup rail");
+assert(!theme.includes("minmax(96px,1fr)"), "meetup is not leftover scraps after the dash");
+assert(!theme.includes("[data-meetup-rail]{flex:1 1 0%"), "meetup does not grow into leftover scraps");
 assert(theme.includes("position:sticky"), "theme sticks the desktop meetup rail");
 assert(theme.includes("width:100%!important"), "phone meetup is a full width column");
 assert(theme.includes("position:static!important"), "phone meetup is not a sticky side bar");
@@ -218,8 +224,9 @@ assert(theme.includes("[data-home-shell]>[data-site-footer]{grid-column:2;grid-r
 const meetupRail = read("app/components/MeetupRail.tsx");
 assert(meetupRail.includes("MEETUP_TEST_POSTS"), "rail stacks more code only test meetup posts");
 assert(meetupRail.includes("MEETUP_RAIL_DEMO_LABEL"), "rail labels the stack as this month demo");
-assert(meetupRail.includes('position: "sticky"'), "desktop meetup rail sticks in the leftover strip");
-assert(meetupRail.includes('flex: "1 1 0%"'), "meetup rail grows into leftover cream");
+assert(meetupRail.includes('position: "sticky"'), "desktop meetup rail sticks as a 240 bar");
+assert(!meetupRail.includes('flex: "0 0 "'), "phone column must not inherit an inline 240 flex basis");
+assert(theme.includes("flex:0 0 auto!important"), "phone meetup is not a 240 tall bar");
 assert(meetupRail.includes("flexDirection: \"column\"") || meetupRail.includes("data-meetup-stack"), "meetup posts stack vertically");
 assert(!/\$\d/.test(meetupRail), "meetup rail names no ticket dollar amount");
 assert(!/STRIPE_EVENT_PRICE_ID/.test(meetupRail), "meetup rail does not invent an event Price");
