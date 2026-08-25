@@ -7,6 +7,7 @@ import {
   isKnownCityName,
   isKnownKeywordAlias,
 } from "./desi-search-aliases";
+import { asProfileMembership, type ProfileMembership } from "./membership";
 import { isRecentlySeen } from "./presence";
 import { PROFILE_WRITE_FIELDS, normalizeProfileGender } from "./profile-fields";
 import { visaLooksLike } from "./visa-status";
@@ -47,6 +48,8 @@ export type BrowseProfile = {
   instagram: string;
   /** True only when the member opted in to other-person biodata download. */
   biodataShare: boolean;
+  /** Regular unless public.subscriptions status is active or trialing. */
+  membership: ProfileMembership;
 };
 
 export type BrowseFactChip = {
@@ -435,6 +438,7 @@ export function toBrowseProfile(row: Record<string, unknown>): BrowseProfile | n
     online: row.online === true || isRecentlySeen(row.last_seen_at),
     instagram: asText(row.instagram).replace(/^@+/, ""),
     biodataShare: parseBiodataShare(row.biodata_share),
+    membership: asProfileMembership(row.membership),
   };
 }
 

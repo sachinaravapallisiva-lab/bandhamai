@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:billing": "node --experimental-strip-types scripts/check-billing.mjs",
+    "check:membership": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-membership.mjs",
     "check:verifyai": "node --experimental-strip-types scripts/check-verifyai.mjs",
     "check:photo-required": "node --experimental-strip-types scripts/check-photo-required.mjs",
     "check:speed-match": "node --experimental-strip-types scripts/check-speed-match.mjs",
