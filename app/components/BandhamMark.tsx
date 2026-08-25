@@ -1,6 +1,6 @@
 import { BANDHAM_MARK_ALT, BANDHAM_MARK_SIZE, BANDHAM_MARK_SRC } from "../../lib/bandham-mark";
 
-/** Small varmala couple mark. Sit beside Bandham AI. Not a hero drawing. */
+/** Small jaimala mark. Sit beside Bandham AI. Not a hero drawing. */
 export default function BandhamMark({
   size = BANDHAM_MARK_SIZE,
   className,
@@ -9,7 +9,7 @@ export default function BandhamMark({
   className?: string;
 }) {
   return (
-    // Brand PNG from the Sai garland lock. next/image is unused for this tiny mark.
+    // Brand PNG from the Sai jaimala lock. next/image is unused for this tiny mark.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={BANDHAM_MARK_SRC}
@@ -17,7 +17,7 @@ export default function BandhamMark({
       width={size}
       height={size}
       className={className}
-      data-bandham-mark="garland-couple"
+      data-bandham-mark="jaimala"
       style={{
         width: size,
         height: size,
