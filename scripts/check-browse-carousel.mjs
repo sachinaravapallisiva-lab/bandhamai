@@ -39,7 +39,19 @@ import {
   browsePinnedPreview,
   browseShortlistPond,
 } from "../lib/browse-test-pond.ts";
-import { GET_PRIORITY, PLANS_BODY, PLANS_PATH, PLANS_TITLE } from "../lib/plans.ts";
+import {
+  GET_PRIORITY,
+  PLANS_BODY,
+  PLANS_PATH,
+  PLANS_PRIORITY_BODY,
+  PLANS_PRIORITY_HEADLINE,
+  PLANS_SUBSCRIBE_BODY,
+  PLANS_SUBSCRIBE_CTA,
+  PLANS_SUBSCRIBE_HEADLINE,
+  PLANS_TITLE,
+  PLANS_VERIFY_BODY,
+  PLANS_VERIFY_HEADLINE,
+} from "../lib/plans.ts";
 import { PROFILE_PHOTO_HEIGHT, PROFILE_PHOTO_SOON } from "../lib/profile-card.ts";
 import {
   BROWSE_EMPTY_INVENTORY_TITLE,
@@ -206,10 +218,37 @@ assert(!/STRIPE_PIN_PRICE_ID=/.test(envExample), "do not invent STRIPE_PIN_PRICE
 assert(!/STRIPE_PIN_PRICE_ID=price_/.test(envExample), "do not invent a live pin Price ID");
 
 const plansPage = read("app/plans/page.tsx");
+const plansPanel = read("app/components/PlansPanel.tsx");
+const plansLib = read("lib/plans.ts");
 assert(plansPage.includes("PlansPanel"), "Plans page hosts the three costs");
-assert(read("app/components/PlansPanel.tsx").includes("PLANS_PRIORITY_HEADLINE"), "Plans names Priority $4.99 for 7 days");
-assert(read("app/components/PlansPanel.tsx").includes("PIN_CHECKOUT_PATH"), "Plans pin pay stays fail closed");
-assert(!/STRIPE_PIN_PRICE_ID=price_/.test(read("app/components/PlansPanel.tsx")), "Plans does not invent a pin Price");
+assert(PLANS_SUBSCRIBE_HEADLINE === "Bandham AI subscription is $9.99 a month", "Bandham AI price line lock");
+assert(
+  PLANS_SUBSCRIBE_BODY ===
+    "Stay on Bandham AI for a month. Browse, search, Speed Match, and profile stay free.",
+  "Bandham AI description lock"
+);
+assert(PLANS_SUBSCRIBE_CTA === "Subscribe $9.99 a month", "Bandham AI button lock");
+assert(PLANS_PRIORITY_HEADLINE === "Priority $4.99 for 7 days", "Priority price line lock");
+assert(
+  PLANS_PRIORITY_BODY ===
+    "Puts your profile on top of Home and Browse for 7 days. Cap 10 pins a week. Pay again to stay on top.",
+  "Priority description lock"
+);
+assert(PLANS_VERIFY_HEADLINE === "VerifyAI $4.99 one time", "VerifyAI price line lock");
+assert(
+  PLANS_VERIFY_BODY === "Profile verification. Adds a verification badge on your Bandham profile.",
+  "VerifyAI description lock"
+);
+assert(plansPanel.includes("PLANS_PRIORITY_HEADLINE"), "Plans names Priority $4.99 for 7 days");
+assert(plansPanel.includes("PIN_CHECKOUT_PATH"), "Plans pin pay stays fail closed");
+assert(!/STRIPE_PIN_PRICE_ID=price_/.test(plansPanel), "Plans does not invent a pin Price");
+assert(!/messaging/i.test(plansLib + plansPanel + plansPage + page), "Plans and Home do not say messaging");
+assert(!/\$9\.99 for messaging/i.test(plansLib + plansPanel + page), "do not say subscription is $9.99 for messaging");
+assert(plansPanel.includes('data-plan-card="bandham-ai"'), "Bandham AI is its own card");
+assert(plansPanel.includes('data-plan-card="priority"'), "Priority is its own card");
+assert(plansPanel.includes('data-plan-card="verifyai"'), "VerifyAI is its own card");
+assert(plansPanel.includes("bm-serif"), "Bandham AI keeps a serif price line");
+assert(plansPanel.includes("WASH"), "Priority card is visually distinct");
 
 assert(page.includes("MeetupRail"), "right cream is the meetup stack");
 assert(page.indexOf("<MeetupRail") > page.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
@@ -241,6 +280,13 @@ assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body name
   GET_PRIORITY,
   PLANS_TITLE,
   PLANS_BODY,
+  PLANS_SUBSCRIBE_HEADLINE,
+  PLANS_SUBSCRIBE_BODY,
+  PLANS_SUBSCRIBE_CTA,
+  PLANS_PRIORITY_HEADLINE,
+  PLANS_PRIORITY_BODY,
+  PLANS_VERIFY_HEADLINE,
+  PLANS_VERIFY_BODY,
 ]
   .concat(
     BROWSE_TEST_SEEDS.flatMap(function (row) {
