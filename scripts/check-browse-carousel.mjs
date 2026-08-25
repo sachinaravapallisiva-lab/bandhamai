@@ -224,7 +224,7 @@ assert(plansPage.includes("PlansPanel"), "Plans page hosts the three costs");
 assert(PLANS_SUBSCRIBE_HEADLINE === "Bandham AI subscription is $9.99 a month", "Bandham AI price line lock");
 assert(
   PLANS_SUBSCRIBE_BODY ===
-    "Stay on Bandham AI for a month. Browse, search, Speed Match, and profile stay free.",
+    "View numbers and socials. Send unlimited messages. Call on the app. Browse, search, Speed Match, and profile stay free.",
   "Bandham AI description lock"
 );
 assert(PLANS_SUBSCRIBE_CTA === "Subscribe $9.99 a month", "Bandham AI button lock");
@@ -242,7 +242,9 @@ assert(
 assert(plansPanel.includes("PLANS_PRIORITY_HEADLINE"), "Plans names Priority $4.99 for 7 days");
 assert(plansPanel.includes("PIN_CHECKOUT_PATH"), "Plans pin pay stays fail closed");
 assert(!/STRIPE_PIN_PRICE_ID=price_/.test(plansPanel), "Plans does not invent a pin Price");
-assert(!/messaging/i.test(plansLib + plansPanel + plansPage + page), "Plans and Home do not say messaging");
+assert(PLANS_SUBSCRIBE_BODY.toLowerCase().includes("unlimited messages"), "unlimited messages is a required feature");
+assert(!/monthly messaging/i.test(plansLib + plansPanel + plansPage + page), "do not write Monthly messaging");
+assert(!/messaging/i.test(plansLib + plansPanel + plansPage + page), "Plans and Home do not call the product messaging");
 assert(!/\$9\.99 for messaging/i.test(plansLib + plansPanel + page), "do not say subscription is $9.99 for messaging");
 assert(plansPanel.includes('data-plan-card="bandham-ai"'), "Bandham AI is its own card");
 assert(plansPanel.includes('data-plan-card="priority"'), "Priority is its own card");

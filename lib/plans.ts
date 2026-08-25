@@ -12,7 +12,7 @@ export const GET_PRIORITY = "Get Priority";
 export const PLANS_SUBSCRIBE_KICKER = "BANDHAM AI";
 export const PLANS_SUBSCRIBE_HEADLINE = "Bandham AI subscription is $9.99 a month";
 export const PLANS_SUBSCRIBE_BODY =
-  "Stay on Bandham AI for a month. Browse, search, Speed Match, and profile stay free.";
+  "View numbers and socials. Send unlimited messages. Call on the app. Browse, search, Speed Match, and profile stay free.";
 export const PLANS_SUBSCRIBE_CTA = BILLING_COPY.subscribe;
 
 export const PLANS_PRIORITY_KICKER = "PRIORITY";
