@@ -1,5 +1,5 @@
 /**
- * Send a member message. Requires an active messaging subscription.
+ * Inbox list (GET) and send (POST). Sending needs an active subscription.
  * Browse / search / Speed Match / profile create stay on their own routes.
  */
 import { NextResponse } from "next/server";
@@ -19,12 +19,48 @@ import {
   isEntitledStatus,
 } from "../../../lib/billing";
 import { getSubscriptionRow } from "../../../lib/entitlement";
+import { INBOX_BLOCKED_SEND, INBOX_MISSING, INBOX_SIGN_IN } from "../../../lib/inbox";
+import { loadConversation, loadInboxThreads, messagingPairBlocked } from "../../../lib/inbox-server";
 import { billingNotConfiguredResponse, isStripeConfigured } from "../../../lib/stripe";
 
 export const runtime = "nodejs";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+export async function GET(request: Request) {
+  try {
+    if (!hasBearerToken(request)) {
+      return unauthorizedResponse(INBOX_SIGN_IN);
+    }
+
+    const supabase = getServiceSupabase();
+    if (!supabase) return missingConfigResponse();
+
+    const { user, error: authError } = await getRequestUser(request, supabase);
+    if (!user) return unauthorizedResponse(authError || INBOX_SIGN_IN);
+
+    if (!(await tableExists(supabase, MESSAGES_TABLE))) {
+      return NextResponse.json({ error: INBOX_MISSING, code: "messages_missing", threads: [] }, { status: 503 });
+    }
+
+    const url = new URL(request.url);
+    const peerId = asString(url.searchParams.get("peer") || url.searchParams.get("to"));
+    if (peerId) {
+      const conversation = await loadConversation(supabase, user.id, peerId);
+      return NextResponse.json({
+        messages: conversation.messages,
+        blocked: conversation.blocked,
+      });
+    }
+
+    const threads = await loadInboxThreads(supabase, user.id);
+    return NextResponse.json({ threads });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not load Inbox.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -85,6 +121,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Messages storage is not available yet.", code: "messages_missing" },
         { status: 503 }
+      );
+    }
+
+    if (await messagingPairBlocked(supabase, user.id, recipientId)) {
+      return NextResponse.json(
+        { error: INBOX_BLOCKED_SEND, code: "blocked", canMessage: false },
+        { status: 403 }
       );
     }
 

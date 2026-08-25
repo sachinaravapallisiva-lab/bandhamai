@@ -13,6 +13,7 @@ import MatchCard from "./components/MatchCard";
 import AccountDrawer from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
 import { supabase } from "../lib/supabase";
+import { INBOX_PATH, INBOX_PREVIEW_NOTE, INBOX_PREVIEW_OPEN } from "../lib/inbox";
 import { MEETUP_PATH } from "../lib/meetup";
 import { BM_CSS, CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme";
 import { authJsonHeaders } from "../lib/client-auth";
@@ -869,11 +870,10 @@ export default function Home() {
           <div style={{ background: CREAM, border: "1px solid " + LINE, borderRadius: 14, overflow: "hidden" }}>
             <div style={{ padding: "12px 17px", borderBottom: "1px solid " + LINE, background: WASH }}>
               <p className="bm-sans" style={{ margin: 0, fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
-                This tab is a layout preview, not a live person. Block or report someone from their Browse or Matches card, or from a live conversation at{" "}
-                <Link href="/chat" className="bm-focus" style={{ color: VIOLET }}>
-                  /chat
+                {INBOX_PREVIEW_NOTE}{" "}
+                <Link href={INBOX_PATH} className="bm-focus" style={{ color: VIOLET }}>
+                  {INBOX_PREVIEW_OPEN}
                 </Link>
-                .
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 17px", borderBottom: "1px solid " + LINE }}>

@@ -7,6 +7,7 @@ function assert(cond, message) {
 
 assert(safeNextPath("/matches") === "/matches", "matches is allowed");
 assert(safeNextPath("/chat") === "/chat", "chat is allowed");
+assert(safeNextPath("/inbox") === "/inbox", "inbox is allowed");
 assert(safeNextPath("/profile/new") === "/profile/new", "profile create is allowed");
 assert(safeNextPath("/account") === "/account", "account is allowed");
 assert(safeNextPath("/?tab=matches") === "/?tab=matches", "home tab query is allowed");

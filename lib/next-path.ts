@@ -4,6 +4,7 @@ export const ALLOWED_NEXT_PATHS = [
   "/",
   "/matches",
   "/chat",
+  "/inbox",
   "/profile/new",
   "/account",
   "/preferences",

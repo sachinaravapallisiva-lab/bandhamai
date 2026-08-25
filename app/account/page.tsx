@@ -439,7 +439,7 @@ export default function AccountPage() {
 
           <VerifyOffer signedIn={signedIn} nextPath="/account" />
 
-          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+          <section id="blocked" className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
             <h3 className="bm-serif" style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 400 }}>
               Blocked
             </h3>
@@ -447,7 +447,7 @@ export default function AccountPage() {
               <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>Loading…</p>
             ) : blocks.length === 0 ? (
               <p className="bm-sans" style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-                {blocksNote || "No one blocked yet. Block is on Browse cards, Matches, and live chat."}
+                {blocksNote || "No one blocked yet. Block is on Browse cards, Matches, Inbox, and live chat."}
               </p>
             ) : (
               <div style={{ display: "grid", gap: 10 }}>

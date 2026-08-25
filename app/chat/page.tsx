@@ -12,9 +12,12 @@ import {
   sendPaidMessage,
   startCheckout,
 } from "../../lib/client-billing";
+import { fetchConversation } from "../../lib/client-inbox";
+import { INBOX_BLOCKED_SEND, INBOX_KICKER, INBOX_PATH, INBOX_TITLE } from "../../lib/inbox";
 import { PRESENCE_HEARTBEAT_MS, PRESENCE_LOOKUP_PATH } from "../../lib/presence";
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
+import InboxList from "../components/InboxList";
 import MessagePaywall from "../components/MessagePaywall";
 import InstagramShareControls from "../components/InstagramShareControls";
 import PresenceMark from "../components/PresenceMark";
@@ -74,6 +77,26 @@ export default function ChatPage() {
   useEffect(function () {
     recipientRef.current = recipientId;
   }, [recipientId]);
+
+  useEffect(
+    function () {
+      if (!userId || !recipientId) return;
+      fetchConversation(recipientId).then(function (result) {
+        if (result.blocked) {
+          setMessages([]);
+          setStatus(INBOX_BLOCKED_SEND);
+          return;
+        }
+        if (result.error) {
+          setStatus(result.error);
+          return;
+        }
+        setMessages(result.messages);
+        setStatus("");
+      });
+    },
+    [userId, recipientId]
+  );
 
   useEffect(function () {
     if (!userId || !recipientId) return;
@@ -141,29 +164,19 @@ export default function ChatPage() {
       return;
     }
     setStatus("Loading...");
-    supabase
-      .from("messages")
-      .select("*")
-      .or(
-        "and(sender_id.eq." +
-          userId +
-          ",recipient_id.eq." +
-          recipientId +
-          "),and(sender_id.eq." +
-          recipientId +
-          ",recipient_id.eq." +
-          userId +
-          ")"
-      )
-      .order("created_at", { ascending: true })
-      .then(function (result) {
-        if (result.error) {
-          setStatus("Error: " + result.error.message);
-        } else {
-          setMessages((result.data || []) as ChatMessage[]);
-          setStatus("");
-        }
-      });
+    fetchConversation(recipientId).then(function (result) {
+      if (result.blocked) {
+        setMessages([]);
+        setStatus(INBOX_BLOCKED_SEND);
+        return;
+      }
+      if (result.error) {
+        setStatus(result.error);
+        return;
+      }
+      setMessages(result.messages);
+      setStatus("");
+    });
   }
 
   function goLogin() {
@@ -231,6 +244,11 @@ export default function ChatPage() {
             setStatus("");
             return;
           }
+          if (result.code === "blocked" || result.status === 403) {
+            setDraft(text);
+            setStatus(INBOX_BLOCKED_SEND);
+            return;
+          }
           if (result.code === "subscription_required" || result.status === 402) {
             setDraft(text);
             setEntitlement(emptyEntitlement({ ...entitlement, canMessage: false }));
@@ -244,16 +262,22 @@ export default function ChatPage() {
   }
 
   return (
-    <AppChrome right={<ChromeLink href="/">Back to browse</ChromeLink>}>
+    <AppChrome right={<ChromeLink href={INBOX_PATH}>{INBOX_TITLE}</ChromeLink>}>
       <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 8px" }}>
-        CHAT
+        {recipientId ? "CHAT" : INBOX_KICKER}
       </p>
       <h2 className="bm-serif" style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 400 }}>
-        Messages
+        {recipientId ? "Conversation" : INBOX_TITLE}
       </h2>
       <p className="bm-sans" style={{ margin: "0 0 18px", fontSize: 13.5, color: MUTED }}>
         You: {userEmail || "signed out"}
       </p>
+
+      {!recipientId ? (
+        <div style={{ marginBottom: 22 }}>
+          <InboxList signedIn={!!userId} nextPath="/chat" />
+        </div>
+      ) : null}
 
       {recipientId ? (
         <div
@@ -343,6 +367,10 @@ export default function ChatPage() {
           surface="chat"
           signedIn={!!userId}
           nextPath="/chat"
+          onBlocked={function () {
+            setMessages([]);
+            setStatus(INBOX_BLOCKED_SEND);
+          }}
         />
       ) : (
         <p className="bm-sans" style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>

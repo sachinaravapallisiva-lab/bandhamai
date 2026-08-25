@@ -16,11 +16,12 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "preferences", label: "Preferences", hint: "Dealbreakers", href: "/preferences" },
   { id: "browse", label: "Browse / Matches", href: "/" },
   { id: "meetup", label: "Meetup this month", href: "/meetup" },
-  { id: "messages", label: "Messages", href: "/chat" },
+  { id: "inbox", label: "Inbox", href: "/inbox" },
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "help", label: "Help / Support", href: "/contact" },
   { id: "call", label: "Call us", href: "/contact#call" },
   { id: "settings", label: "Settings / Account", href: "/account" },
+  { id: "block", label: "Block", href: "/account#blocked" },
 ] as const;
 
 export const ACCOUNT_MENU_BIODATA_ID = "biodata";
