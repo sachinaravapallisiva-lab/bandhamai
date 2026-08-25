@@ -18,7 +18,16 @@ import {
   sidebarOwnPhotoUrl,
 } from "../lib/sidebar-avatar.ts";
 import { SUPPORT_CALL_LABEL, SUPPORT_CALL_PATH } from "../lib/site.ts";
-import { CREAM, LINE, VIOLET, VIOLET_DEEP, WASH } from "../lib/theme.ts";
+import {
+  CREAM,
+  LINE,
+  SIDEBAR_DASH_BASIS,
+  SIDEBAR_RAIL_BASIS,
+  SIDEBAR_RAIL_SLIM,
+  VIOLET,
+  VIOLET_DEEP,
+  WASH,
+} from "../lib/theme.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -141,10 +150,27 @@ assert(!/<span>Close<\/span>/.test(drawer), "no Close control");
 assert(!/aria-modal/.test(drawer), "no overlay dialog");
 assert(!/bm-scrim/.test(drawer), "no dismiss overlay");
 assert(!/ACCOUNT_MENU_OPEN_LABEL/.test(drawer), "no open menu control");
-assert(read("lib/theme.ts").includes(".bm-rail"), "slim rail width lives in theme");
+const theme = read("lib/theme.ts");
+assert(theme.includes(".bm-rail"), "rail width lives in theme");
+assert(theme.includes(".bm-dash"), "dashboard canvas lives in theme");
+assert(theme.includes(".bm-dash-inner"), "dashboard inner fills the canvas");
+assert(theme.includes(".bm-rail{flex:1 1 "), "rail grows into leftover space");
+assert(theme.includes(".bm-dash{flex:1 1 "), "dashboard grows into leftover space");
+assert(theme.includes("max-width:none"), "dashboard is not a centered 640 strip");
+assert(SIDEBAR_RAIL_BASIS >= 260, "sidebar rail must be wider than the skinny 240 rail");
+assert(SIDEBAR_DASH_BASIS >= 660, "dashboard canvas must grow with the rail");
+assert(SIDEBAR_RAIL_BASIS !== SIDEBAR_DASH_BASIS, "rail and dash grow as a pair, not one equal clone");
+assert(SIDEBAR_RAIL_SLIM >= 140 && SIDEBAR_RAIL_SLIM <= 180, "phones keep a slimmer visible rail");
+assert(!theme.includes("flex:0 0 240"), "fixed skinny 240 rail fails");
+assert(!/\.bm-rail\{flex:0 0 (2[6-9]\d|[3-9]\d{2})/.test(theme.replace(/\s/g, "")), "do not only widen the rail as a fixed column");
 assert(/display: "flex"/.test(home) && home.includes("<AccountDrawer />"), "home paints the rail in the shell");
 assert(/display: "flex"/.test(chrome) && chrome.includes("<AccountDrawer />"), "AppChrome paints the rail in the shell");
-const themeExports = read("lib/theme.ts").split("export const BM_CSS")[0];
+assert(home.includes('className="bm-dash"') && home.includes("bm-dash-inner"), "home dashboard grows with the rail");
+assert(chrome.includes('className="bm-dash"') && chrome.includes("bm-dash-inner"), "AppChrome dashboard grows with the rail");
+assert(meetup.includes('className="bm-dash"') && meetup.includes("bm-dash-inner"), "meetup dashboard grows with the rail");
+assert(!/maxWidth:\s*640/.test(chrome + home + meetup), "shell must not keep a 640 canvas beside the rail");
+assert(!/margin:\s*["']0 auto["']/.test(chrome + home + meetup), "shell must not leave a centered unused middle band");
+const themeExports = theme.split("export const BM_CSS")[0];
 assert(themeExports.includes('export const CREAM = "#FDF8F1"'), "cream export stays");
 assert(themeExports.includes('export const WASH = "#F7F1E8"'), "wash export stays");
 assert(!/export const \w+ = "#[0-9A-Fa-f]{6}"/.test(themeExports.replace(/export const (VIOLET|VIOLET_DEEP|INK|MUTED|LINE|WASH|CREAM|GOLD) = "#[0-9A-Fa-f]{6}";/g, "")), "do not invent a new palette token");

@@ -15,9 +15,9 @@ export default function AppChrome({
     <div style={{ minHeight: "100vh", background: CREAM, color: INK, display: "flex" }}>
       <style>{BM_CSS}</style>
       <AccountDrawer />
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+      <div className="bm-dash">
         <header style={{ background: CREAM, borderBottom: "1px solid " + LINE }}>
-          <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 20px 16px" }}>
+          <div className="bm-dash-inner" style={{ padding: "20px 20px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
               <div>
                 <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK }}>
@@ -33,7 +33,7 @@ export default function AppChrome({
             </div>
           </div>
         </header>
-        <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 28px", width: "100%", boxSizing: "border-box" }}>
+        <main className="bm-dash-inner" style={{ padding: "24px 20px 28px" }}>
           {children}
         </main>
         <SiteFooter />

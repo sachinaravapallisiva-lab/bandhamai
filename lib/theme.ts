@@ -7,6 +7,11 @@ export const WASH = "#F7F1E8";
 export const CREAM = "#FDF8F1";
 export const GOLD = "#C4A36A";
 
+/** Rail and dashboard grow from these bases by the same leftover space. */
+export const SIDEBAR_RAIL_BASIS = 280;
+export const SIDEBAR_DASH_BASIS = 680;
+export const SIDEBAR_RAIL_SLIM = 148;
+
 export const BM_CSS =
   "@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap');" +
   ".bm-serif{font-family:'Newsreader',Georgia,serif}" +
@@ -22,8 +27,20 @@ export const BM_CSS =
   ".bm-menu{transition:background .18s ease,border-color .18s ease}" +
   ".bm-menu:hover{background:#F3EBE0}" +
   ".bm-drawer{transition:transform .2s ease}" +
-  ".bm-rail{width:240px;flex-shrink:0;box-sizing:border-box}" +
-  "@media (max-width:720px){.bm-rail{width:132px}}" +
+  ".bm-rail{flex:1 1 " +
+  SIDEBAR_RAIL_BASIS +
+  "px;min-width:260px;box-sizing:border-box}" +
+  ".bm-dash{flex:1 1 " +
+  SIDEBAR_DASH_BASIS +
+  "px;min-width:0;display:flex;flex-direction:column}" +
+  ".bm-dash-inner{width:100%;max-width:none;margin:0;box-sizing:border-box}" +
+  "@media (max-width:720px){.bm-rail{flex:0 0 " +
+  SIDEBAR_RAIL_SLIM +
+  "px;width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px;min-width:" +
+  SIDEBAR_RAIL_SLIM +
+  "px}}" +
   ".bm-scrim{transition:opacity .2s ease}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
