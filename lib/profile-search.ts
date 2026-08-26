@@ -156,8 +156,8 @@ const STOPWORDS = new Set([
   "sixty",
 ]);
 
-const FEMALE_WORDS = new Set(["female", "woman", "women", "girl", "girls", "lady", "ladies", "she", "her"]);
-const MALE_WORDS = new Set(["male", "man", "men", "boy", "boys", "guy", "guys", "he", "him"]);
+const FEMALE_WORDS = new Set(["female", "woman", "women", "girl", "girls", "lady", "ladies", "she", "her", "bride", "brides"]);
+const MALE_WORDS = new Set(["male", "man", "men", "boy", "boys", "guy", "guys", "he", "him", "groom", "grooms"]);
 const OTHER_WORDS = new Set(["nonbinary", "non-binary", "other"]);
 
 function asText(value: unknown) {
@@ -246,8 +246,8 @@ function extractKeywordAliases(text: string): { keywords: string[]; rest: string
 }
 
 function extractGender(text: string): { gender: SearchCriteria["gender"]; rest: string } {
-  const looking = text.match(/\b(?:looking for|find|want|wants)\s+(?:a\s+)?(woman|women|female|girl|man|men|male|boy|guy)\b/i);
-  const token = looking?.[1] || text.match(/\b(female|woman|women|girl|girls|lady|ladies|male|man|men|boy|boys|guy|guys|nonbinary|non-binary)\b/i)?.[1];
+  const looking = text.match(/\b(?:looking for|find|want|wants)\s+(?:a\s+)?(woman|women|female|girl|man|men|male|boy|guy|bride|groom)\b/i);
+  const token = looking?.[1] || text.match(/\b(female|woman|women|girl|girls|lady|ladies|male|man|men|boy|boys|guy|guys|bride|brides|groom|grooms|nonbinary|non-binary)\b/i)?.[1];
   if (!token) return { gender: null, rest: text };
   const lower = token.toLowerCase();
   const gender: SearchCriteria["gender"] = FEMALE_WORDS.has(lower)

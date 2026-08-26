@@ -45,6 +45,12 @@ assertEq(woman.city, "Dallas", "woman city");
 assertEq(woman.gender, "Female", "woman gender");
 assertHas(woman.keywords, "vegetarian", "woman keywords");
 
+const dallasGroom = parseSearchQuery("Dallas groom");
+assertEq(dallasGroom.city, "Dallas", "Dallas groom city");
+assertEq(dallasGroom.gender, "Male", "groom is a male match search");
+const dallasBride = parseSearchQuery("Dallas bride");
+assertEq(dallasBride.gender, "Female", "bride is a female match search");
+
 const englishAustin = parseSearchQuery("software engineer in Austin");
 assertEq(englishAustin.city, "Austin", "English Austin city");
 assertHas(englishAustin.keywords, "software", "English software");
