@@ -8,6 +8,9 @@ export const SEARCH_LABEL = "PROFILE SEARCH";
 export const SEARCH_HINT =
   "Search for people. Type or tap to speak. Advice is in the Bandham assistant mic chip.";
 
+export const SEARCH_FILTER_HELPER =
+  "Add city, visa, and religion if you know them.";
+
 export const SEARCH_PLACEHOLDER =
   "Search profiles: a pediatrician in Austin, raised in the UK";
 

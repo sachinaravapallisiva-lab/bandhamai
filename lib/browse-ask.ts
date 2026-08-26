@@ -1,27 +1,23 @@
 /**
- * Browse ask after a PROFILE SEARCH prompt. Not the Speed Match timer.
+ * Browse leftover FILTER taps after a PROFILE SEARCH prompt. Not Speed Match.
  *
  * After a typed or spoken prompt, enlarge the search box and ask leftover
- * household dealbreakers as tap chips, one question at a time. Same 10 as
- * Speed Match. Diet is not a main question. Answers fold into the same q /
- * parseSearchQuery path. Session answers stay until reload.
+ * search filters as tap chips, one at a time. These are filters, not
+ * dealbreakers. Dealbreakers stay on Speed Match / when they talk.
+ * Answers fold into the same q / parseSearchQuery path. Session answers
+ * stay until reload. A short prompt is never blocked; it still gets chips.
  */
 
 import {
   DEALBREAKER_COMMUNITY_ALIAS_TERMS,
-  DEALBREAKER_CHILDREN_CHOICES,
-  DEALBREAKER_FAMILY_LIVING_CHOICES,
-  DEALBREAKER_FIELD_ORDER,
   DEALBREAKER_LANGUAGE_CHOICES,
   DEALBREAKER_LANGUAGE_TERMS,
   DEALBREAKER_LOCATION_CHOICES,
-  DEALBREAKER_PARENTS_CHOICES,
-  DEALBREAKER_PROMPTS,
   DEALBREAKER_RELIGION_CHOICES,
   DEALBREAKER_RELIGION_TERMS,
-  DEALBREAKER_TIMELINE_CHOICES,
-  DEALBREAKER_WORK_CHOICES,
   DEALBREAKER_ANY_CHOICE,
+  SEARCH_FILTER_FIELD_ORDER,
+  SEARCH_FILTER_PROMPTS,
   dealbreakerCommunityChoices,
 } from "./dealbreakers";
 import { SEARCH_CITIES } from "./desi-search-aliases";
@@ -39,11 +35,11 @@ export const BROWSE_ASK_NO_ANSWER_ALIAS = "prefer_not";
 export const BROWSE_ASK_NO_ANSWER_LABEL = "Don't want to answer";
 export const BROWSE_ASK_VISA_NO_ANSWER_LABEL = "Prefer not to say";
 
-export const BROWSE_ASK_LABEL = "STILL NEEDED";
-export const BROWSE_ASK_HINT = "Tap one. Bandham AI uses this for the shortlist.";
+export const BROWSE_ASK_LABEL = "FILTERS";
+export const BROWSE_ASK_HINT = "Tap one filter. Bandham AI uses this for the shortlist.";
 
-/** Locked order. City is an optional follow-up after a region, not one of the 10. */
-export const BROWSE_ASK_FIELD_ORDER = DEALBREAKER_FIELD_ORDER;
+/** Locked filter order. City is an optional follow-up after a region, not one of the 5. */
+export const BROWSE_ASK_FIELD_ORDER = SEARCH_FILTER_FIELD_ORDER;
 
 export type BrowseAskField = (typeof BROWSE_ASK_FIELD_ORDER)[number];
 
@@ -160,7 +156,7 @@ function visaQuestion(): BrowseAskQuestion {
   }).map(visaChoice);
   return {
     id: "visa",
-    prompt: DEALBREAKER_PROMPTS.visa,
+    prompt: SEARCH_FILTER_PROMPTS.visa,
     choices: extra,
     groups: groups,
     noAnswerLabel: BROWSE_ASK_VISA_NO_ANSWER_LABEL,
@@ -170,7 +166,7 @@ function visaQuestion(): BrowseAskQuestion {
 function locationQuestion(): BrowseAskQuestion {
   return {
     id: "location",
-    prompt: DEALBREAKER_PROMPTS.location,
+    prompt: SEARCH_FILTER_PROMPTS.location,
     choices: LOCATION_CHOICES,
   };
 }
@@ -186,7 +182,7 @@ function cityQuestion(regionId: string): BrowseAskQuestion {
 function religionQuestion(): BrowseAskQuestion {
   return {
     id: "religion",
-    prompt: DEALBREAKER_PROMPTS.religion,
+    prompt: SEARCH_FILTER_PROMPTS.religion,
     choices: RELIGION_CHOICES,
   };
 }
@@ -194,55 +190,15 @@ function religionQuestion(): BrowseAskQuestion {
 function casteQuestion(): BrowseAskQuestion {
   return {
     id: "caste",
-    prompt: DEALBREAKER_PROMPTS.caste,
+    prompt: SEARCH_FILTER_PROMPTS.caste,
     choices: dealbreakerCommunityChoices(),
-  };
-}
-
-function familyLivingQuestion(): BrowseAskQuestion {
-  return {
-    id: "family_living",
-    prompt: DEALBREAKER_PROMPTS.family_living,
-    choices: DEALBREAKER_FAMILY_LIVING_CHOICES,
-  };
-}
-
-function parentsQuestion(): BrowseAskQuestion {
-  return {
-    id: "parents",
-    prompt: DEALBREAKER_PROMPTS.parents,
-    choices: DEALBREAKER_PARENTS_CHOICES,
-  };
-}
-
-function workQuestion(): BrowseAskQuestion {
-  return {
-    id: "work",
-    prompt: DEALBREAKER_PROMPTS.work,
-    choices: DEALBREAKER_WORK_CHOICES,
-  };
-}
-
-function timelineQuestion(): BrowseAskQuestion {
-  return {
-    id: "timeline",
-    prompt: DEALBREAKER_PROMPTS.timeline,
-    choices: DEALBREAKER_TIMELINE_CHOICES,
-  };
-}
-
-function childrenQuestion(): BrowseAskQuestion {
-  return {
-    id: "children",
-    prompt: DEALBREAKER_PROMPTS.children,
-    choices: DEALBREAKER_CHILDREN_CHOICES,
   };
 }
 
 function motherTongueQuestion(): BrowseAskQuestion {
   return {
     id: "mother_tongue",
-    prompt: DEALBREAKER_PROMPTS.mother_tongue,
+    prompt: SEARCH_FILTER_PROMPTS.mother_tongue,
     choices: DEALBREAKER_LANGUAGE_CHOICES,
   };
 }
@@ -252,11 +208,6 @@ export const BROWSE_ASK_QUESTIONS: BrowseAskQuestion[] = [
   visaQuestion(),
   religionQuestion(),
   casteQuestion(),
-  familyLivingQuestion(),
-  parentsQuestion(),
-  workQuestion(),
-  timelineQuestion(),
-  childrenQuestion(),
   motherTongueQuestion(),
 ];
 
@@ -382,53 +333,6 @@ export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
   });
 }
 
-export function promptHasFamilyLiving(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  return (
-    hasTerm(haystack(raw, parsed), ["joint family", "nuclear family", "live with parents"]) ||
-    parsed.keywords.some(function (kw) {
-      return /joint family|nuclear family/.test(kw.toLowerCase());
-    })
-  );
-}
-
-export function promptHasParents(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  return hasTerm(haystack(raw, parsed), [
-    "parents involved",
-    "involve parents",
-    "from the start",
-    "family involved",
-  ]);
-}
-
-export function promptHasWorkAfterMarriage(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  return hasTerm(haystack(raw, parsed), [
-    "keep working",
-    "working after marriage",
-    "work after marriage",
-    "stay at home after marriage",
-    "home after marriage",
-  ]);
-}
-
-export function promptHasTimeline(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  return hasTerm(haystack(raw, parsed), [
-    "within a year",
-    "1 to 2 years",
-    "marry soon",
-    "no timeline",
-    "when families are ready",
-  ]);
-}
-
-export function promptHasChildren(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  return hasTerm(haystack(raw, parsed), ["children", "kids", "want kids", "no kids"]);
-}
-
 export function promptHasMotherTongue(raw: string, criteria?: SearchCriteria) {
   const parsed = criteria || parseSearchQuery(raw);
   const hay = haystack(raw, parsed);
@@ -451,11 +355,6 @@ export function browseAskAlreadyAnswered(
   if (questionId === "visa") return promptHasVisa(raw, parsed);
   if (questionId === "religion") return promptHasReligion(raw, parsed);
   if (questionId === "caste") return promptHasCaste(raw, parsed);
-  if (questionId === "family_living") return promptHasFamilyLiving(raw, parsed);
-  if (questionId === "parents") return promptHasParents(raw, parsed);
-  if (questionId === "work") return promptHasWorkAfterMarriage(raw, parsed);
-  if (questionId === "timeline") return promptHasTimeline(raw, parsed);
-  if (questionId === "children") return promptHasChildren(raw, parsed);
   if (questionId === "mother_tongue") return promptHasMotherTongue(raw, parsed);
   return false;
 }
@@ -512,7 +411,7 @@ export function foldBrowseAnswers(prompt: string, answers: BrowseAskAnswer[]) {
 }
 
 /**
- * Still-unknown questions in lock order.
+ * Still-unknown FILTER questions in lock order.
  * City is inserted only after they tap a region that already has cities
  * in SEARCH_CITIES, and only when the prompt had no city.
  */
@@ -552,28 +451,13 @@ export function remainingBrowseQuestions(
   if (!browseAskAlreadyAnswered("caste", text, parsed, answers)) {
     needed.push(casteQuestion());
   }
-  if (!browseAskAlreadyAnswered("family_living", text, parsed, answers)) {
-    needed.push(familyLivingQuestion());
-  }
-  if (!browseAskAlreadyAnswered("parents", text, parsed, answers)) {
-    needed.push(parentsQuestion());
-  }
-  if (!browseAskAlreadyAnswered("work", text, parsed, answers)) {
-    needed.push(workQuestion());
-  }
-  if (!browseAskAlreadyAnswered("timeline", text, parsed, answers)) {
-    needed.push(timelineQuestion());
-  }
-  if (!browseAskAlreadyAnswered("children", text, parsed, answers)) {
-    needed.push(childrenQuestion());
-  }
   if (!browseAskAlreadyAnswered("mother_tongue", text, parsed, answers)) {
     needed.push(motherTongueQuestion());
   }
   return needed;
 }
 
-/** True only when leftover dealbreakers are answered or skipped. Empty prompt is ready. */
+/** True only when leftover filters are answered or skipped. Empty prompt is ready. */
 export function browseAskReadyForShortlist(raw: string, answers: BrowseAskAnswer[] = []) {
   return remainingBrowseQuestions(raw, answers).length === 0;
 }
@@ -591,7 +475,7 @@ export function userFacingBrowseAskCopy() {
     BROWSE_ASK_HINT,
     BROWSE_ASK_NO_ANSWER_LABEL,
     BROWSE_ASK_VISA_NO_ANSWER_LABEL,
-    browseAskProgress(0, 10),
+    browseAskProgress(0, 5),
     CASTE_ANY_CHOICE.label,
   ]
     .concat(fromQuestions)

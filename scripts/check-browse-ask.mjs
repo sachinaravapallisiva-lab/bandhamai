@@ -49,12 +49,14 @@ assert(BROWSE_ASK_NO_ANSWER_LABEL === "Don't want to answer", "Don't want to ans
 assert(BROWSE_ASK_VISA_NO_ANSWER_LABEL === "Prefer not to say", "visa keeps Prefer not to say");
 assert(BROWSE_ASK_NO_ANSWER_CHOICE.id === BROWSE_ASK_NO_ANSWER_ID, "no-answer choice id");
 assert(BROWSE_ASK_HINT.toLowerCase().includes("bandham ai"), "hint names Bandham AI");
+assert(BROWSE_ASK_HINT.toLowerCase().includes("filter"), "hint calls leftover taps filters");
+assert(!/dealbreaker/i.test(BROWSE_ASK_HINT), "search box hint must not say dealbreaker");
 assert(!/bandhan\b/i.test(BROWSE_ASK_HINT), "product is Bandham, not Bandhan");
-assert(BROWSE_ASK_LABEL === "STILL NEEDED", "ask eyebrow");
+assert(BROWSE_ASK_LABEL === "FILTERS", "ask eyebrow says FILTERS");
 assertEq(
   BROWSE_ASK_FIELD_ORDER.join(" "),
-  "location visa religion caste family_living parents work timeline children mother_tongue",
-  "locked field order"
+  "location visa religion caste mother_tongue",
+  "locked filter order"
 );
 
 const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
@@ -62,13 +64,17 @@ const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
 });
 assertEq(
   ids.join(" "),
-  "location visa religion caste family_living parents work timeline children mother_tongue",
-  "bank order is the ten household dealbreakers"
+  "location visa religion caste mother_tongue",
+  "bank order is the five search filters"
 );
-assert(!ids.includes("city"), "city is a follow-up, not one of the 10");
+assert(!ids.includes("city"), "city is a follow-up, not one of the 5");
 assert(!ids.includes("diet"), "diet is not a main question");
-assert(!ids.includes("dowry"), "dowry is not in this 10");
-assert(!ids.includes("gender"), "gender is not one of the ten");
+assert(!ids.includes("family_living"), "joint family is a Speed Match dealbreaker");
+assert(!ids.includes("parents"), "parents in the decision is a Speed Match dealbreaker");
+assert(!ids.includes("work"), "work after marriage is a Speed Match dealbreaker");
+assert(!ids.includes("timeline"), "timeline is a Speed Match dealbreaker");
+assert(!ids.includes("children"), "kids is a Speed Match dealbreaker");
+assert(!ids.includes("gender"), "gender is not one of the five");
 
 BROWSE_ASK_QUESTIONS.forEach(function (q) {
   assert(!dating.test(q.prompt), "not dating prompt: " + q.id);
@@ -147,8 +153,8 @@ assert(!browseAskReadyForShortlist(thinPrompt), "thin prompt must not render the
 const thin = remainingBrowseQuestions(thinPrompt);
 assertEq(
   thin.map(function (q) { return q.id; }).join(" "),
-  "location visa religion caste family_living parents work timeline children mother_tongue",
-  "thin prompt asks the ten in order"
+  "location visa religion caste mother_tongue",
+  "thin prompt asks the five leftover filters in order"
 );
 assertEq(thin[0].id, "location", "first leftover question is location");
 assertEq(thin[0].prompt, "Where should we look?", "location copy");
@@ -187,14 +193,9 @@ const allSkipped = [
   { questionId: "visa", choiceId: "prefer_not" },
   { questionId: "religion", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "caste", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "family_living", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "parents", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "work", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "timeline", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "children", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "mother_tongue", choiceId: BROWSE_ASK_NO_ANSWER_ID },
 ];
-assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "ten skips unlock the shortlist");
+assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "five filter skips unlock the shortlist");
 assertEq(foldBrowseAnswers(thinPrompt, allSkipped), thinPrompt, "Don't want to answer omits filters");
 
 const cityFold = foldBrowseAnswers(thinPrompt, [
@@ -212,8 +213,10 @@ userFacingBrowseAskCopy().forEach(function (text) {
   assert(!emDash.test(text), "user-facing copy has no em dash: " + text);
   assert(!/bandhan\b/i.test(text), "product name is Bandham, not Bandhan: " + text);
   assert(!dating.test(text), "not dating copy: " + text);
+  assert(!/dealbreaker/i.test(text), "search box copy must not say dealbreaker: " + text);
 });
-assertEq(browseAskProgress(0, 10), "1 of 10", "progress has no slash or hyphen");
+assertEq(browseAskProgress(0, 5), "1 of 5", "progress has no slash or hyphen");
+assert(/filter/i.test(userFacingBrowseAskCopy().join(" ")), "user-facing ask copy names filters");
 
 const page = read("app/page.tsx");
 const ui = read("app/components/BrowseAsk.tsx");
@@ -223,7 +226,8 @@ assert(page.includes("remainingBrowseQuestions"), "Browse asks remaining questio
 assert(page.includes("submitPrompt"), "typed/spoken prompt goes through ask first");
 assert(!/onClick=\{function \(\) \{ submitPrompt\(\); \}\}[\s\S]{0,80}disabled=\{searching\}/.test(page), "Search stays tappable while the default shortlist is still looking");
 assert(page.includes("foldBrowseAnswers"), "answers fold into search q");
-assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until leftover dealbreakers are resolved or skipped");
+assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until leftover filters are resolved or skipped");
+assert(page.includes("SEARCH_FILTER_HELPER"), "quiet helper sits under the search box");
 assert(page.includes("showBrowseShortlist"), "shortlist render is gated");
 assert(page.includes("data-search-enlarged"), "search box marks enlarged");
 assert(page.includes("data-browse-shortlist"), "shortlist ready/waiting is marked");
@@ -256,17 +260,21 @@ assert(!/\bswipe\b/i.test(ui), "ask is not a swipe deck");
 
 const speed = read("app/components/SpeedMatch.tsx");
 const speedLib = read("lib/speed-match.ts");
-assert(speedLib.includes("speedMatchDealbreakerQuestions"), "Speed Match uses the shared household bank");
+const surfaces = read("lib/surfaces.ts");
+assert(speedLib.includes("speedMatchDealbreakerQuestions"), "Speed Match uses the household dealbreaker bank");
 assert(speedLib.includes("SPEED_MATCH_QUESTION_COUNT = 10"), "Speed Match bank stays 10");
-assert(/not the speed match timer/i.test(askLib), "Browse ask is not the timer");
+assert(/not the speed match timer/i.test(askLib) || /not speed match/i.test(askLib), "Browse ask is not the timer");
+assert(askLib.toLowerCase().includes("filter"), "Browse ask lib names leftover taps filters");
 assert(!/diet/i.test(ids.join(" ")), "Browse bank has no diet id");
-assert(findBrowseAskQuestion("work")?.prompt.includes("keep working"), "work after marriage is in Browse");
-assert(findBrowseAskQuestion("mother_tongue")?.id === "mother_tongue", "mother tongue is in Browse");
-assert(!browseAskAlreadyAnswered("family_living", thinPrompt), "family values is not joint family");
-assert(browseAskAlreadyAnswered("family_living", "joint family in Dallas"), "joint family skips that tap");
+assert(findBrowseAskQuestion("mother_tongue")?.id === "mother_tongue", "mother tongue is a Browse filter");
+assert(!findBrowseAskQuestion("work"), "work after marriage is not a Browse filter");
+assert(!findBrowseAskQuestion("family_living"), "joint family is not a Browse filter");
 assert(browseAskAlreadyAnswered("mother_tongue", "Telugu doctor"), "Telugu skips mother tongue");
-assert(!browseAskAlreadyAnswered("children", thinPrompt), "family values is not kids");
 assert(askLib.includes("VISA_STATUS_GROUPS"), "visa taps reuse VISA_STATUS_GROUPS");
+assert(surfaces.includes('Add city, visa, and religion if you know them.'), "helper copy is Sai's line");
+assert(!emDash.test(surfaces.match(/SEARCH_FILTER_HELPER[\s\S]{0,80}/)?.[0] || ""), "helper has no em dash");
+assert(!/dealbreaker/i.test(surfaces.match(/SEARCH_FILTER_HELPER[\s\S]{0,120}/)?.[0] || ""), "helper does not say dealbreaker");
+assert(!/dealbreaker/i.test(page.slice(page.indexOf("SEARCH_HINT"), page.indexOf("<BrowseAsk"))), "search box copy does not say dealbreaker");
 assert(page.includes("MeetupRail"), "home meetup rail stays");
 assert(page.includes("PinnedRow"), "home pinned row stays");
 assert(page.includes('data-home-shell="true"'), "home shell stays locked");

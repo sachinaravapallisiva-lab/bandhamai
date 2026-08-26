@@ -19,9 +19,8 @@ import {
   questionAt,
   withAnswer,
 } from "../lib/speed-match.ts";
-import { DEALBREAKER_FIELD_ORDER, DEALBREAKER_SPEED_VISA_CHOICES } from "../lib/dealbreakers.ts";
+import { DEALBREAKER_FIELD_ORDER, SEARCH_FILTER_FIELD_ORDER } from "../lib/dealbreakers.ts";
 import { BROWSE_ASK_FIELD_ORDER } from "../lib/browse-ask.ts";
-import { VISA_STATUS_OPTIONS } from "../lib/visa-status.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -73,56 +72,56 @@ SPEED_MATCH_QUESTIONS.forEach(function (q, i) {
 assert(questionAt(10) === null, "no 11th question");
 
 const dealbreakers = [
-  "location",
-  "visa",
-  "religion",
-  "caste",
   "family_living",
   "parents",
   "work",
   "timeline",
   "children",
-  "mother_tongue",
+  "live_after",
+  "community",
+  "dowry",
+  "faith",
+  "habits",
 ];
 assertEq(
   SPEED_MATCH_QUESTIONS.map(function (q) { return q.id; }).join(" "),
   dealbreakers.join(" "),
-  "Speed Match order matches Sai's household 10"
+  "Speed Match order is household talk dealbreakers"
 );
+["location", "visa", "religion", "caste", "mother_tongue"].forEach(function (id) {
+  assert(!ids.has(id), id + " belongs only in the search filter box");
+});
 assert(!ids.has("diet"), "diet is not a main Speed Match question");
-assert(!ids.has("dowry"), "dowry is not in this 10");
-assert(!ids.has("faith"), "faith practice is replaced by religion");
-assert(!ids.has("community"), "community preference is caste / community chips");
 
 const answers = emptyAnswers();
 assert(answers.length === 10, "emptyAnswers is 10 slots");
 assert(countAnswered(answers) === 0, "empty round has no answers");
 
 const first = withAnswer(answers, 0, {
-  question_id: "location",
-  choice_id: "us",
+  question_id: "family_living",
+  choice_id: "joint",
   timed_out: false,
   skipped: false,
 });
 assert(countAnswered(first) === 1, "one recorded choice");
-assert(choiceLabel("location", "us") === "United States", "choice label lookup");
-assert(choiceLabel("location", null) === SPEED_MATCH_NO_ANSWER_LABEL, "null maps to don't-want label");
-assert(choiceLabel("location", SPEED_MATCH_NO_ANSWER_ID) === SPEED_MATCH_NO_ANSWER_LABEL, "dont_answer label");
-assert(choiceLabel("location", SPEED_MATCH_NO_ANSWER_ALIAS) === SPEED_MATCH_NO_ANSWER_LABEL, "prefer_not label");
+assert(choiceLabel("family_living", "joint") === "Joint with parents", "choice label lookup");
+assert(choiceLabel("family_living", null) === SPEED_MATCH_NO_ANSWER_LABEL, "null maps to don't-want label");
+assert(choiceLabel("family_living", SPEED_MATCH_NO_ANSWER_ID) === SPEED_MATCH_NO_ANSWER_LABEL, "dont_answer label");
+assert(choiceLabel("family_living", SPEED_MATCH_NO_ANSWER_ALIAS) === SPEED_MATCH_NO_ANSWER_LABEL, "prefer_not label");
 
-const skipped = withAnswer(first, 1, noAnswerPayload("visa", false));
+const skipped = withAnswer(first, 1, noAnswerPayload("parents", false));
 assert(skipped[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "tap skip persists dont_answer");
 assert(skipped[1].skipped === true, "tap skip is skipped");
 assert(skipped[1].timed_out === false, "tap skip is not a timeout");
 assert(countAnswered(skipped) === 1, "dont_answer does not count as answered");
 
-const timedOut = withAnswer(first, 1, noAnswerPayload("visa", true));
+const timedOut = withAnswer(first, 1, noAnswerPayload("parents", true));
 assert(timedOut[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "timer skip persists dont_answer");
 assert(timedOut[1].timed_out === true, "timer skip sets timed_out");
 assert(timedOut[1].skipped === true, "timer skip is skipped");
 
 const parsed = parseRoundAnswers(first);
-assert(parsed && parsed[0].choice_id === "us", "parse keeps a valid round");
+assert(parsed && parsed[0].choice_id === "joint", "parse keeps a valid round");
 assert(parseRoundAnswers(first.slice(0, 3)) === null, "short payload rejected");
 assert(parseRoundAnswers([{ question_id: "nope" }]) === null, "wrong ids rejected");
 
@@ -138,7 +137,7 @@ assert(parsedAlias && parsedAlias[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "pr
 
 const legacyNull = first.map(function (row, i) {
   return i === 1
-    ? { question_id: "visa", choice_id: null, timed_out: true, skipped: true }
+    ? { question_id: "parents", choice_id: null, timed_out: true, skipped: true }
     : row;
 });
 const parsedNull = parseRoundAnswers(legacyNull);
@@ -167,20 +166,18 @@ assert(!/[—]/.test(ui), "Speed Match UI has no em dash");
 
 assertEq(
   BROWSE_ASK_FIELD_ORDER.join(" "),
-  DEALBREAKER_FIELD_ORDER.join(" "),
-  "Browse ask and Speed Match share the same 10"
+  SEARCH_FILTER_FIELD_ORDER.join(" "),
+  "Browse leftover taps are the search filters"
 );
-DEALBREAKER_SPEED_VISA_CHOICES.forEach(function (choice) {
-  assert(VISA_STATUS_OPTIONS.includes(choice.label), "Speed Match visa reuses a stored label: " + choice.label);
+SEARCH_FILTER_FIELD_ORDER.forEach(function (id) {
+  assert(DEALBREAKER_FIELD_ORDER.indexOf(id) === -1, "filter " + id + " is not a Speed Match dealbreaker");
 });
-const visaQ = SPEED_MATCH_QUESTIONS.find(function (q) { return q.id === "visa"; });
-assert(visaQ, "visa is in the Speed Match bank");
-visaQ.choices.forEach(function (choice) {
-  assert(VISA_STATUS_OPTIONS.includes(choice.label), "Speed Match visa chip is a known label: " + choice.label);
-});
-assert(SPEED_MATCH_QUESTIONS[0].id === "location", "Speed Match starts at location");
-assert(SPEED_MATCH_QUESTIONS[6].id === "work", "work after marriage stays in the 10");
-assert(SPEED_MATCH_QUESTIONS[9].id === "mother_tongue", "mother tongue is last");
+assert(SPEED_MATCH_QUESTIONS[0].id === "family_living", "Speed Match starts at joint family");
+assert(SPEED_MATCH_QUESTIONS[2].id === "work", "work after marriage stays in the 10");
+assert(SPEED_MATCH_QUESTIONS[4].id === "children", "kids stays in the 10");
+assert(SPEED_MATCH_QUESTIONS[9].id === "habits", "parked alcohol / smoking fills the last slot");
+assert(/dealbreaker/i.test(ui), "Speed Match intro names dealbreakers");
+assert(!/matrimony filters families/i.test(ui), "Speed Match intro does not call dealbreakers filters");
 
 console.log("speed match bank ok", {
   count: SPEED_MATCH_QUESTIONS.length,

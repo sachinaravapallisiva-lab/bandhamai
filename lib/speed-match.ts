@@ -43,8 +43,9 @@ export type SpeedMatchLocalRound = {
 };
 
 /**
- * Indian household / NRI dealbreakers only. Same 10 as Browse leftover taps.
- * Diet is not a main question. Not Western dating, not flirty, not party games.
+ * Indian household dealbreakers for talking. Not Browse search filters.
+ * Diet is not a main question. Location, visa, religion, caste, and mother
+ * tongue stay in the search box. Not Western dating, not flirty, not party games.
  */
 export const SPEED_MATCH_QUESTIONS: SpeedMatchQuestion[] = speedMatchDealbreakerQuestions().map(
   function (question) {

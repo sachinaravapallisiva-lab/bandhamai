@@ -51,6 +51,7 @@ import {
   MATCHES_EMPTY_TITLE,
   MATCHES_LIST_LABEL,
   SEARCH_HEARING_STATUS,
+  SEARCH_FILTER_HELPER,
   SEARCH_HINT,
   SEARCH_LABEL,
   SEARCH_LISTEN_STATUS,
@@ -678,6 +679,13 @@ export default function Home() {
               </p>
               <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 12, color: MUTED }}>
                 {SEARCH_HINT}
+              </p>
+              <p
+                className="bm-sans"
+                data-search-filter-helper="true"
+                style={{ margin: "-4px 0 10px", fontSize: 12, color: MUTED, lineHeight: 1.45 }}
+              >
+                {SEARCH_FILTER_HELPER}
               </p>
 
               <input

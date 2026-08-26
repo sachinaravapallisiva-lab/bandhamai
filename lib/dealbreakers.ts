@@ -1,22 +1,33 @@
 /**
- * Sai's locked Indian household / NRI dealbreakers.
- * Same 10 for Browse leftover taps and Speed Match. Diet is not a main question.
- * City is a Browse-only follow-up after a region, not one of the 10.
+ * Two banks, not one.
+ * Browse leftover taps are SEARCH FILTERS (location, visa, religion, caste, mother tongue).
+ * Speed Match is HOUSEHOLD DEALBREAKERS. Diet is not a main question.
+ * City is a Browse-only follow-up after a region, not a filter in the 5.
  */
 
 import { VISA_STATUS_OPTIONS } from "./visa-status";
 
-export const DEALBREAKER_FIELD_ORDER = [
+export const SEARCH_FILTER_FIELD_ORDER = [
   "location",
   "visa",
   "religion",
   "caste",
+  "mother_tongue",
+] as const;
+
+export type SearchFilterField = (typeof SEARCH_FILTER_FIELD_ORDER)[number];
+
+export const DEALBREAKER_FIELD_ORDER = [
   "family_living",
   "parents",
   "work",
   "timeline",
   "children",
-  "mother_tongue",
+  "live_after",
+  "community",
+  "dowry",
+  "faith",
+  "habits",
 ] as const;
 
 export type DealbreakerField = (typeof DEALBREAKER_FIELD_ORDER)[number];
@@ -119,13 +130,13 @@ export const DEALBREAKER_ANY_CHOICE: DealbreakerChoice = {
   fold: "",
 };
 
-/** Compact existing visa labels for the 15s Speed Match round. Browse keeps the full grouped list. */
-export const DEALBREAKER_SPEED_VISA_CHOICES: DealbreakerChoice[] = [
-  { id: "US Citizen", label: "US Citizen", fold: "US Citizen" },
-  { id: "Green Card (LPR)", label: "Green Card (LPR)", fold: "Green Card (LPR)" },
-  { id: "H-1B", label: "H-1B", fold: "H-1B" },
-  { id: "Indian citizen (living abroad)", label: "Indian citizen (living abroad)", fold: "Indian citizen (living abroad)" },
-];
+export const SEARCH_FILTER_PROMPTS: Record<SearchFilterField, string> = {
+  location: "Where should we look?",
+  visa: "Which visa status should we look for?",
+  religion: "Any faith we should look for?",
+  caste: "Any community we should look for?",
+  mother_tongue: "Any mother tongue we should look for?",
+};
 
 export const DEALBREAKER_FAMILY_LIVING_CHOICES: DealbreakerChoice[] = [
   { id: "joint", label: "Joint with parents", fold: "joint family" },
@@ -162,17 +173,55 @@ export const DEALBREAKER_CHILDREN_CHOICES: DealbreakerChoice[] = [
   { id: "undecided", label: "Still deciding", fold: "" },
 ];
 
+/** After-marriage settlement talk. Not the Browse location filter. */
+export const DEALBREAKER_LIVE_AFTER_CHOICES: DealbreakerChoice[] = [
+  { id: "india", label: "India", fold: "" },
+  { id: "abroad", label: "US / abroad", fold: "" },
+  { id: "either", label: "Either", fold: "" },
+  { id: "undecided", label: "Not sure yet", fold: "" },
+];
+
+/** Same-community preference talk. Not the Browse caste chips. */
+export const DEALBREAKER_COMMUNITY_PREF_CHOICES: DealbreakerChoice[] = [
+  { id: "same", label: "Prefer same community", fold: "" },
+  { id: "values", label: "Open if values match", fold: "" },
+  { id: "none", label: "No preference", fold: "" },
+  { id: "family", label: "Deciding with family", fold: "" },
+];
+
+export const DEALBREAKER_DOWRY_CHOICES: DealbreakerChoice[] = [
+  { id: "refuse", label: "Never ask or accept", fold: "" },
+  { id: "walk_away", label: "Walk away if it comes up", fold: "" },
+  { id: "both_clear", label: "Both families must refuse", fold: "" },
+];
+
+/** Practice at home. Not the Browse religion filter. */
+export const DEALBREAKER_FAITH_CHOICES: DealbreakerChoice[] = [
+  { id: "regular", label: "Regular practice", fold: "" },
+  { id: "festivals", label: "Festivals / family rituals", fold: "" },
+  { id: "private", label: "Private", fold: "" },
+  { id: "not_central", label: "Not central", fold: "" },
+];
+
+/** Parked in supabase/speed_match.sql as alcohol / smoking comfort. */
+export const DEALBREAKER_HABITS_CHOICES: DealbreakerChoice[] = [
+  { id: "neither", label: "Neither at home", fold: "" },
+  { id: "drink_ok", label: "Drinks ok, no smoking", fold: "" },
+  { id: "occasional", label: "Occasional is fine", fold: "" },
+  { id: "talk", label: "We'll talk it through", fold: "" },
+];
+
 export const DEALBREAKER_PROMPTS: Record<DealbreakerField, string> = {
-  location: "Where should we look?",
-  visa: "Which visa status should we look for?",
-  religion: "Any faith we should look for?",
-  caste: "Any community we should look for?",
   family_living: "Joint family or live with parents after marriage?",
   parents: "Should parents be involved in this match?",
   work: "Can your spouse keep working after marriage?",
   timeline: "How soon do you want to marry?",
   children: "Do you want children?",
-  mother_tongue: "Any mother tongue we should look for?",
+  live_after: "Live in India or abroad after marriage?",
+  community: "Same community preference?",
+  dowry: "Asking or offering dowry?",
+  faith: "Temple, church, or mosque practice?",
+  habits: "Alcohol or smoking at home?",
 };
 
 function titleLabel(value: string) {
@@ -197,19 +246,19 @@ export type SharedDealbreakerQuestion = {
   choices: DealbreakerChoice[];
 };
 
-/** Speed Match bank: same 10 prompts. Visa uses existing labels only, not a new taxonomy. */
+/** Speed Match bank: household talk items already in the product. Not Browse filters. */
 export function speedMatchDealbreakerQuestions(): SharedDealbreakerQuestion[] {
   return [
-    { id: "location", prompt: DEALBREAKER_PROMPTS.location, choices: DEALBREAKER_LOCATION_CHOICES },
-    { id: "visa", prompt: DEALBREAKER_PROMPTS.visa, choices: DEALBREAKER_SPEED_VISA_CHOICES },
-    { id: "religion", prompt: DEALBREAKER_PROMPTS.religion, choices: DEALBREAKER_RELIGION_CHOICES },
-    { id: "caste", prompt: DEALBREAKER_PROMPTS.caste, choices: dealbreakerCommunityChoices() },
     { id: "family_living", prompt: DEALBREAKER_PROMPTS.family_living, choices: DEALBREAKER_FAMILY_LIVING_CHOICES },
     { id: "parents", prompt: DEALBREAKER_PROMPTS.parents, choices: DEALBREAKER_PARENTS_CHOICES },
     { id: "work", prompt: DEALBREAKER_PROMPTS.work, choices: DEALBREAKER_WORK_CHOICES },
     { id: "timeline", prompt: DEALBREAKER_PROMPTS.timeline, choices: DEALBREAKER_TIMELINE_CHOICES },
     { id: "children", prompt: DEALBREAKER_PROMPTS.children, choices: DEALBREAKER_CHILDREN_CHOICES },
-    { id: "mother_tongue", prompt: DEALBREAKER_PROMPTS.mother_tongue, choices: DEALBREAKER_LANGUAGE_CHOICES },
+    { id: "live_after", prompt: DEALBREAKER_PROMPTS.live_after, choices: DEALBREAKER_LIVE_AFTER_CHOICES },
+    { id: "community", prompt: DEALBREAKER_PROMPTS.community, choices: DEALBREAKER_COMMUNITY_PREF_CHOICES },
+    { id: "dowry", prompt: DEALBREAKER_PROMPTS.dowry, choices: DEALBREAKER_DOWRY_CHOICES },
+    { id: "faith", prompt: DEALBREAKER_PROMPTS.faith, choices: DEALBREAKER_FAITH_CHOICES },
+    { id: "habits", prompt: DEALBREAKER_PROMPTS.habits, choices: DEALBREAKER_HABITS_CHOICES },
   ];
 }
 
