@@ -19,9 +19,18 @@ import {
   questionAt,
   withAnswer,
 } from "../lib/speed-match.ts";
+import { DEALBREAKER_FIELD_ORDER, DEALBREAKER_SPEED_VISA_CHOICES } from "../lib/dealbreakers.ts";
+import { BROWSE_ASK_FIELD_ORDER } from "../lib/browse-ask.ts";
+import { VISA_STATUS_OPTIONS } from "../lib/visa-status.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
+}
+
+function assertEq(got, expected, label) {
+  if (got !== expected) {
+    throw new Error(label + ": expected " + JSON.stringify(expected) + ", got " + JSON.stringify(got));
+  }
 }
 
 assert(SPEED_MATCH_QUESTION_COUNT === 10, "locked to 10 questions");
@@ -40,7 +49,8 @@ SPEED_MATCH_QUESTIONS.forEach(function (q, i) {
   ids.add(q.id);
   assert(q.prompt && q.prompt.length > 8, "prompt missing at " + q.id);
   assert(!banned.test(q.prompt), "flirty/party prompt at " + q.id);
-  assert(q.choices.length >= 2 && q.choices.length <= 4, "2–4 dealbreaker choices at " + q.id);
+  assert(q.choices.length >= 2, "at least two dealbreaker choices at " + q.id);
+  assert(!/[—–]/.test(q.prompt), "no em dash in prompt: " + q.prompt);
   assert(
     !q.choices.some(function (c) { return isNoAnswerChoiceId(c.id); }),
     "dont_answer stays off the dealbreaker bank at " + q.id
@@ -62,41 +72,57 @@ SPEED_MATCH_QUESTIONS.forEach(function (q, i) {
 
 assert(questionAt(10) === null, "no 11th question");
 
-const dealbreakers = ["diet", "location", "family_living", "parents", "community", "dowry", "faith", "timeline", "children", "work"];
-assert(
-  dealbreakers.every(function (id) { return ids.has(id); }),
-  "missing a matrimony dealbreaker id"
+const dealbreakers = [
+  "location",
+  "visa",
+  "religion",
+  "caste",
+  "family_living",
+  "parents",
+  "work",
+  "timeline",
+  "children",
+  "mother_tongue",
+];
+assertEq(
+  SPEED_MATCH_QUESTIONS.map(function (q) { return q.id; }).join(" "),
+  dealbreakers.join(" "),
+  "Speed Match order matches Sai's household 10"
 );
+assert(!ids.has("diet"), "diet is not a main Speed Match question");
+assert(!ids.has("dowry"), "dowry is not in this 10");
+assert(!ids.has("faith"), "faith practice is replaced by religion");
+assert(!ids.has("community"), "community preference is caste / community chips");
 
 const answers = emptyAnswers();
 assert(answers.length === 10, "emptyAnswers is 10 slots");
 assert(countAnswered(answers) === 0, "empty round has no answers");
 
 const first = withAnswer(answers, 0, {
-  question_id: "diet",
-  choice_id: "vegetarian",
+  question_id: "location",
+  choice_id: "us",
   timed_out: false,
   skipped: false,
 });
 assert(countAnswered(first) === 1, "one recorded choice");
-assert(choiceLabel("diet", "vegetarian") === "Vegetarian only", "choice label lookup");
-assert(choiceLabel("diet", null) === SPEED_MATCH_NO_ANSWER_LABEL, "null maps to don't-want label");
-assert(choiceLabel("diet", SPEED_MATCH_NO_ANSWER_ID) === SPEED_MATCH_NO_ANSWER_LABEL, "dont_answer label");
-assert(choiceLabel("diet", SPEED_MATCH_NO_ANSWER_ALIAS) === SPEED_MATCH_NO_ANSWER_LABEL, "prefer_not label");
+assert(choiceLabel("location", "us") === "United States", "choice label lookup");
+assert(choiceLabel("location", null) === SPEED_MATCH_NO_ANSWER_LABEL, "null maps to don't-want label");
+assert(choiceLabel("location", SPEED_MATCH_NO_ANSWER_ID) === SPEED_MATCH_NO_ANSWER_LABEL, "dont_answer label");
+assert(choiceLabel("location", SPEED_MATCH_NO_ANSWER_ALIAS) === SPEED_MATCH_NO_ANSWER_LABEL, "prefer_not label");
 
-const skipped = withAnswer(first, 1, noAnswerPayload("location", false));
+const skipped = withAnswer(first, 1, noAnswerPayload("visa", false));
 assert(skipped[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "tap skip persists dont_answer");
 assert(skipped[1].skipped === true, "tap skip is skipped");
 assert(skipped[1].timed_out === false, "tap skip is not a timeout");
 assert(countAnswered(skipped) === 1, "dont_answer does not count as answered");
 
-const timedOut = withAnswer(first, 1, noAnswerPayload("location", true));
+const timedOut = withAnswer(first, 1, noAnswerPayload("visa", true));
 assert(timedOut[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "timer skip persists dont_answer");
 assert(timedOut[1].timed_out === true, "timer skip sets timed_out");
 assert(timedOut[1].skipped === true, "timer skip is skipped");
 
 const parsed = parseRoundAnswers(first);
-assert(parsed && parsed[0].choice_id === "vegetarian", "parse keeps a valid round");
+assert(parsed && parsed[0].choice_id === "us", "parse keeps a valid round");
 assert(parseRoundAnswers(first.slice(0, 3)) === null, "short payload rejected");
 assert(parseRoundAnswers([{ question_id: "nope" }]) === null, "wrong ids rejected");
 
@@ -112,7 +138,7 @@ assert(parsedAlias && parsedAlias[1].choice_id === SPEED_MATCH_NO_ANSWER_ID, "pr
 
 const legacyNull = first.map(function (row, i) {
   return i === 1
-    ? { question_id: "location", choice_id: null, timed_out: true, skipped: true }
+    ? { question_id: "visa", choice_id: null, timed_out: true, skipped: true }
     : row;
 });
 const parsedNull = parseRoundAnswers(legacyNull);
@@ -137,6 +163,24 @@ assert(!/<textarea\b/.test(ui) && !/<input\b/.test(ui), "tap choices only — no
 assert(ui.includes("choicesForQuestion"), "UI renders the shared tap list including dont_answer");
 assert(ui.includes("SPEED_MATCH_NO_ANSWER_ID"), "timer skip uses shared dont_answer id");
 assert(!/\bSkip\b/.test(ui), "underline Skip is replaced by Don't want to answer");
+assert(!/[—]/.test(ui), "Speed Match UI has no em dash");
+
+assertEq(
+  BROWSE_ASK_FIELD_ORDER.join(" "),
+  DEALBREAKER_FIELD_ORDER.join(" "),
+  "Browse ask and Speed Match share the same 10"
+);
+DEALBREAKER_SPEED_VISA_CHOICES.forEach(function (choice) {
+  assert(VISA_STATUS_OPTIONS.includes(choice.label), "Speed Match visa reuses a stored label: " + choice.label);
+});
+const visaQ = SPEED_MATCH_QUESTIONS.find(function (q) { return q.id === "visa"; });
+assert(visaQ, "visa is in the Speed Match bank");
+visaQ.choices.forEach(function (choice) {
+  assert(VISA_STATUS_OPTIONS.includes(choice.label), "Speed Match visa chip is a known label: " + choice.label);
+});
+assert(SPEED_MATCH_QUESTIONS[0].id === "location", "Speed Match starts at location");
+assert(SPEED_MATCH_QUESTIONS[6].id === "work", "work after marriage stays in the 10");
+assert(SPEED_MATCH_QUESTIONS[9].id === "mother_tongue", "mother tongue is last");
 
 console.log("speed match bank ok", {
   count: SPEED_MATCH_QUESTIONS.length,

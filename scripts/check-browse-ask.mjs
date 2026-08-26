@@ -51,15 +51,24 @@ assert(BROWSE_ASK_NO_ANSWER_CHOICE.id === BROWSE_ASK_NO_ANSWER_ID, "no-answer ch
 assert(BROWSE_ASK_HINT.toLowerCase().includes("bandham ai"), "hint names Bandham AI");
 assert(!/bandhan\b/i.test(BROWSE_ASK_HINT), "product is Bandham, not Bandhan");
 assert(BROWSE_ASK_LABEL === "STILL NEEDED", "ask eyebrow");
-assertEq(BROWSE_ASK_FIELD_ORDER.join(" "), "location visa religion caste", "locked field order");
+assertEq(
+  BROWSE_ASK_FIELD_ORDER.join(" "),
+  "location visa religion caste family_living parents work timeline children mother_tongue",
+  "locked field order"
+);
 
 const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
   return q.id;
 });
-assertEq(ids.join(" "), "location visa religion caste", "bank order is the four dealbreakers");
-assert(!ids.includes("city"), "city is a follow-up, not a fifth bank field");
-assert(!ids.includes("diet"), "this lock is not the old diet-first bank");
-assert(!ids.includes("gender"), "gender is not one of the four");
+assertEq(
+  ids.join(" "),
+  "location visa religion caste family_living parents work timeline children mother_tongue",
+  "bank order is the ten household dealbreakers"
+);
+assert(!ids.includes("city"), "city is a follow-up, not one of the 10");
+assert(!ids.includes("diet"), "diet is not a main question");
+assert(!ids.includes("dowry"), "dowry is not in this 10");
+assert(!ids.includes("gender"), "gender is not one of the ten");
 
 BROWSE_ASK_QUESTIONS.forEach(function (q) {
   assert(!dating.test(q.prompt), "not dating prompt: " + q.id);
@@ -136,7 +145,11 @@ assert(browseAskReadyForShortlist(""), "empty first load may show the default sh
 assert(!browseAskReadyForShortlist(thinPrompt), "thin prompt must not render the shortlist yet");
 
 const thin = remainingBrowseQuestions(thinPrompt);
-assertEq(thin.map(function (q) { return q.id; }).join(" "), "location visa religion caste", "thin prompt asks the four in order");
+assertEq(
+  thin.map(function (q) { return q.id; }).join(" "),
+  "location visa religion caste family_living parents work timeline children mother_tongue",
+  "thin prompt asks the ten in order"
+);
 assertEq(thin[0].id, "location", "first leftover question is location");
 assertEq(thin[0].prompt, "Where should we look?", "location copy");
 
@@ -174,8 +187,14 @@ const allSkipped = [
   { questionId: "visa", choiceId: "prefer_not" },
   { questionId: "religion", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "caste", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "family_living", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "parents", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "work", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "timeline", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "children", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "mother_tongue", choiceId: BROWSE_ASK_NO_ANSWER_ID },
 ];
-assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "four skips unlock the shortlist");
+assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "ten skips unlock the shortlist");
 assertEq(foldBrowseAnswers(thinPrompt, allSkipped), thinPrompt, "Don't want to answer omits filters");
 
 const cityFold = foldBrowseAnswers(thinPrompt, [
@@ -194,7 +213,7 @@ userFacingBrowseAskCopy().forEach(function (text) {
   assert(!/bandhan\b/i.test(text), "product name is Bandham, not Bandhan: " + text);
   assert(!dating.test(text), "not dating copy: " + text);
 });
-assertEq(browseAskProgress(0, 4), "1 of 4", "progress has no slash or hyphen");
+assertEq(browseAskProgress(0, 10), "1 of 10", "progress has no slash or hyphen");
 
 const page = read("app/page.tsx");
 const ui = read("app/components/BrowseAsk.tsx");
@@ -204,7 +223,7 @@ assert(page.includes("remainingBrowseQuestions"), "Browse asks remaining questio
 assert(page.includes("submitPrompt"), "typed/spoken prompt goes through ask first");
 assert(!/onClick=\{function \(\) \{ submitPrompt\(\); \}\}[\s\S]{0,80}disabled=\{searching\}/.test(page), "Search stays tappable while the default shortlist is still looking");
 assert(page.includes("foldBrowseAnswers"), "answers fold into search q");
-assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until the four are resolved or skipped");
+assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until leftover dealbreakers are resolved or skipped");
 assert(page.includes("showBrowseShortlist"), "shortlist render is gated");
 assert(page.includes("data-search-enlarged"), "search box marks enlarged");
 assert(page.includes("data-browse-shortlist"), "shortlist ready/waiting is marked");
@@ -237,9 +256,16 @@ assert(!/\bswipe\b/i.test(ui), "ask is not a swipe deck");
 
 const speed = read("app/components/SpeedMatch.tsx");
 const speedLib = read("lib/speed-match.ts");
-assert(!speed.includes("browse-ask"), "Speed Match UI is unchanged by Browse ask");
+assert(speedLib.includes("speedMatchDealbreakerQuestions"), "Speed Match uses the shared household bank");
 assert(speedLib.includes("SPEED_MATCH_QUESTION_COUNT = 10"), "Speed Match bank stays 10");
-assert(/not speed match/i.test(askLib), "lib names the split");
+assert(/not the speed match timer/i.test(askLib), "Browse ask is not the timer");
+assert(!/diet/i.test(ids.join(" ")), "Browse bank has no diet id");
+assert(findBrowseAskQuestion("work")?.prompt.includes("keep working"), "work after marriage is in Browse");
+assert(findBrowseAskQuestion("mother_tongue")?.id === "mother_tongue", "mother tongue is in Browse");
+assert(!browseAskAlreadyAnswered("family_living", thinPrompt), "family values is not joint family");
+assert(browseAskAlreadyAnswered("family_living", "joint family in Dallas"), "joint family skips that tap");
+assert(browseAskAlreadyAnswered("mother_tongue", "Telugu doctor"), "Telugu skips mother tongue");
+assert(!browseAskAlreadyAnswered("children", thinPrompt), "family values is not kids");
 assert(askLib.includes("VISA_STATUS_GROUPS"), "visa taps reuse VISA_STATUS_GROUPS");
 assert(page.includes("MeetupRail"), "home meetup rail stays");
 assert(page.includes("PinnedRow"), "home pinned row stays");

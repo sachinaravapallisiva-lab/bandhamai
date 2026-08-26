@@ -1,12 +1,29 @@
 /**
- * Browse ask after a PROFILE SEARCH prompt. Not Speed Match.
+ * Browse ask after a PROFILE SEARCH prompt. Not the Speed Match timer.
  *
  * After a typed or spoken prompt, enlarge the search box and ask leftover
- * dealbreakers as tap chips, one question at a time: location, visa,
- * religion, caste. Answers fold into the same q / parseSearchQuery path.
- * Session answers are remembered until reload. No new profile columns.
+ * household dealbreakers as tap chips, one question at a time. Same 10 as
+ * Speed Match. Diet is not a main question. Answers fold into the same q /
+ * parseSearchQuery path. Session answers stay until reload.
  */
 
+import {
+  DEALBREAKER_COMMUNITY_ALIAS_TERMS,
+  DEALBREAKER_CHILDREN_CHOICES,
+  DEALBREAKER_FAMILY_LIVING_CHOICES,
+  DEALBREAKER_FIELD_ORDER,
+  DEALBREAKER_LANGUAGE_CHOICES,
+  DEALBREAKER_LANGUAGE_TERMS,
+  DEALBREAKER_LOCATION_CHOICES,
+  DEALBREAKER_PARENTS_CHOICES,
+  DEALBREAKER_PROMPTS,
+  DEALBREAKER_RELIGION_CHOICES,
+  DEALBREAKER_RELIGION_TERMS,
+  DEALBREAKER_TIMELINE_CHOICES,
+  DEALBREAKER_WORK_CHOICES,
+  DEALBREAKER_ANY_CHOICE,
+  dealbreakerCommunityChoices,
+} from "./dealbreakers";
 import { SEARCH_CITIES } from "./desi-search-aliases";
 import { parseSearchQuery, type SearchCriteria } from "./profile-search";
 import {
@@ -25,8 +42,8 @@ export const BROWSE_ASK_VISA_NO_ANSWER_LABEL = "Prefer not to say";
 export const BROWSE_ASK_LABEL = "STILL NEEDED";
 export const BROWSE_ASK_HINT = "Tap one. Bandham AI uses this for the shortlist.";
 
-/** Locked order. City is an optional second tap after a region, not a fifth field. */
-export const BROWSE_ASK_FIELD_ORDER = ["location", "visa", "religion", "caste"] as const;
+/** Locked order. City is an optional follow-up after a region, not one of the 10. */
+export const BROWSE_ASK_FIELD_ORDER = DEALBREAKER_FIELD_ORDER;
 
 export type BrowseAskField = (typeof BROWSE_ASK_FIELD_ORDER)[number];
 
@@ -55,77 +72,10 @@ export type BrowseAskAnswer = {
   choiceId: string;
 };
 
-const RELIGION_CHOICES: BrowseAskChoice[] = [
-  { id: "hindu", label: "Hindu", fold: "Hindu" },
-  { id: "muslim", label: "Muslim", fold: "Muslim" },
-  { id: "christian", label: "Christian", fold: "Christian" },
-  { id: "sikh", label: "Sikh", fold: "Sikh" },
-  { id: "jain", label: "Jain", fold: "Jain" },
-  { id: "buddhist", label: "Buddhist", fold: "Buddhist" },
-  { id: "other", label: "Other", fold: "Other" },
-];
-
-const RELIGION_TERMS = [
-  "hindu",
-  "muslim",
-  "islam",
-  "islamic",
-  "christian",
-  "sikh",
-  "jain",
-  "buddhist",
-  "buddhism",
-];
-
-/** Community aliases already used by parseSearchQuery. Not a new caste taxonomy. */
-const COMMUNITY_ALIAS_TERMS = [
-  "iyengar",
-  "iyer",
-  "reddy",
-  "nair",
-  "nambiar",
-  "menon",
-  "naidu",
-  "kamma",
-  "kapu",
-  "velama",
-  "raju",
-  "brahmin",
-  "namboodiri",
-  "pillai",
-  "chettiar",
-  "mudaliar",
-  "gowda",
-  "shetty",
-  "patel",
-  "aggarwal",
-  "agarwal",
-  "kayastha",
-  "syrian christian",
-];
-
-/** Short chip row from that same community list. */
-const COMMUNITY_CHIP_IDS = [
-  "reddy",
-  "iyengar",
-  "iyer",
-  "nair",
-  "naidu",
-  "brahmin",
-  "patel",
-  "gowda",
-  "shetty",
-  "aggarwal",
-];
-
-const LOCATION_CHOICES: BrowseAskChoice[] = [
-  { id: "us", label: "United States", fold: "" },
-  { id: "australia", label: "Australia", fold: "" },
-  { id: "uk", label: "United Kingdom", fold: "" },
-  { id: "europe", label: "Europe", fold: "" },
-  { id: "ireland", label: "Ireland", fold: "" },
-  { id: "india", label: "India", fold: "" },
-];
+const RELIGION_CHOICES: BrowseAskChoice[] = DEALBREAKER_RELIGION_CHOICES;
+const RELIGION_TERMS = DEALBREAKER_RELIGION_TERMS;
+const COMMUNITY_ALIAS_TERMS = DEALBREAKER_COMMUNITY_ALIAS_TERMS;
+const LOCATION_CHOICES: BrowseAskChoice[] = DEALBREAKER_LOCATION_CHOICES;
 
 const LOCATION_REGION_TERMS = [
   "united states",
@@ -180,21 +130,7 @@ export const BROWSE_ASK_NO_ANSWER_CHOICE: BrowseAskChoice = {
   fold: "",
 };
 
-const CASTE_ANY_CHOICE: BrowseAskChoice = {
-  id: "any",
-  label: "Any",
-  fold: "",
-};
-
-function titleLabel(value: string) {
-  return value
-    .split(/\s+/)
-    .map(function (part) {
-      if (!part) return part;
-      return part.charAt(0).toUpperCase() + part.slice(1);
-    })
-    .join(" ");
-}
+const CASTE_ANY_CHOICE: BrowseAskChoice = DEALBREAKER_ANY_CHOICE;
 
 function cityChoice(city: string): BrowseAskChoice {
   return { id: city.toLowerCase().replace(/\s+/g, "_"), label: city, fold: city };
@@ -224,7 +160,7 @@ function visaQuestion(): BrowseAskQuestion {
   }).map(visaChoice);
   return {
     id: "visa",
-    prompt: "Which visa status should we look for?",
+    prompt: DEALBREAKER_PROMPTS.visa,
     choices: extra,
     groups: groups,
     noAnswerLabel: BROWSE_ASK_VISA_NO_ANSWER_LABEL,
@@ -234,7 +170,7 @@ function visaQuestion(): BrowseAskQuestion {
 function locationQuestion(): BrowseAskQuestion {
   return {
     id: "location",
-    prompt: "Where should we look?",
+    prompt: DEALBREAKER_PROMPTS.location,
     choices: LOCATION_CHOICES,
   };
 }
@@ -250,7 +186,7 @@ function cityQuestion(regionId: string): BrowseAskQuestion {
 function religionQuestion(): BrowseAskQuestion {
   return {
     id: "religion",
-    prompt: "Any faith we should look for?",
+    prompt: DEALBREAKER_PROMPTS.religion,
     choices: RELIGION_CHOICES,
   };
 }
@@ -258,10 +194,56 @@ function religionQuestion(): BrowseAskQuestion {
 function casteQuestion(): BrowseAskQuestion {
   return {
     id: "caste",
-    prompt: "Any community we should look for?",
-    choices: COMMUNITY_CHIP_IDS.map(function (id) {
-      return { id: id, label: titleLabel(id), fold: titleLabel(id) };
-    }).concat(CASTE_ANY_CHOICE),
+    prompt: DEALBREAKER_PROMPTS.caste,
+    choices: dealbreakerCommunityChoices(),
+  };
+}
+
+function familyLivingQuestion(): BrowseAskQuestion {
+  return {
+    id: "family_living",
+    prompt: DEALBREAKER_PROMPTS.family_living,
+    choices: DEALBREAKER_FAMILY_LIVING_CHOICES,
+  };
+}
+
+function parentsQuestion(): BrowseAskQuestion {
+  return {
+    id: "parents",
+    prompt: DEALBREAKER_PROMPTS.parents,
+    choices: DEALBREAKER_PARENTS_CHOICES,
+  };
+}
+
+function workQuestion(): BrowseAskQuestion {
+  return {
+    id: "work",
+    prompt: DEALBREAKER_PROMPTS.work,
+    choices: DEALBREAKER_WORK_CHOICES,
+  };
+}
+
+function timelineQuestion(): BrowseAskQuestion {
+  return {
+    id: "timeline",
+    prompt: DEALBREAKER_PROMPTS.timeline,
+    choices: DEALBREAKER_TIMELINE_CHOICES,
+  };
+}
+
+function childrenQuestion(): BrowseAskQuestion {
+  return {
+    id: "children",
+    prompt: DEALBREAKER_PROMPTS.children,
+    choices: DEALBREAKER_CHILDREN_CHOICES,
+  };
+}
+
+function motherTongueQuestion(): BrowseAskQuestion {
+  return {
+    id: "mother_tongue",
+    prompt: DEALBREAKER_PROMPTS.mother_tongue,
+    choices: DEALBREAKER_LANGUAGE_CHOICES,
   };
 }
 
@@ -270,6 +252,12 @@ export const BROWSE_ASK_QUESTIONS: BrowseAskQuestion[] = [
   visaQuestion(),
   religionQuestion(),
   casteQuestion(),
+  familyLivingQuestion(),
+  parentsQuestion(),
+  workQuestion(),
+  timelineQuestion(),
+  childrenQuestion(),
+  motherTongueQuestion(),
 ];
 
 export function isBrowseAskNoAnswer(choiceId: string | null | undefined) {
@@ -394,6 +382,62 @@ export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
   });
 }
 
+export function promptHasFamilyLiving(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  return (
+    hasTerm(haystack(raw, parsed), ["joint family", "nuclear family", "live with parents"]) ||
+    parsed.keywords.some(function (kw) {
+      return /joint family|nuclear family/.test(kw.toLowerCase());
+    })
+  );
+}
+
+export function promptHasParents(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  return hasTerm(haystack(raw, parsed), [
+    "parents involved",
+    "involve parents",
+    "from the start",
+    "family involved",
+  ]);
+}
+
+export function promptHasWorkAfterMarriage(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  return hasTerm(haystack(raw, parsed), [
+    "keep working",
+    "working after marriage",
+    "work after marriage",
+    "stay at home after marriage",
+    "home after marriage",
+  ]);
+}
+
+export function promptHasTimeline(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  return hasTerm(haystack(raw, parsed), [
+    "within a year",
+    "1 to 2 years",
+    "marry soon",
+    "no timeline",
+    "when families are ready",
+  ]);
+}
+
+export function promptHasChildren(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  return hasTerm(haystack(raw, parsed), ["children", "kids", "want kids", "no kids"]);
+}
+
+export function promptHasMotherTongue(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  const hay = haystack(raw, parsed);
+  if (hasTerm(hay, DEALBREAKER_LANGUAGE_TERMS)) return true;
+  return parsed.keywords.some(function (kw) {
+    return DEALBREAKER_LANGUAGE_TERMS.indexOf(kw.toLowerCase()) >= 0;
+  });
+}
+
 export function browseAskAlreadyAnswered(
   questionId: string,
   raw: string,
@@ -407,6 +451,12 @@ export function browseAskAlreadyAnswered(
   if (questionId === "visa") return promptHasVisa(raw, parsed);
   if (questionId === "religion") return promptHasReligion(raw, parsed);
   if (questionId === "caste") return promptHasCaste(raw, parsed);
+  if (questionId === "family_living") return promptHasFamilyLiving(raw, parsed);
+  if (questionId === "parents") return promptHasParents(raw, parsed);
+  if (questionId === "work") return promptHasWorkAfterMarriage(raw, parsed);
+  if (questionId === "timeline") return promptHasTimeline(raw, parsed);
+  if (questionId === "children") return promptHasChildren(raw, parsed);
+  if (questionId === "mother_tongue") return promptHasMotherTongue(raw, parsed);
   return false;
 }
 
@@ -502,6 +552,24 @@ export function remainingBrowseQuestions(
   if (!browseAskAlreadyAnswered("caste", text, parsed, answers)) {
     needed.push(casteQuestion());
   }
+  if (!browseAskAlreadyAnswered("family_living", text, parsed, answers)) {
+    needed.push(familyLivingQuestion());
+  }
+  if (!browseAskAlreadyAnswered("parents", text, parsed, answers)) {
+    needed.push(parentsQuestion());
+  }
+  if (!browseAskAlreadyAnswered("work", text, parsed, answers)) {
+    needed.push(workQuestion());
+  }
+  if (!browseAskAlreadyAnswered("timeline", text, parsed, answers)) {
+    needed.push(timelineQuestion());
+  }
+  if (!browseAskAlreadyAnswered("children", text, parsed, answers)) {
+    needed.push(childrenQuestion());
+  }
+  if (!browseAskAlreadyAnswered("mother_tongue", text, parsed, answers)) {
+    needed.push(motherTongueQuestion());
+  }
   return needed;
 }
 
@@ -523,7 +591,7 @@ export function userFacingBrowseAskCopy() {
     BROWSE_ASK_HINT,
     BROWSE_ASK_NO_ANSWER_LABEL,
     BROWSE_ASK_VISA_NO_ANSWER_LABEL,
-    browseAskProgress(0, 4),
+    browseAskProgress(0, 10),
     CASTE_ANY_CHOICE.label,
   ]
     .concat(fromQuestions)

@@ -196,7 +196,7 @@ export default function SpeedMatch({
           </h2>
           <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
             {introBody ||
-              ("Fifteen seconds each. Matrimony filters families actually gate on — not a score, and not a promise that you will match. Tap " +
+              ("Fifteen seconds each. Matrimony filters families actually gate on. Not a score, and not a promise that you will match. Tap " +
                 SPEED_MATCH_NO_ANSWER_LABEL +
                 " if you would rather skip. Time running out records the same choice.")}
           </p>
