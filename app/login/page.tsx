@@ -12,10 +12,10 @@ import {
   LOGIN_EMPTY_FIELDS,
   LOGIN_FORGOT_LABEL,
   LOGIN_FORGOT_SENT,
-  LOGIN_PRIVACY_PATH,
   LOGIN_RESEND_LABEL,
   LOGIN_RESEND_SENT,
   LOGIN_SIGN_IN_LABEL,
+  LOGIN_SIGN_UP_API,
   LOGIN_SIGN_UP_LABEL,
   LOGIN_SIGN_UP_PROMPT,
   LOGIN_SIGN_UP_UNREACHABLE,
@@ -98,22 +98,44 @@ export default function LoginPage() {
       }
       setBusy(true);
       setStatus(LOGIN_CREATING);
-      supabase.auth.signUp({ email: email.trim(), password: password }).then(function (result) {
-        setBusy(false);
-        if (result.error) {
-          setStatus(result.error.message);
-          return;
-        }
-        if (result.data.session) {
-          setStatus(LOGIN_CREATED_SESSION);
-          goNext();
-          return;
-        }
-        setStatus(LOGIN_CREATED_CONFIRM);
-      }).catch(function () {
-        setBusy(false);
-        setStatus(LOGIN_SIGN_UP_UNREACHABLE);
-      });
+      fetch(LOGIN_SIGN_UP_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password,
+          agreed: true,
+        }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            setBusy(false);
+            setStatus(result.data.error || LOGIN_SIGN_UP_UNREACHABLE);
+            return;
+          }
+          const session = result.data.session;
+          if (session && session.access_token && session.refresh_token) {
+            return supabase.auth.setSession({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            }).then(function () {
+              setBusy(false);
+              setStatus(LOGIN_CREATED_SESSION);
+              goNext();
+            });
+          }
+          setBusy(false);
+          setStatus(LOGIN_CREATED_CONFIRM);
+        })
+        .catch(function () {
+          setBusy(false);
+          setStatus(LOGIN_SIGN_UP_UNREACHABLE);
+        });
     }
   }
 
@@ -363,10 +385,6 @@ export default function LoginPage() {
                   I agree to the{" "}
                   <Link href={LOGIN_TERMS_PATH} className="bm-focus" style={{ color: VIOLET }}>
                     Terms
-                  </Link>
-                  {" and "}
-                  <Link href={LOGIN_PRIVACY_PATH} className="bm-focus" style={{ color: VIOLET }}>
-                    Privacy
                   </Link>
                   .
                 </span>

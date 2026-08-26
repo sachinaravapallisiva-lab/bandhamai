@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
+  LOGIN_SIGN_UP_API,
   LOGIN_TERMS_AGREE,
+  LOGIN_TERMS_NEED,
   LOGIN_TERMS_PATH,
   canCreateSignUpAccount,
   decideSignUpIntent,
@@ -32,14 +34,27 @@ function read(path) {
 assert(TERMS_PATH === "/terms", "Terms path");
 assert(LOGIN_TERMS_PATH === "/terms", "login Terms path stays /terms");
 assert(TERMS_AGREE_LABEL === "I agree to the Terms.", "agree copy lock");
+assert(LOGIN_TERMS_AGREE === "I agree to the Terms.", "Sign up checkbox is I agree to the Terms.");
+assert(!/privacy/i.test(LOGIN_TERMS_AGREE), "Sign up agree does not mention Privacy");
 assert(TERMS_PROFILE_DATA_TITLE === "Profile data you submit", "profile data section title");
 assert(TERMS_VERIFYAI_BIO_TITLE === "VerifyAI and biometrics on Bandham", "biometrics section title");
 assert(TERMS_PROFILE_DATA_BODY.includes("name, gender, city"), "profile data names required fields");
 assert(TERMS_PROFILE_DATA_BODY.includes("profile photo"), "profile data names photo");
+assert(TERMS_PROFILE_DATA_BODY.includes("review the profile"), "profile data says why we use it");
+assert(TERMS_PROFILE_DATA_BODY.includes("Reviewers"), "profile data says who sees it");
+assert(TERMS_PROFILE_DATA_BODY.includes("do not sell"), "profile data says no sale");
+assert(TERMS_PROFILE_DATA_BODY.includes("account is open"), "profile data says retention");
+assert(TERMS_PROFILE_DATA_BODY.includes("18 or older"), "profile data says 18 and over");
+assert(TERMS_PROFILE_DATA_BODY.includes("religion"), "profile data covers religion");
+assert(TERMS_PROFILE_DATA_BODY.includes("community"), "profile data covers community");
 assert(!/caste|income|aadhaar number, passport number/i.test(TERMS_PROFILE_DATA_BODY), "do not invent extra profile fields");
 assert(TERMS_VERIFYAI_BIO_BODY.includes("$4.99 one time"), "VerifyAI is $4.99 one time");
 assert(TERMS_VERIFYAI_BIO_BODY.toLowerCase().includes("paying does not verify"), "paying does not verify");
 assert(TERMS_VERIFYAI_BIO_BODY.includes("verifyai.llc"), "handoff is the live VerifyAI path");
+assert(TERMS_VERIFYAI_BIO_BODY.includes("Face ID"), "VerifyAI is device Face ID only");
+assert(!/device biometrics/i.test(TERMS_VERIFYAI_BIO_BODY), "do not use a vague device biometrics line");
+assert(TERMS_VERIFYAI_BIO_BODY.includes("refuse Face ID"), "refuse Face ID means no badge");
+assert(TERMS_VERIFYAI_BIO_BODY.includes("do not get a badge"), "refuse = no badge");
 assert(TERMS_VERIFYAI_BIO_BODY.includes("does not store a face map"), "do not invent face map storage");
 assert(TERMS_VERIFYAI_BIO_BODY.toLowerCase().includes("badge"), "badge only after success");
 assert(TERMS_VERIFYAI_BIO_BODY.includes("verified"), "stores verified status after success");
@@ -72,8 +87,24 @@ assert(!terms.includes("470") && !terms.includes("640"), "terms has no invented 
 const login = read("app/login/page.tsx");
 assert(login.includes("canCreateSignUpAccount"), "Sign up checkbox lock stays");
 assert(login.includes("LOGIN_TERMS_PATH") || login.includes('href="/terms"'), "Sign up Terms still links to /terms");
-assert(LOGIN_TERMS_AGREE.toLowerCase().includes("i agree to the terms"), "Sign up agree copy stays");
+assert(/I agree to the/.test(login), "Sign up checkbox copy is on the page");
+assert(!/and Privacy/.test(login), "Sign up checkbox is not I agree to the Terms and Privacy");
+assert(login.includes("LOGIN_SIGN_UP_API") || login.includes("/api/signup"), "Sign up posts to the server");
+assert(!login.includes("supabase.auth.signUp"), "skipping the checkbox cannot hit browser signUp");
 assert(!existsSync(new URL("../app/signup/page.tsx", import.meta.url)), "do not invent a second signup");
+
+assert(existsSync(new URL("../app/api/signup/route.ts", import.meta.url)), "server signup reject exists");
+assert(LOGIN_SIGN_UP_API === "/api/signup", "server signup path");
+assert(canCreateSignUpAccount(false) === false, "unchecked server agree is false");
+assert(canCreateSignUpAccount({ agreed: false }) === false, "object without true agree is false");
+const signupApi = read("app/api/signup/route.ts");
+assert(signupApi.includes("canCreateSignUpAccount"), "POST /api/signup checks agree");
+assert(signupApi.includes("LOGIN_TERMS_NEED") || signupApi.includes(LOGIN_TERMS_NEED), "POST /api/signup returns agree error");
+assert(signupApi.includes("status: 400"), "POST /api/signup reject is 400");
+const signupBeforeCreate = signupApi.slice(0, signupApi.indexOf("auth.signUp"));
+assert(signupBeforeCreate.includes("canCreateSignUpAccount"), "server checks agree before create");
+assert(signupBeforeCreate.includes("return"), "server returns without agree");
+assert(signupBeforeCreate.indexOf("canCreateSignUpAccount") < signupApi.indexOf("auth.signUp"), "unchecked Sign up cannot create an account");
 
 const profiles = read("app/api/profiles/route.ts");
 const post = profiles.slice(profiles.indexOf("export async function POST"), profiles.indexOf("export async function PATCH"));
