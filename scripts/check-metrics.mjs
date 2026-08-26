@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { ACCOUNT_MENU_ITEMS } from "../lib/account-menu.ts";
-import { founderAdminEmails, isFounderAdminEmail } from "../lib/internal-admin.ts";
+import { FOUNDER_SIGNIN_ADMIN_EMAIL, founderAdminEmails, isFounderAdminEmail } from "../lib/internal-admin.ts";
 import {
   METRICS_AGE_LABELS,
   METRICS_API_PATH,
@@ -49,9 +49,13 @@ assert(ALLOWED_NEXT_PATHS.includes(METRICS_PATH), "login can return to metrics")
 assert(ALLOWED_NEXT_PATHS.includes("/admin"), "login can return to admin");
 
 assertEq(SUPPORT_INBOX_EMAIL_DEFAULT, "sachin.aravapallisiva@gmail.com", "founder email lock");
+assertEq(FOUNDER_SIGNIN_ADMIN_EMAIL, "sachin.aravapalli.siva@gmail.com", "personal founder email lock");
 assert(founderAdminEmails().includes(SUPPORT_INBOX_EMAIL_DEFAULT), "allowlist includes founder email");
+assert(founderAdminEmails().includes(FOUNDER_SIGNIN_ADMIN_EMAIL), "allowlist includes personal founder email");
 assert(isFounderAdminEmail("sachin.aravapallisiva@gmail.com"), "founder email is allowed");
+assert(isFounderAdminEmail("sachin.aravapalli.siva@gmail.com"), "personal founder email is allowed");
 assert(isFounderAdminEmail("Sachin.Aravapallisiva@gmail.com"), "founder email match is case insensitive");
+assert(isFounderAdminEmail("Sachin.Aravapalli.Siva@gmail.com"), "personal founder email match is case insensitive");
 assert(!isFounderAdminEmail(""), "empty email fails closed");
 assert(!isFounderAdminEmail("someone@example.com"), "other emails fail closed");
 assert(!isFounderAdminEmail(null), "missing email fails closed");
@@ -156,6 +160,7 @@ assert(redirectPage.includes("redirect"), "legacy /metrics redirects to admin me
 assert(read("lib/admin-server.ts").includes("status: 404"), "non admin is not available, not 500");
 assert(!/status:\s*500/.test(route) && !/status:\s*500/.test(read("lib/admin-server.ts")), "api does not 500");
 assert(admin.includes("SUPPORT_INBOX_EMAIL_DEFAULT"), "gate reuses founder inbox");
+assert(admin.includes("sachin.aravapalli.siva@gmail.com"), "personal founder gmail is on the founder list");
 assert(admin.includes("BANDHAM_ADMIN_EMAILS"), "gate reads the server allowlist env");
 assert(!admin.includes("NEXT_PUBLIC_BANDHAM_ADMIN_EMAILS"), "allowlist stays server only");
 assert(!admin.includes("clerk") && !admin.includes("auth0"), "no new auth vendor");
