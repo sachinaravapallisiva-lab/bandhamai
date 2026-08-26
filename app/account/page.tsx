@@ -11,11 +11,13 @@ import {
   parseBiodataShare,
 } from "../../lib/biodata-share";
 import { parseInstagramInput } from "../../lib/instagram";
+import { canWriteProfile, TERMS_NEED_PROFILE } from "../../lib/terms-agree";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import BiodataShareField from "../components/BiodataShareField";
 import DownloadBiodata from "../components/DownloadBiodata";
 import InstagramField from "../components/InstagramField";
+import TermsAgreeField from "../components/TermsAgreeField";
 import VerifyOffer from "../components/VerifyOffer";
 import MeetupCard from "../components/MeetupCard";
 
@@ -42,6 +44,7 @@ export default function AccountPage() {
   const [biodataShare, setBiodataShare] = useState(false);
   const [savingShare, setSavingShare] = useState(false);
   const [shareNote, setShareNote] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   function loadProfile() {
     authJsonHeaders().then(function (headers) {
@@ -147,6 +150,10 @@ export default function AccountPage() {
   }
 
   function saveInstagram() {
+    if (!canWriteProfile(agreedTerms)) {
+      setSocialNote(TERMS_NEED_PROFILE);
+      return;
+    }
     const parsed = parseInstagramInput(instagram);
     if (parsed.error) {
       setSocialNote(parsed.error);
@@ -169,7 +176,7 @@ export default function AccountPage() {
         return fetch("/api/profiles", {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ instagram }),
+          body: JSON.stringify({ instagram, agreed: true }),
         });
       })
       .then(function (res) {
@@ -192,6 +199,10 @@ export default function AccountPage() {
   }
 
   function saveBiodataShare() {
+    if (!canWriteProfile(agreedTerms)) {
+      setShareNote(TERMS_NEED_PROFILE);
+      return;
+    }
     if (!hasProfile) {
       setShareNote("Create a profile first.");
       return;
@@ -209,7 +220,7 @@ export default function AccountPage() {
         return fetch("/api/profiles", {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ biodata_share: biodataShare }),
+          body: JSON.stringify({ biodata_share: biodataShare, agreed: true }),
         });
       })
       .then(function (res) {
@@ -364,6 +375,14 @@ export default function AccountPage() {
           </section>
 
           <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
+            <div style={{ marginBottom: 16 }}>
+              <TermsAgreeField
+                id="account-agree-terms"
+                checked={agreedTerms}
+                onChange={setAgreedTerms}
+                disabled={savingSocial || savingShare}
+              />
+            </div>
             <InstagramField
               id="account-instagram"
               value={instagram}
@@ -375,7 +394,7 @@ export default function AccountPage() {
             />
             <button
               type="button"
-              disabled={savingSocial || !hasProfile}
+              disabled={savingSocial || !hasProfile || !agreedTerms}
               onClick={saveInstagram}
               className="bm-sans bm-talk bm-focus"
               style={{
@@ -387,7 +406,7 @@ export default function AccountPage() {
                 padding: "11px 18px",
                 fontSize: 13.5,
                 fontWeight: 600,
-                cursor: savingSocial || !hasProfile ? "default" : "pointer",
+                cursor: savingSocial || !hasProfile || !agreedTerms ? "default" : "pointer",
               }}
             >
               {savingSocial ? "Saving…" : "Save Instagram"}
@@ -413,7 +432,7 @@ export default function AccountPage() {
             />
             <button
               type="button"
-              disabled={savingShare || !hasProfile}
+              disabled={savingShare || !hasProfile || !agreedTerms}
               onClick={saveBiodataShare}
               className="bm-sans bm-talk bm-focus"
               style={{
@@ -425,7 +444,7 @@ export default function AccountPage() {
                 padding: "11px 18px",
                 fontSize: 13.5,
                 fontWeight: 600,
-                cursor: savingShare || !hasProfile ? "default" : "pointer",
+                cursor: savingShare || !hasProfile || !agreedTerms ? "default" : "pointer",
               }}
             >
               {savingShare ? BIODATA_SHARE_SAVING_LABEL : BIODATA_SHARE_SAVE_LABEL}

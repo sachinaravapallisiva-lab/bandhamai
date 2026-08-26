@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 import LegalArticle, { LegalList, LegalSection } from "../components/LegalArticle";
+import {
+  TERMS_PROFILE_DATA_BODY,
+  TERMS_PROFILE_DATA_TITLE,
+  TERMS_VERIFYAI_BIO_BODY,
+  TERMS_VERIFYAI_BIO_TITLE,
+} from "../../lib/terms-agree";
 import { VIOLET } from "../../lib/theme";
 
 export const metadata: Metadata = {
@@ -41,6 +47,10 @@ export default function TermsPage() {
           </p>
         </LegalSection>
 
+        <LegalSection title={TERMS_PROFILE_DATA_TITLE}>
+          <p style={{ margin: 0 }}>{TERMS_PROFILE_DATA_BODY}</p>
+        </LegalSection>
+
         <LegalSection title="Messaging">
           <p style={{ margin: 0 }}>
             Chat is for respectful, marriage-minded conversation. Do not send threats, spam, or sexual messages the other person did not ask for. Do not keep writing after someone asked you to stop. Do not use chat to sell goods, loans, crypto, or a job. Bandham AI subscription is $9.99 a month. A subscription is not a promise of a match, a meeting, or a marriage.
@@ -63,6 +73,10 @@ export default function TermsPage() {
           <p style={{ margin: 0 }}>
             VerifyAI is an optional identity check on a Bandham profile. It costs $4.99 one-time, billed by Stripe Checkout, then you complete the VerifyAI flow (verifyai.llc). Paying does not verify the profile. A quiet badge appears only when we have a stored verified status after that flow succeeds. It is not a background check, a visa check, or a promise that someone is who they say they are.
           </p>
+        </LegalSection>
+
+        <LegalSection title={TERMS_VERIFYAI_BIO_TITLE}>
+          <p style={{ margin: 0 }}>{TERMS_VERIFYAI_BIO_BODY}</p>
         </LegalSection>
 
         <LegalSection title="Money, dowry, and papers">

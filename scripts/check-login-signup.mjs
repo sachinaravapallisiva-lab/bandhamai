@@ -6,18 +6,24 @@ import {
   LOGIN_EMPTY_FIELDS,
   LOGIN_FORGOT_LABEL,
   LOGIN_FORGOT_SENT,
+  LOGIN_PRIVACY_PATH,
   LOGIN_PRODUCT,
   LOGIN_RESEND_LABEL,
   LOGIN_RESEND_SENT,
   LOGIN_SIGN_IN_HEADING,
   LOGIN_SIGN_IN_HELP,
   LOGIN_SIGN_IN_LABEL,
+  LOGIN_SIGN_UP_API,
   LOGIN_SIGN_UP_HEADING,
   LOGIN_SIGN_UP_HELP,
   LOGIN_SIGN_UP_LABEL,
   LOGIN_SIGN_UP_PATH,
   LOGIN_SIGN_UP_PROMPT,
   LOGIN_TAGLINE,
+  LOGIN_TERMS_AGREE,
+  LOGIN_TERMS_NEED,
+  LOGIN_TERMS_PATH,
+  canCreateSignUpAccount,
   decideSignInIntent,
   decideSignUpIntent,
   hasLoginCredentials,
@@ -93,6 +99,18 @@ assert(decideSignUpIntent("signin", "sai@example.com", "secret") === "create-acc
 assert(decideSignUpIntent("signup", "sai@example.com", "secret") === "create-account", "filled signup in signup mode creates");
 assert(decideSignInIntent("", "") === "need-fields", "empty sign in keeps the empty check");
 assert(decideSignInIntent("sai@example.com", "secret") === "sign-in", "filled sign in signs in");
+assert(canCreateSignUpAccount(false) === false, "unchecked Terms cannot create");
+assert(canCreateSignUpAccount(true) === true, "checked Terms can create");
+assert(LOGIN_TERMS_AGREE === "I agree to the Terms.", "agree copy lock");
+assert(LOGIN_TERMS_AGREE.toLowerCase().includes("i agree to the terms"), "agree copy names Terms");
+assert(!/privacy/i.test(LOGIN_TERMS_AGREE), "Sign up agree does not mention Privacy");
+assert(LOGIN_SIGN_UP_API === "/api/signup", "Sign up create posts to /api/signup");
+assert(LOGIN_TERMS_NEED.toLowerCase().includes("agree"), "need copy asks them to agree");
+assert(LOGIN_TERMS_NEED.toLowerCase().includes("terms"), "need copy names Terms");
+assert(LOGIN_TERMS_PATH === "/terms", "Terms link is /terms");
+assert(LOGIN_PRIVACY_PATH === "/privacy", "Privacy link is /privacy");
+assert(existsSync(new URL("../app/terms/page.tsx", import.meta.url)), "existing /terms page stays");
+assert(existsSync(new URL("../app/privacy/page.tsx", import.meta.url)), "existing /privacy page stays");
 
 assert(loginHeading("signin") === LOGIN_SIGN_IN_HEADING, "signin heading");
 assert(loginHeading("signup") === LOGIN_SIGN_UP_HEADING, "signup heading");
@@ -106,7 +124,8 @@ assert(src.includes("loginHelp"), "page uses shared helper");
 assert(src.includes("LOGIN_SIGN_UP_PROMPT"), "empty signup first tap asks, it does not reuse the dead error");
 assert(src.includes('setMode("signup")') || src.includes("setMode('signup')"), "empty signup enters signup mode");
 assert(src.includes("emailRef") && src.includes(".focus("), "empty signup focuses email");
-assert(src.includes("supabase.auth.signUp"), "filled signup uses existing supabase.auth.signUp");
+assert(src.includes("LOGIN_SIGN_UP_API") || src.includes("/api/signup"), "filled signup posts to the server");
+assert(!src.includes("supabase.auth.signUp"), "login page does not create an account in the browser");
 assert(src.includes("goNext"), "session signup still follows next path");
 assert(src.includes("LOGIN_CREATED_CONFIRM") || src.includes(LOGIN_CREATED_CONFIRM), "confirm copy stays");
 assert(src.includes("handleForgot") && src.includes("LOGIN_FORGOT_LABEL"), "Forgot password stays");
@@ -142,6 +161,57 @@ assert(
   !/switch-to-signup[\s\S]{0,180}LOGIN_EMPTY_FIELDS/.test(signUpFn),
   "mode switch must not show the sign in empty error"
 );
+assert(
+  signUpFn.indexOf('"switch-to-signup"') < signUpFn.indexOf("canCreateSignUpAccount"),
+  "empty Sign up still opens Sign up before the Terms lock"
+);
+assert(signUpFn.includes("canCreateSignUpAccount"), "handleSignUp checks Terms before create");
+assert(signUpFn.includes("LOGIN_TERMS_NEED"), "handleSignUp tells them to agree");
+const createGuard = signUpFn.slice(signUpFn.indexOf("create-account"), signUpFn.indexOf("LOGIN_SIGN_UP_API"));
+assert(createGuard.includes("canCreateSignUpAccount"), "create path checks agree");
+assert(createGuard.includes("return"), "handleSignUp returns without agree");
+assert(!createGuard.includes("LOGIN_SIGN_UP_API"), "no server create without agree");
+assert(signUpFn.includes('agreed: true'), "checked Sign up sends agreed");
+
+const signInFn = src.slice(src.indexOf("function handleSignIn"), src.indexOf("function handleForgot"));
+assert(!signInFn.includes("canCreateSignUpAccount"), "sign in does not require Terms");
+assert(!signInFn.includes("agreedTerms"), "sign in does not read the Terms checkbox");
+
+const resetFn = src.slice(src.indexOf("function handleUpdatePassword"), src.indexOf("const fieldStyle"));
+assert(!resetFn.includes("canCreateSignUpAccount"), "password reset does not require Terms");
+assert(!resetFn.includes("agreedTerms"), "password reset does not read the Terms checkbox");
+
+assert(src.includes('mode === "signup"'), "Terms checkbox is Sign up only");
+assert(src.includes('type="checkbox"'), "Sign up has a required checkbox");
+assert(src.includes("required"), "Terms checkbox is required");
+assert(src.includes("agreedTerms"), "checkbox state is tracked");
+assert(src.includes("LOGIN_TERMS_PATH") || src.includes('href="/terms"'), "Terms links to /terms");
+assert(src.includes("href={LOGIN_TERMS_PATH}") || src.includes('href="/terms"'), "Terms href is /terms");
+assert(!src.includes("LOGIN_PRIVACY_PATH"), "Sign up checkbox does not link Privacy");
+assert(!/and Privacy/.test(src), "Sign up checkbox is not I agree to the Terms and Privacy");
+assert(/I agree to the/.test(src), "agree copy is on the page");
+assert(src.includes("Terms"), "checkbox names Terms");
+assert(
+  /disabled=\{busy \|\| \(mode === "signup" && !agreedTerms\)\}/.test(src),
+  "Sign up is disabled without agree"
+);
+assert(
+  /mode === "signup" \? \([\s\S]*type=["']checkbox["']/.test(src),
+  "the required checkbox is on Sign up only"
+);
+const resetJsx = src.slice(src.indexOf('{mode === "reset"'), src.indexOf(") : ("));
+assert(resetJsx.includes("Save password"), "reset block is the password form");
+assert(!/type=["']checkbox["']/.test(resetJsx), "reset does not ask Terms");
+
+assert(existsSync(new URL("../app/api/signup/route.ts", import.meta.url)), "server signup route exists");
+const signupApiSrc = read("app/api/signup/route.ts");
+assert(signupApiSrc.includes("canCreateSignUpAccount"), "server signup checks agree");
+assert(signupApiSrc.includes("LOGIN_TERMS_NEED"), "server signup returns agree error");
+assert(signupApiSrc.includes("status: 400"), "server signup reject is 400");
+const signupGuard = signupApiSrc.slice(0, signupApiSrc.indexOf("auth.signUp"));
+assert(signupGuard.includes("canCreateSignUpAccount"), "agree is checked before create");
+assert(signupGuard.includes("return"), "server returns without agree");
+assert(!signupGuard.includes("auth.signUp") || signupGuard.indexOf("canCreateSignUpAccount") < signupApiSrc.indexOf("auth.signUp"), "no account without agree");
 
 assert(helpers.includes("supabase") === false, "helpers stay intent only, auth stays on the login page");
 assert(layout.includes("Bandham AI"), "layout names Bandham AI");
@@ -154,4 +224,6 @@ console.log("login signup mode ok", {
   emptySignUp: decideSignUpIntent("signin", "", ""),
   filledSignUp: decideSignUpIntent("signin", "a@b.c", "x"),
   emptySignIn: decideSignInIntent("", ""),
+  termsUnchecked: canCreateSignUpAccount(false),
+  termsChecked: canCreateSignUpAccount(true),
 });
