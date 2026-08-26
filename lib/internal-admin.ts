@@ -10,9 +10,12 @@ export function envAdminEmails() {
     .filter(Boolean);
 }
 
-/** Founder inbox already used in this repo. Not a new auth vendor. */
+/** Personal Gmail used to sign in. Same inbox as SUPPORT_INBOX_EMAIL_DEFAULT, extra dot. */
+export const FOUNDER_SIGNIN_ADMIN_EMAIL = "sachin.aravapalli.siva@gmail.com";
+
+/** Founder inbox plus the personal Gmail used to sign in. Not a new auth vendor. */
 export function founderAdminEmails() {
-  const emails = [SUPPORT_INBOX_EMAIL_DEFAULT];
+  const emails = [SUPPORT_INBOX_EMAIL_DEFAULT, FOUNDER_SIGNIN_ADMIN_EMAIL];
   const fromEnv = (process.env.SUPPORT_INBOX_EMAIL || "").trim();
   if (fromEnv) emails.push(fromEnv);
   return emails.map(function (email) {

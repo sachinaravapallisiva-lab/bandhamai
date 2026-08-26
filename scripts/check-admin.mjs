@@ -19,6 +19,7 @@ import {
 import {
   adminAllowlistEmails,
   envAdminEmails,
+  FOUNDER_SIGNIN_ADMIN_EMAIL,
   founderAdminEmails,
   isAdminEmail,
 } from "../lib/internal-admin.ts";
@@ -63,9 +64,14 @@ assert(ALLOWED_NEXT_PATHS.includes(ADMIN_PATH), "login can return to admin");
 assert(ALLOWED_NEXT_PATHS.includes(ADMIN_METRICS_PATH), "login can return to admin metrics");
 
 assertEq(SUPPORT_INBOX_EMAIL_DEFAULT, "sachin.aravapallisiva@gmail.com", "founder email lock");
+assertEq(FOUNDER_SIGNIN_ADMIN_EMAIL, "sachin.aravapalli.siva@gmail.com", "personal founder email lock");
 assert(founderAdminEmails().includes(SUPPORT_INBOX_EMAIL_DEFAULT), "founder stays on the allowlist");
+assert(founderAdminEmails().includes(FOUNDER_SIGNIN_ADMIN_EMAIL), "personal founder stays on the allowlist");
 assert(adminAllowlistEmails().includes(SUPPORT_INBOX_EMAIL_DEFAULT), "combined allowlist includes founder");
+assert(adminAllowlistEmails().includes(FOUNDER_SIGNIN_ADMIN_EMAIL), "combined allowlist includes personal founder");
 assert(isAdminEmail("sachin.aravapallisiva@gmail.com"), "founder is admin");
+assert(isAdminEmail("sachin.aravapalli.siva@gmail.com"), "personal founder is admin");
+assert(isAdminEmail("Sachin.Aravapalli.Siva@gmail.com"), "personal founder match is case insensitive");
 assert(!isAdminEmail(""), "empty email fails closed");
 assert(!isAdminEmail("someone@example.com"), "unknown email fails closed");
 assertEq(envAdminEmails().includes("someone@example.com"), false, "env list is empty in tests unless set");
@@ -75,7 +81,15 @@ process.env.BANDHAM_ADMIN_EMAILS = "ops@example.com, Other@Example.com";
 assert(isAdminEmail("ops@example.com"), "env allowlist email is admin");
 assert(isAdminEmail("other@example.com"), "env allowlist is case insensitive");
 assert(isAdminEmail(SUPPORT_INBOX_EMAIL_DEFAULT), "founder still admin when env is set");
+assert(isAdminEmail(FOUNDER_SIGNIN_ADMIN_EMAIL), "personal founder still admin when env is set");
 process.env.BANDHAM_ADMIN_EMAILS = previous;
+
+const previousInbox = process.env.SUPPORT_INBOX_EMAIL;
+process.env.SUPPORT_INBOX_EMAIL = "opsinbox@example.com";
+assert(isAdminEmail("opsinbox@example.com"), "SUPPORT_INBOX_EMAIL env is admin");
+assert(isAdminEmail(SUPPORT_INBOX_EMAIL_DEFAULT), "founder inbox still admin when SUPPORT_INBOX_EMAIL is set");
+assert(isAdminEmail(FOUNDER_SIGNIN_ADMIN_EMAIL), "personal founder still admin when SUPPORT_INBOX_EMAIL is set");
+process.env.SUPPORT_INBOX_EMAIL = previousInbox;
 
 const drawer = read("app/components/AccountDrawer.tsx");
 const menu = read("lib/account-menu.ts");
@@ -101,6 +115,8 @@ assert(meRoute.includes("admin: true"), "me route only confirms admin");
 assert(!meRoute.includes("BANDHAM_ADMIN_EMAILS"), "me route does not leak the allowlist");
 assert(metricsRoute.includes("requireAdminRequest"), "metrics api is gated");
 assert(helper.includes("BANDHAM_ADMIN_EMAILS"), "allowlist env is server side");
+assert(helper.includes("SUPPORT_INBOX_EMAIL_DEFAULT"), "existing founder inbox stays");
+assert(helper.includes("sachin.aravapalli.siva@gmail.com"), "personal founder gmail is hardcoded");
 assert(!helper.includes("NEXT_PUBLIC_BANDHAM_ADMIN_EMAILS"), "allowlist is not public");
 assert(envExample.includes("BANDHAM_ADMIN_EMAILS"), "env example documents the allowlist");
 assert(!/BANDHAM_ADMIN_EMAILS=.+@/.test(envExample), "env example does not publish admin emails");
