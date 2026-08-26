@@ -3,6 +3,8 @@
 import {
   BROWSE_ASK_HINT,
   BROWSE_ASK_LABEL,
+  BROWSE_ASK_NO_ANSWER_ALIAS,
+  BROWSE_ASK_NO_ANSWER_ID,
   browseAskChoices,
   browseAskProgress,
   isBrowseAskNoAnswer,
@@ -58,7 +60,7 @@ export default function BrowseAsk({
   onChoose: (choiceId: string) => void;
 }) {
   const skip = browseAskChoices(question).filter(function (choice) {
-    return isBrowseAskNoAnswer(choice.id);
+    return choice.id === BROWSE_ASK_NO_ANSWER_ID || choice.id === BROWSE_ASK_NO_ANSWER_ALIAS;
   })[0];
 
   return (

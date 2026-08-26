@@ -229,6 +229,8 @@ assert(ui.includes("PROFILE_ACTION_MIN") || ui.includes("minHeight: 44"), "44px 
 assert(ui.includes("CREAM") || ui.includes("FDF8F1"), "cream surface");
 assert(ui.includes("VIOLET") || ui.includes("6D28D9") || ui.includes("WASH"), "soft violet family");
 assert(ui.includes("data-browse-ask"), "current question is marked");
+assert(ui.includes("BROWSE_ASK_NO_ANSWER_ID"), "Don't want to answer is the skip chip, not Any");
+assert(ui.includes("BROWSE_ASK_NO_ANSWER_ALIAS"), "visa skip stays Prefer not to say");
 assert(!page.includes("Ask me anything"), "do not copy Manasi input copy");
 assert(!/manasi\.ai|smart fast personalized/i.test(page + ui), "Browse has no Manasi brand copy");
 assert(!/\bswipe\b/i.test(ui), "ask is not a swipe deck");
