@@ -252,6 +252,7 @@ assert(badge.includes("background: CREAM") || badge.includes("background: WASH")
 assert(badge.includes('padding: "8px 10px"') || /padding: "[1-9]/.test(badge), "popup has padding");
 assert(badge.includes('border: "1px solid " + GOLD') || badge.includes("1px solid ") && /\bGOLD\b/.test(badge), "popup has a gold hairline");
 assert(badge.includes("fontWeight: 700"), "popup phrase is bold");
+assert(badge.includes("width: 236") || badge.includes("maxWidth: 236"), "popup is wide enough for two lines");
 assert(badge.includes('calc(100% + 8px)') || badge.includes("100%"), "popup sits beside the badge");
 assert(!badge.includes('top: "calc(100% + 4px)"'), "popup is not a bare line under the name");
 assert(badge.includes('"left"') && badge.includes('"right"'), "popup can flip left if it would clip");
