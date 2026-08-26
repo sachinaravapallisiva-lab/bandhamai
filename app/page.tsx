@@ -7,6 +7,7 @@ import VoiceAssistant from "./components/VoiceAssistant";
 import SiteFooter from "./components/SiteFooter";
 import SpeedMatch from "./components/SpeedMatch";
 import MessagePaywall from "./components/MessagePaywall";
+import BrowseAsk from "./components/BrowseAsk";
 import BrowseCarousel from "./components/BrowseCarousel";
 import PinnedRow from "./components/PinnedRow";
 import EmptyState, { EmptyStateAction } from "./components/EmptyState";
@@ -29,6 +30,13 @@ import {
   startCheckout,
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
+import {
+  browseAskReadyForShortlist,
+  foldBrowseAnswers,
+  mergeBrowseAskAnswers,
+  remainingBrowseQuestions,
+  type BrowseAskAnswer,
+} from "../lib/browse-ask";
 import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
 import { emptyCriteria } from "../lib/profile-search";
 import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-test-pond";
@@ -91,6 +99,9 @@ export default function Home() {
   const [entitlement, setEntitlement] = useState(emptyEntitlement({ configured: true }));
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingNote, setBillingNote] = useState("");
+  const [askPrompt, setAskPrompt] = useState("");
+  const [askAnswers, setAskAnswers] = useState<BrowseAskAnswer[]>([]);
+  const [sessionAnswers, setSessionAnswers] = useState<BrowseAskAnswer[]>([]);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
@@ -149,6 +160,49 @@ export default function Home() {
   }
 
   searchRef.current = runSearch;
+
+  function clearAsk() {
+    setAskPrompt("");
+    setAskAnswers([]);
+  }
+
+  function submitPrompt(text?: string) {
+    const q = (typeof text === "string" ? text : query).trim();
+    if (!q) {
+      clearAsk();
+      runSearch("");
+      return;
+    }
+    setAskPrompt(q);
+    setAskAnswers([]);
+    setNote("");
+    if (browseAskReadyForShortlist(q, sessionAnswers)) {
+      clearAsk();
+      runSearch(foldBrowseAnswers(q, sessionAnswers));
+      return;
+    }
+    setSearching(false);
+    setLoadedOnce(true);
+    setProfiles([]);
+    setEmptyKind(null);
+    setMatchCount(null);
+    setCriteria(emptyCriteria());
+  }
+
+  function chooseAsk(choiceId: string) {
+    const source = askPrompt || query.trim();
+    const current = remainingBrowseQuestions(source, mergeBrowseAskAnswers(sessionAnswers, askAnswers))[0];
+    if (!current) return;
+    const nextAnswers = askAnswers.concat({ questionId: current.id, choiceId: choiceId });
+    const combined = mergeBrowseAskAnswers(sessionAnswers, nextAnswers);
+    if (browseAskReadyForShortlist(source, combined)) {
+      setSessionAnswers(combined);
+      clearAsk();
+      runSearch(foldBrowseAnswers(source, combined));
+      return;
+    }
+    setAskAnswers(nextAnswers);
+  }
 
   useEffect(() => {
     function applySession(session: { user?: { email?: string }; access_token?: string } | null) {
@@ -285,7 +339,7 @@ export default function Home() {
             if (data && data.text) {
               setQuery(function (prev) {
                 const next = (prev + " " + data.text).trim();
-                queueMicrotask(function () { runSearch(next); });
+                queueMicrotask(function () { submitPrompt(next); });
                 return next;
               });
               setNote("");
@@ -395,6 +449,11 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
+  const combinedAskAnswers = mergeBrowseAskAnswers(sessionAnswers, askAnswers);
+  const askQueue = askPrompt ? remainingBrowseQuestions(askPrompt, combinedAskAnswers) : [];
+  const askQuestion = askQueue[0] || null;
+  const asking = !!askQuestion;
+  const showBrowseShortlist = !asking;
   const pond = browseShortlistPond(profiles);
   const pinned = browsePinnedPreview();
   const hasProfiles = pond.length > 0;
@@ -598,12 +657,15 @@ export default function Home() {
             ) : null}
 
             <section
+              data-search-enlarged={asking ? "true" : "false"}
               style={{
                 background: CREAM,
                 border: "1px solid " + LINE,
                 borderRadius: 14,
-                padding: "14px 14px 12px",
+                padding: asking ? "20px 18px 18px" : "14px 14px 12px",
                 marginBottom: 18,
+                minHeight: asking ? 280 : undefined,
+                transition: "padding .2s ease, min-height .2s ease",
               }}
             >
               <p className="bm-sans" style={{ margin: "0 0 4px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}>
@@ -619,7 +681,7 @@ export default function Home() {
                 onKeyDown={function (e) {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    runSearch();
+                    submitPrompt();
                   }
                 }}
                 placeholder={SEARCH_PLACEHOLDER}
@@ -667,7 +729,7 @@ export default function Home() {
                   {live ? SEARCH_SPEAK_LIVE : busy ? SEARCH_SPEAK_BUSY : SEARCH_SPEAK_IDLE}
                 </button>
                 <button
-                  onClick={function () { runSearch(); }}
+                  onClick={function () { submitPrompt(); }}
                   disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
@@ -711,7 +773,7 @@ export default function Home() {
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); runSearch(""); }}
+                    onClick={function () { setQuery(""); setNote(""); clearAsk(); runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -719,8 +781,19 @@ export default function Home() {
                   </button>
                 ) : null}
               </div>
+
+              {askQuestion ? (
+                <BrowseAsk
+                  question={askQuestion}
+                  index={askAnswers.length}
+                  total={askAnswers.length + askQueue.length}
+                  onChoose={chooseAsk}
+                />
+              ) : null}
             </section>
 
+            {showBrowseShortlist ? (
+            <div data-browse-shortlist="ready">
             <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 14px" }}>
               {searching && !loadedOnce ? "LOOKING…" : "A SHORTLIST, NOT A STACK"}
             </p>
@@ -809,6 +882,10 @@ export default function Home() {
               />
               </>
             ) : null}
+            </div>
+            ) : (
+            <div data-browse-shortlist="waiting" />
+            )}
           </>
         )}
 
