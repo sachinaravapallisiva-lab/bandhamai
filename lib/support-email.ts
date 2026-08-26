@@ -1,15 +1,17 @@
 import {
   supportFromEmail,
   supportInboxEmail,
+  type SupportCategory,
   type SupportTicketDraft,
 } from "./support";
 
-export type TicketEmailInput = SupportTicketDraft & {
+export type TicketEmailInput = Omit<SupportTicketDraft, "category"> & {
   id: string;
   userId: string;
   email?: string | null;
   source?: string;
   callerPhone?: string | null;
+  category: SupportCategory | "idea";
 };
 
 export type TicketEmailResult = {
@@ -20,6 +22,9 @@ export type TicketEmailResult = {
 function founderEmailLead(ticket: TicketEmailInput) {
   if (ticket.source === "voice") {
     return "A Bandham AI phone support call opened an app issue ticket.";
+  }
+  if (ticket.source === "idea") {
+    return "A Bandham AI member sent a feature idea.";
   }
   return "A Bandham AI member confirmed an app issue ticket.";
 }

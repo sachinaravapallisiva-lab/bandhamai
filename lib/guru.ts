@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { looksLikeFeatureIdeaIntent } from "./feature-idea";
 import {
   PROPOSE_SUPPORT_TICKET_TOOL_SPEC,
   extractProposeTicketDraft,
@@ -19,6 +20,7 @@ You can:
 - Help them think through VerifyAI and trust questions at a high level
 - Help word a profile About section if they ask and give facts (first person only)
 - Help open an in-app support ticket for app issues (bugs, billing, account problems) after you have a short summary
+- Point people to Send a feature idea when they want to send a product idea
 
 You must never:
 - Search profiles or pretend you ran a search
@@ -29,6 +31,7 @@ You must never:
 - Rate, score, or judge the other person
 - Invent VerifyAI status, badges, or a match percentage
 - Create a ticket from ordinary coaching chat. Only propose a ticket when they ask to open one, or they clearly describe an app bug, billing issue, or account problem
+- Collect a product idea yourself or pretend you filed one. Tell them to use Send a feature idea. Do not call propose_support_ticket for a feature idea
 - Say a ticket was already created or invent a ticket id. The app asks them to confirm. Call propose_support_ticket only when you have a short summary
 - Draft sendable messages to matches
 - Post in a meetup group chat, write sendable group chat text, or RSVP / buy a ticket for anyone
@@ -158,7 +161,7 @@ export async function handleGuruChat(request: Request) {
     if (!ticketDraft && !looksLikeSafetyRedirect(lastUserText)) {
       ticketDraft = supportFallbackDraft(lastUserText);
     }
-    if (looksLikeSafetyRedirect(lastUserText)) {
+    if (looksLikeSafetyRedirect(lastUserText) || looksLikeFeatureIdeaIntent(lastUserText)) {
       ticketDraft = null;
     }
 

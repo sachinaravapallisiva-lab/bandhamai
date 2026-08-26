@@ -82,6 +82,9 @@ export function looksLikeSafetyRedirect(text: string) {
 export function looksLikeSupportIntent(text: string) {
   if (!text || looksLikeSafetyRedirect(text)) return false;
   const lower = text.toLowerCase();
+  if (/\bsend a feature idea\b/.test(lower) || /\b(feature idea|product idea)\b/.test(lower)) {
+    return false;
+  }
   const wantsTicket =
     /\b(open|file|create|submit|raise|start)\b.{0,32}\b(ticket|support ticket)\b/.test(lower) ||
     /\b(ticket|support ticket)\b.{0,24}\b(open|file|create|submit)\b/.test(lower) ||

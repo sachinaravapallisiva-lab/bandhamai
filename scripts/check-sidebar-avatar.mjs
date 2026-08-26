@@ -63,20 +63,21 @@ const itemLabels = ACCOUNT_MENU_ITEMS.map(function (item) {
 });
 
 assert(
-  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
-  "sidebar item order keeps Inbox, Call us, Block, and Plans"
+  itemIds.join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,idea,call,settings,block",
+  "sidebar item order keeps Inbox, Call us, Block, Plans, and idea"
 );
 assert(
   itemLabels.join("|") ===
-    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Plans|Help / Support|Call us|Settings / Account|Block",
-  "sidebar labels keep Inbox, Call us, Block, and Plans"
+    "My profile|Preferences|Browse / Matches|Meetup this month|Inbox|VerifyAI|Plans|Help / Support|Send a feature idea|Call us|Settings / Account|Block",
+  "sidebar labels keep Inbox, Call us, Block, Plans, and idea"
 );
 assert(itemIds.includes("plans") && itemLabels.includes("Plans"), "Plans is in the sidebar");
 assert(!itemIds.includes("messages"), "Messages item id is gone");
 assert(!itemLabels.includes("Messages"), "Messages label is gone");
 assert(itemIds.includes("inbox") && itemLabels.includes("Inbox"), "Inbox stays");
 assert(itemIds.includes("block") && itemLabels.includes("Block"), "Block stays");
-assert(itemIds.indexOf("help") + 1 === itemIds.indexOf("call"), "Help / Support then Call us");
+assert(itemIds.indexOf("help") + 1 === itemIds.indexOf("idea"), "Help / Support then Send a feature idea");
+assert(itemIds.indexOf("idea") + 1 === itemIds.indexOf("call"), "idea then Call us");
 const callItem = ACCOUNT_MENU_ITEMS.find(function (item) {
   return item.id === "call";
 });

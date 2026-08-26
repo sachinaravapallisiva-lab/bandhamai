@@ -27,7 +27,7 @@ export const GURU_ORB_LABEL = "Open Bandham assistant";
 export const GURU_SPEAKER = "ASSISTANT";
 
 export const GURU_INTRO =
-  "I'm the Bandham assistant. Serious suggestions and guidance: filters, honesty, and profile wording if you ask. I can also help open an app issue ticket. I don't look up people. Use the search box above for that.";
+  "I'm the Bandham assistant. Serious suggestions and guidance: filters, honesty, and profile wording if you ask. I can also help open an app issue ticket. To send a product idea, use Send a feature idea. I don't look up people. Use the search box above for that.";
 
 export const GURU_SUPPORT_NOTE =
   "Tickets are for app issues, not emergencies. If someone is harassing you, use Block or Report on their profile.";
