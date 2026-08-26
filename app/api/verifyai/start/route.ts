@@ -15,8 +15,10 @@ import {
   buildVerifyaiStartUrl,
   hasPaidVerifyai,
   loadVerifyaiState,
+  profileIsUnder18,
   rememberVerifyaiExternalId,
   verifyaiPhotoRequiredBody,
+  verifyaiUnderageBody,
 } from "../../../../lib/verifyai-checkout";
 import { appOrigin } from "../../../../lib/stripe";
 import { canStartVerifyai, TERMS_NEED_VERIFYAI } from "../../../../lib/terms-agree";
@@ -44,6 +46,9 @@ export async function GET(request: Request) {
     }
     if (!state.hasPhoto) {
       return NextResponse.json({ ...verifyaiPhotoRequiredBody(), paid: state.paid, url: null }, { status: 409 });
+    }
+    if (state.under18 || (await profileIsUnder18(supabase, state.profileId))) {
+      return NextResponse.json({ ...verifyaiUnderageBody(), paid: state.paid, url: null }, { status: 403 });
     }
     if (!(await hasPaidVerifyai(supabase, user.id, state.profileId))) {
       return NextResponse.json(

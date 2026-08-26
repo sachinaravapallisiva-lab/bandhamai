@@ -79,14 +79,30 @@ export async function POST(request: Request) {
     }
 
     const state = await loadVerifyaiState(supabase, user.id);
+    if (state.under18) {
+      return NextResponse.json({
+        paid: true,
+        verified: false,
+        status: state.status,
+        hasPhoto: state.hasPhoto,
+        under18: true,
+        start_url: null,
+        start_configured: state.startConfigured,
+        first_party: state.firstParty,
+        error: VERIFYAI_COPY.underage,
+        message: VERIFYAI_COPY.underage,
+      });
+    }
     if (!state.hasPhoto) {
       return NextResponse.json({
         paid: true,
         verified: false,
         status: state.status,
         hasPhoto: false,
+        under18: false,
         start_url: null,
         start_configured: state.startConfigured,
+        first_party: state.firstParty,
         error: VERIFYAI_COPY.photoRequired,
         message: VERIFYAI_COPY.photoRequired,
       });
@@ -98,8 +114,10 @@ export async function POST(request: Request) {
         verified: isVerifyaiVerified(state.status),
         status: state.status,
         hasPhoto: true,
+        under18: false,
         start_url: null,
         start_configured: state.startConfigured,
+        first_party: state.firstParty,
         message: VERIFYAI_COPY.paid,
       });
     }
@@ -124,8 +142,10 @@ export async function POST(request: Request) {
       verified: isVerifyaiVerified(state.status),
       status: state.status,
       hasPhoto: true,
+      under18: false,
       start_url: start.url,
       start_configured: !!start.url,
+      first_party: state.firstParty,
       message: start.url ? VERIFYAI_COPY.paid : VERIFYAI_COPY.startMissing,
     });
   } catch (err) {

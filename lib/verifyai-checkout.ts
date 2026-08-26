@@ -9,7 +9,9 @@ import {
   VERIFYAI_STATUS_COLUMN,
   VERIFYAI_UPDATED_AT_COLUMN,
   VERIFYAI_COPY,
+  firstPartyVerifyaiStartUrl,
   isVerifyaiVerified,
+  profileSaysUnder18,
   type VerifyaiStatus,
 } from "./verifyai";
 import { tableExists, tableHasColumn } from "./server-supabase";
@@ -23,9 +25,11 @@ export type VerifyaiPaymentState = {
   status: string | null;
   profileId: string | null;
   hasPhoto: boolean;
+  under18: boolean;
   startUrl: string | null;
   startConfigured: boolean;
   checkoutConfigured: boolean;
+  firstParty: boolean;
 };
 
 export function verifyaiPhotoRequiredBody() {
@@ -37,8 +41,21 @@ export function verifyaiPhotoRequiredBody() {
   };
 }
 
-export function verifyaiStartConfigured() {
+export function verifyaiUnderageBody() {
+  return {
+    error: VERIFYAI_COPY.underage,
+    code: "underage",
+    verified: false,
+  };
+}
+
+/** Third-party handoff when those env vars are set; otherwise first-party on this origin. */
+export function verifyaiHasThirdPartyStart() {
   return !!(verifyaiHostedStartUrl() || (verifyaiApiUrl() && verifyaiApiKey()));
+}
+
+export function verifyaiStartConfigured() {
+  return true;
 }
 
 export function verifyaiHostedStartUrl() {
@@ -178,6 +195,25 @@ export async function rememberVerifyaiExternalId(
   }
 }
 
+export async function profileIsUnder18(
+  supabase: SupabaseClient,
+  profileId?: string | null
+) {
+  if (!profileId) return false;
+  const cols: string[] = [];
+  if (await tableHasColumn(supabase, "profiles", "dob")) cols.push("dob");
+  if (await tableHasColumn(supabase, "profiles", "age")) cols.push("age");
+  if (!cols.length) return false;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(cols.join(", "))
+    .eq("id", profileId)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return false;
+  return profileSaysUnder18(data as { dob?: unknown; age?: unknown });
+}
+
 export async function markVerifyaiSessionResult(
   supabase: SupabaseClient,
   input: {
@@ -189,6 +225,9 @@ export async function markVerifyaiSessionResult(
 ) {
   if (isVerifyaiVerified(input.status) && !(await profileHasRequiredPhoto(supabase, input.profileId))) {
     return { error: VERIFYAI_COPY.photoRequired };
+  }
+  if (isVerifyaiVerified(input.status) && (await profileIsUnder18(supabase, input.profileId))) {
+    return { error: VERIFYAI_COPY.underage };
   }
 
   const now = new Date().toISOString();
@@ -262,20 +301,22 @@ export async function buildVerifyaiStartUrl(input: {
   }
 
   const hosted = verifyaiHostedStartUrl();
-  if (!hosted) return { url: null, externalId: null };
-
-  try {
-    const url = new URL(hosted);
-    url.searchParams.set("bandham_user_id", input.userId);
-    if (input.email) url.searchParams.set("email", input.email);
-    if (input.profileId) url.searchParams.set("profile_id", input.profileId);
-    if (input.checkoutSessionId) url.searchParams.set("checkout_session_id", input.checkoutSessionId);
-    url.searchParams.set("return_url", returnUrl);
-    url.searchParams.set("webhook_url", webhookUrl);
-    return { url: url.toString(), externalId: null };
-  } catch {
-    return { url: hosted, externalId: null };
+  if (hosted) {
+    try {
+      const url = new URL(hosted);
+      url.searchParams.set("bandham_user_id", input.userId);
+      if (input.email) url.searchParams.set("email", input.email);
+      if (input.profileId) url.searchParams.set("profile_id", input.profileId);
+      if (input.checkoutSessionId) url.searchParams.set("checkout_session_id", input.checkoutSessionId);
+      url.searchParams.set("return_url", returnUrl);
+      url.searchParams.set("webhook_url", webhookUrl);
+      return { url: url.toString(), externalId: null };
+    } catch {
+      return { url: hosted, externalId: null };
+    }
   }
+
+  return { url: firstPartyVerifyaiStartUrl(input.origin), externalId: null };
 }
 
 export async function loadVerifyaiState(
@@ -285,6 +326,7 @@ export async function loadVerifyaiState(
   const profileId = await resolveUserProfileId(supabase, userId);
   let status: string | null = null;
   let hasPhoto = false;
+  let under18 = false;
   if (profileId) {
     const cols: string[] = [];
     if (await tableHasColumn(supabase, "profiles", VERIFYAI_STATUS_COLUMN)) {
@@ -293,12 +335,19 @@ export async function loadVerifyaiState(
     if (await tableHasColumn(supabase, "profiles", "photo_url")) {
       cols.push("photo_url");
     }
+    if (await tableHasColumn(supabase, "profiles", "dob")) {
+      cols.push("dob");
+    }
+    if (await tableHasColumn(supabase, "profiles", "age")) {
+      cols.push("age");
+    }
     if (cols.length) {
       const row = await supabase.from("profiles").select(cols.join(", ")).eq("id", profileId).maybeSingle();
       const data = row.data as Record<string, unknown> | null;
       if (data) {
         status = asId(data[VERIFYAI_STATUS_COLUMN]) || null;
         hasPhoto = hasProfilePhotoUrl(data.photo_url);
+        under18 = profileSaysUnder18(data);
       }
     }
   }
@@ -309,8 +358,10 @@ export async function loadVerifyaiState(
     status,
     profileId,
     hasPhoto,
+    under18,
     startUrl: null,
     startConfigured: verifyaiStartConfigured(),
     checkoutConfigured: !!(stripeSecretKey() && stripeVerifyaiPriceId()),
+    firstParty: !verifyaiHasThirdPartyStart(),
   };
 }
