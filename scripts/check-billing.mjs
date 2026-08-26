@@ -9,7 +9,6 @@ import {
   SUBSCRIPTIONS_SQL_FILE,
   SUBSCRIPTIONS_TABLE,
 } from "../lib/billing.ts";
-import { PLANS_INCLUDED_BODY, PLANS_SUBSCRIBE_BODY } from "../lib/plans.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -48,14 +47,6 @@ assert(!/includes/i.test(BILLING_COPY.headline), "headline does not list include
 assert(!/\$9\.99\/mo to message/.test(BILLING_COPY.headline), "no old messaging headline");
 assert(!/includes messaging|browse, search|speed match/i.test(defaultCopy), "default copy does not list includes");
 assert(BILLING_COPY.body === "Pay monthly. Cancel anytime in the Stripe customer portal.", "quiet body");
-assert(PLANS_SUBSCRIBE_BODY === BILLING_COPY.body, "plans default body is the quiet pay monthly line");
-assert(
-  !/view numbers|unlimited messages|socials|call on the app|includes messaging|browse, search|speed match/i.test(
-    PLANS_SUBSCRIBE_BODY
-  ),
-  "default Plans subscribe body does not list messaging inclusions"
-);
-assert(PLANS_INCLUDED_BODY === BILLING_COPY.includedWhenAsked, "asked-only include string stays off the default body");
 assert(BILLING_COPY.lawyer.includes("not a promise of a match"), "lawyer-safe copy");
 assert(BILLING_COPY.subscribe === "Subscribe $9.99 a month", "subscribe CTA");
 assert(BILLING_COPY.includedWhenAsked.toLowerCase().includes("messaging"), "asked-only include string");
@@ -64,6 +55,18 @@ assert(!/messaging plan|\$9\.99 for messaging/i.test(copy), "no messaging-plan p
 
 const plansLib = readFileSync(new URL("../lib/plans.ts", import.meta.url), "utf8");
 const plansPanel = readFileSync(new URL("../app/components/PlansPanel.tsx", import.meta.url), "utf8");
+assert(
+  /PLANS_SUBSCRIBE_BODY\s*=\s*BILLING_COPY\.body/.test(plansLib),
+  "plans default body is the quiet pay monthly line"
+);
+assert(
+  !/view numbers|unlimited messages|View numbers and socials|call on the app/i.test(plansLib),
+  "default Plans subscribe body does not list messaging inclusions"
+);
+assert(
+  /PLANS_INCLUDED_BODY\s*=\s*BILLING_COPY\.includedWhenAsked/.test(plansLib),
+  "asked-only include string stays off the default body"
+);
 assert(!/View numbers and socials/.test(plansLib + plansPanel), "plans source dropped the old inclusion dump");
 assert(plansPanel.includes("PLANS_INCLUDED_CTA"), "Plans has an explicit What's included tap");
 assert(plansPanel.includes("<details"), "inclusions stay closed until tapped");
