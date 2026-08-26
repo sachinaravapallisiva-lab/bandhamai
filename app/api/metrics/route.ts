@@ -1,1 +1,6 @@
-export { GET, dynamic, runtime } from "../admin/metrics/route";
+import { GET as adminMetricsGet } from "../admin/metrics/route";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export const GET = adminMetricsGet;
