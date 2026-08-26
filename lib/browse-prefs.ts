@@ -2,6 +2,10 @@
  * Browse leftover prefs for the next PROFILE SEARCH on this device.
  * localStorage + session only. No new SQL table. Server write fails closed.
  *
+ * Registration seed reuses live profiles columns only: gender, city,
+ * visa_status, wants, plus looking_for / religion / community if they
+ * already exist on the row. Preferred match country is not a column yet.
+ *
  * Seeker country is memory, never a match filter. Match country / city,
  * bride or groom, visa, religion, and caste can fold into the search box.
  */
@@ -20,6 +24,8 @@ import {
   visaChoiceFromPrompt,
   type BrowseAskAnswer,
 } from "./browse-ask";
+import { normalizeProfileGender } from "./profile-fields";
+import { isVisaStatusOption, resolveVisaAlias } from "./visa-status";
 
 export const BROWSE_PREFS_STORAGE_KEY = "bandham.browse.prefs";
 
@@ -34,8 +40,16 @@ export type BrowseSearchPrefs = {
 
 export type BrowseProfilePrefSource = {
   city?: unknown;
+  location?: unknown;
+  gender?: unknown;
   looking_for?: unknown;
   wants?: unknown;
+  visa_status?: unknown;
+  religion?: unknown;
+  community?: unknown;
+  caste?: unknown;
+  preferred_country?: unknown;
+  match_country?: unknown;
 };
 
 export function emptyBrowsePrefs(): BrowseSearchPrefs {
@@ -173,24 +187,78 @@ export function foldMatchPrefsIntoQuery(raw: string, prefs: BrowseSearchPrefs) {
   return foldBrowseAnswers(raw, matchAnswers);
 }
 
+/** Own gender on registration maps to the match they seek. M looks for a bride. */
+export function lookingForFromOwnGender(gender: unknown) {
+  const code = normalizeProfileGender(gender);
+  if (code === "F") return "groom";
+  if (code === "M") return "bride";
+  return "";
+}
+
+function visaFromProfileField(value: unknown) {
+  const text = asText(value);
+  if (!text) return "";
+  if (isVisaStatusOption(text)) return text;
+  const resolved = resolveVisaAlias(text);
+  if (resolved) return resolved;
+  return visaChoiceFromPrompt(text);
+}
+
+function firstText(profile: BrowseProfilePrefSource, keys: Array<keyof BrowseProfilePrefSource>) {
+  for (let i = 0; i < keys.length; i += 1) {
+    const text = asText(profile[keys[i]]);
+    if (text) return text;
+  }
+  return "";
+}
+
 export function hydratePrefsFromProfile(
   prefs: BrowseSearchPrefs,
   profile: BrowseProfilePrefSource | null | undefined
 ): BrowseSearchPrefs {
   const next = sanitizeBrowsePrefs(prefs);
   if (!profile) return next;
-  if (!next.seekerCountry) {
-    const region = regionIdFromPlace(asText(profile.city));
-    if (region) next.seekerCountry = region;
-  }
+  const wants = asText(profile.wants);
+  const lookingField = asText(profile.looking_for);
+
   if (!next.lookingFor) {
     next.lookingFor =
-      lookingForFromPrompt(asText(profile.looking_for)) || lookingForFromPrompt(asText(profile.wants));
+      lookingForFromPrompt(lookingField) ||
+      lookingForFromPrompt(wants) ||
+      lookingForFromOwnGender(profile.gender);
+  }
+  if (!next.seekerCountry) {
+    const region = regionIdFromPlace(firstText(profile, ["city", "location"]));
+    if (region) next.seekerCountry = region;
+  }
+  if (!next.matchCountry) {
+    const preferred = firstText(profile, ["preferred_country", "match_country"]);
+    next.matchCountry = matchCountryFromPrompt(preferred) || matchCountryFromPrompt(wants);
+  }
+  if (!next.visa) {
+    next.visa = visaFromProfileField(profile.visa_status) || visaChoiceFromPrompt(wants);
+  }
+  if (!next.religion) {
+    next.religion = religionChoiceFromPrompt(firstText(profile, ["religion"])) || religionChoiceFromPrompt(wants);
+  }
+  if (!next.caste) {
+    next.caste =
+      casteChoiceFromPrompt(firstText(profile, ["community", "caste"])) || casteChoiceFromPrompt(wants);
   }
   return next;
 }
 
-/** No looking_for / browse_prompts column to write. Fail closed. */
+/** Seed leftover prefs when they sign up or finish a profile. Device only. */
+export function seedBrowsePrefsFromRegistration(profile: BrowseProfilePrefSource | null | undefined) {
+  const next = hydratePrefsFromProfile(loadBrowsePrefs(), profile);
+  saveBrowsePrefs(next);
+  return next;
+}
+
+/**
+ * Leftover prefs stay on the device. browse_prompts stores recent search
+ * text only. Live profiles has no looking_for write column. Fail closed.
+ */
 export function persistBrowsePrefsToServer() {
   return false;
 }

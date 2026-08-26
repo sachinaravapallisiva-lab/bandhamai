@@ -41,8 +41,10 @@ import {
   emptyBrowsePrefs,
   foldMatchPrefsIntoQuery,
   hydratePrefsFromProfile,
+  lookingForFromOwnGender,
   persistBrowsePrefsToServer,
   prefsToAnswers,
+  seedBrowsePrefsFromRegistration,
 } from "../lib/browse-prefs.ts";
 import { hasCriteria, parseSearchQuery } from "../lib/profile-search.ts";
 import { VISA_STATUS_GROUPS, VISA_STATUS_UNGROUPED } from "../lib/visa-status.ts";
@@ -454,12 +456,95 @@ assertEq(
   "groom",
   "profile wants can fill bride or groom"
 );
+assertEq(lookingForFromOwnGender("F"), "groom", "a woman registering is seeking a groom");
+assertEq(lookingForFromOwnGender("M"), "bride", "a man registering is seeking a bride");
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "F", city: "Dallas" }).lookingFor,
+  "groom",
+  "registration gender seeds bride or groom when looking_for is absent"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "F", city: "Dallas" }).matchCountry,
+  "",
+  "own city is seeker country, not preferred match country"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).lookingFor,
+  "bride",
+  "own gender seeds looking for when wants has no bride or groom"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).seekerCountry,
+  "india",
+  "Hyderabad registration is seeker India"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).matchCountry,
+  "india",
+  "wants text can seed preferred match country"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).visa,
+  "H-1B",
+  "own visa_status seeds leftover visa"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).religion,
+  "hindu",
+  "wants can seed religion"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).caste,
+  "reddy",
+  "wants can seed community"
+);
+assertEq(
+  applyPromptToPrefs("bride in Australia", hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "M", city: "Dallas" })).lookingFor,
+  "bride",
+  "typed prompt still beats registration"
+);
 assertEq(BROWSE_PREFS_STORAGE_KEY, "bandham.browse.prefs", "prefs key is device localStorage");
-assertEq(persistBrowsePrefsToServer(), false, "no browse_prompts table, server persist fails closed");
+assertEq(persistBrowsePrefsToServer(), false, "leftover prefs are not written to browse_prompts");
+assert(typeof seedBrowsePrefsFromRegistration === "function", "registration can seed leftover prefs");
 
 const prefsLib = read("lib/browse-prefs.ts");
 assert(prefsLib.includes("localStorage"), "prefs persist on the device");
 assert(!prefsLib.includes("from("), "prefs do not invent a SQL write");
+assert(prefsLib.includes("lookingForFromOwnGender"), "registration gender can seed looking for");
+assert(prefsLib.includes("visa_status"), "own visa_status can seed leftover visa");
+assert(prefsLib.includes("preferred_country"), "preferred match country is read if that column exists");
+assert(read("app/profile/new/page.tsx").includes("seedBrowsePrefsFromRegistration"), "profile create seeds leftover prefs");
+assert(!read("app/profile/new/page.tsx").includes("looking_for"), "do not invent a looking_for signup field");
 assert(!askLib.includes("mother_tongue"), "Browse ask still has no mother tongue path");
 assert(findBrowseAskQuestion("looking_for"), "bride or groom is a leftover tap");
 assert(findBrowseAskQuestion("seeker"), "seeker country is a leftover tap");
