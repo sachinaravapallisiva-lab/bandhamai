@@ -104,19 +104,20 @@ assert(labels.includes("Browse / Matches"), "browse / matches item");
 assert(labels.includes("Meetup this month"), "meetup item");
 assert(labels.includes("Inbox"), "inbox item");
 assert(!labels.includes("Messages"), "Inbox replaces the Messages label");
-assert(labels.includes("VerifyAI"), "verifyai item");
+assert(!labels.includes("VerifyAI"), "VerifyAI sidebar row is gone");
 assert(labels.includes("Help / Support"), "help item");
 assert(labels.includes("Call us"), "call us item");
 assert(
   ACCOUNT_MENU_ITEMS.map(function (item) {
     return item.id;
-  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
+  }).join(",") === "profile,preferences,browse,meetup,inbox,plans,help,call,settings,block",
   "Inbox, Call us, Block, and Plans stay in order"
 );
 assert(labels.includes("Plans"), "Plans item");
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
+assert(labels.indexOf("Plans") === labels.indexOf("Inbox") + 1, "Plans stays after Inbox");
 assert(labels.indexOf("Block") === labels.indexOf("Settings / Account") + 1, "Block is added after Settings");
 
 const hrefs = ACCOUNT_MENU_ITEMS.map(function (item) {
@@ -127,9 +128,13 @@ assert(hrefs.includes("/preferences"), "preferences route");
 assert(hrefs.includes("/"), "browse route");
 assert(hrefs.includes("/meetup"), "meetup route");
 assert(hrefs.includes("/inbox"), "inbox route");
-assert(hrefs.includes("/account#verify"), "verify anchor");
+assert(!hrefs.includes("/account#verify"), "sidebar does not jump to the verify hash");
 assert(hrefs.includes("/plans"), "plans route");
 assert(ALLOWED_NEXT_PATHS.includes("/plans"), "plans is a real next path");
+assert(read("lib/plans.ts").includes('PLANS_VERIFY_HREF = "/account#verify"'), "Plans still uses the verify hash");
+assert(read("app/components/VerifyOffer.tsx").includes('id="verify"'), "verify hash target stays on Account");
+assert(!drawer.includes('href="/account#verify"'), "drawer source has no verify hash row");
+assert(!drawer.includes('"verifyai"'), "drawer has no VerifyAI icon mapping");
 assert(hrefs.includes("/contact"), "support route");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");

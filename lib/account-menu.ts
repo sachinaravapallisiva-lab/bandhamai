@@ -20,7 +20,6 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "browse", label: "Browse / Matches", href: "/" },
   { id: "meetup", label: "Meetup this month", href: "/meetup" },
   { id: "inbox", label: "Inbox", href: "/inbox" },
-  { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "plans", label: "Plans", href: "/plans" },
   { id: "help", label: "Help / Support", href: "/contact" },
   { id: "call", label: "Call us", href: "/contact#call" },
