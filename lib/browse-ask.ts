@@ -23,6 +23,9 @@ export const BROWSE_ASK_NO_ANSWER_ID = "dont_answer";
 export const BROWSE_ASK_NO_ANSWER_ALIAS = "prefer_not";
 export const BROWSE_ASK_NO_ANSWER_LABEL = "Don't want to answer";
 export const BROWSE_ASK_VISA_NO_ANSWER_LABEL = "Prefer not to say";
+/** Explicit preference that community does not matter. Not Don't want to answer. */
+export const BROWSE_ASK_CASTE_NO_BAR_ID = "caste_no_bar";
+export const BROWSE_ASK_CASTE_NO_BAR_LABEL = "Caste no bar";
 
 export const BROWSE_ASK_LABEL = "FILTERS";
 export const BROWSE_ASK_HINT = "Tap one filter. Bandham AI uses this for the shortlist.";
@@ -70,7 +73,7 @@ const SEARCH_FILTER_PROMPTS: Record<BrowseAskField, string> = {
   location: "Where should they be from?",
   visa: "Which visa status should we look for?",
   religion: "Any faith we should look for?",
-  caste: "Any community we should look for?",
+  caste: "Which community should we look for?",
 };
 
 /**
@@ -229,9 +232,9 @@ export const BROWSE_ASK_NO_ANSWER_CHOICE: BrowseAskChoice = {
   fold: "",
 };
 
-const CASTE_ANY_CHOICE: BrowseAskChoice = {
-  id: "any",
-  label: "Any",
+export const BROWSE_ASK_CASTE_NO_BAR_CHOICE: BrowseAskChoice = {
+  id: BROWSE_ASK_CASTE_NO_BAR_ID,
+  label: BROWSE_ASK_CASTE_NO_BAR_LABEL,
   fold: "",
 };
 
@@ -248,7 +251,7 @@ function titleLabel(value: string) {
 function communityChoices(): BrowseAskChoice[] {
   return COMMUNITY_CHIP_IDS.map(function (id) {
     return { id: id, label: titleLabel(id), fold: titleLabel(id) };
-  }).concat(CASTE_ANY_CHOICE);
+  }).concat(BROWSE_ASK_CASTE_NO_BAR_CHOICE);
 }
 
 function cityChoice(city: string): BrowseAskChoice {
@@ -352,9 +355,14 @@ export function isBrowseAskNoAnswer(choiceId: string | null | undefined) {
     key === BROWSE_ASK_NO_ANSWER_ID ||
     key === BROWSE_ASK_NO_ANSWER_ALIAS ||
     key === BROWSE_ASK_NO_ANSWER_LABEL.toLowerCase() ||
-    key === BROWSE_ASK_VISA_NO_ANSWER_LABEL.toLowerCase() ||
-    key === "any"
+    key === BROWSE_ASK_VISA_NO_ANSWER_LABEL.toLowerCase()
   );
+}
+
+export function isCasteNoBar(choiceId: string | null | undefined) {
+  if (!choiceId) return false;
+  const key = choiceId.toLowerCase().replace(/\s+/g, " ").trim();
+  return key === BROWSE_ASK_CASTE_NO_BAR_ID || key === BROWSE_ASK_CASTE_NO_BAR_LABEL.toLowerCase();
 }
 
 export function browseAskChoices(question: BrowseAskQuestion) {
@@ -555,6 +563,7 @@ export function promptHasReligion(raw: string, criteria?: SearchCriteria) {
 }
 
 export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
+  if (isCasteNoBar(casteChoiceFromPrompt(raw))) return true;
   const parsed = criteria || parseSearchQuery(raw);
   const hay = haystack(raw, parsed);
   if (hasTerm(hay, COMMUNITY_ALIAS_TERMS)) return true;
@@ -577,6 +586,9 @@ export function religionChoiceFromPrompt(raw: string) {
 
 export function casteChoiceFromPrompt(raw: string) {
   const hay = normalizeHay(raw);
+  if (hasTerm(hay, ["caste no bar"]) || hasTerm(hay, ["no caste bar"])) {
+    return BROWSE_ASK_CASTE_NO_BAR_ID;
+  }
   for (let i = 0; i < COMMUNITY_CHIP_IDS.length; i += 1) {
     const id = COMMUNITY_CHIP_IDS[i];
     if (hasTerm(hay, [id])) return id;
@@ -646,7 +658,7 @@ function findChoice(question: BrowseAskQuestion, choiceId: string) {
 }
 
 export function foldPhraseForAnswer(questionId: string, choiceId: string) {
-  if (isBrowseAskNoAnswer(choiceId)) return "";
+  if (isBrowseAskNoAnswer(choiceId) || isCasteNoBar(choiceId)) return "";
   if (questionId === "city") {
     const fromUs = citiesForRegion("us").find(function (choice) {
       return choice.id === choiceId || choice.label.toLowerCase() === choiceId.toLowerCase();
@@ -743,7 +755,7 @@ export function userFacingBrowseAskCopy() {
     BROWSE_ASK_NO_ANSWER_LABEL,
     BROWSE_ASK_VISA_NO_ANSWER_LABEL,
     browseAskProgress(0, 6),
-    CASTE_ANY_CHOICE.label,
+    BROWSE_ASK_CASTE_NO_BAR_LABEL,
   ]
     .concat(fromQuestions)
     .concat(

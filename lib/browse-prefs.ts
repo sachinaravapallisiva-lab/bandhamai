@@ -7,7 +7,9 @@
  * already exist on the row. Preferred match country is not a column yet.
  *
  * Seeker country is memory, never a match filter. Match country / city,
- * bride or groom, visa, religion, and caste can fold into the search box.
+ * bride or groom, visa, religion, and a specific community can fold into the
+ * search box. Caste no bar is remembered and stays out of the box. Don't want
+ * to answer on caste records no caste preference.
  */
 
 import {
@@ -15,7 +17,9 @@ import {
   foldBrowseAnswers,
   foldPhraseForAnswer,
   foldsIntoSearchBox,
+  BROWSE_ASK_CASTE_NO_BAR_ID,
   isBrowseAskNoAnswer,
+  isCasteNoBar,
   lookingForFromPrompt,
   matchCountryFromPrompt,
   religionChoiceFromPrompt,
@@ -81,8 +85,15 @@ export function sanitizeBrowsePrefs(raw: unknown): BrowseSearchPrefs {
     matchCountry: sanitizeChoice(row.matchCountry),
     visa: sanitizeChoice(row.visa),
     religion: sanitizeChoice(row.religion),
-    caste: sanitizeChoice(row.caste),
+    caste: sanitizeCastePref(row.caste),
   };
+}
+
+function sanitizeCastePref(value: unknown) {
+  const text = sanitizeChoice(value);
+  if (!text || isBrowseAskNoAnswer(text)) return "";
+  if (text === "any" || isCasteNoBar(text)) return BROWSE_ASK_CASTE_NO_BAR_ID;
+  return text;
 }
 
 export function loadBrowsePrefs(): BrowseSearchPrefs {
@@ -128,7 +139,11 @@ export function applyAnswerToPrefs(
   if (questionId === "location") next.matchCountry = choiceId;
   if (questionId === "visa") next.visa = choiceId;
   if (questionId === "religion") next.religion = choiceId;
-  if (questionId === "caste") next.caste = choiceId;
+  if (questionId === "caste") {
+    if (isBrowseAskNoAnswer(choiceId)) next.caste = "";
+    else if (isCasteNoBar(choiceId)) next.caste = BROWSE_ASK_CASTE_NO_BAR_ID;
+    else next.caste = choiceId;
+  }
   return next;
 }
 

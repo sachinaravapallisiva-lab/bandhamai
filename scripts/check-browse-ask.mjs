@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import {
+  BROWSE_ASK_CASTE_NO_BAR_ID,
+  BROWSE_ASK_CASTE_NO_BAR_LABEL,
   BROWSE_ASK_FIELD_ORDER,
   BROWSE_ASK_HINT,
   BROWSE_ASK_LABEL,
@@ -13,12 +15,14 @@ import {
   browseAskChoices,
   browseAskProgress,
   browseAskReadyForShortlist,
+  casteChoiceFromPrompt,
   findBrowseAskQuestion,
   browseAskRegionFolds,
   foldBrowseAnswers,
   foldPhraseForAnswer,
   foldsIntoSearchBox,
   isBrowseAskNoAnswer,
+  isCasteNoBar,
   lookingForFromPrompt,
   matchCountryFromPrompt,
   promptHasCaste,
@@ -44,6 +48,7 @@ import {
   lookingForFromOwnGender,
   persistBrowsePrefsToServer,
   prefsToAnswers,
+  sanitizeBrowsePrefs,
   seedBrowsePrefsFromRegistration,
 } from "../lib/browse-prefs.ts";
 import { hasCriteria, parseSearchQuery } from "../lib/profile-search.ts";
@@ -151,11 +156,30 @@ const religion = findBrowseAskQuestion("religion");
 ["Hindu", "Muslim", "Christian", "Sikh", "Jain", "Buddhist", "Other"].forEach(function (label) {
   assert(religion.choices.some(function (c) { return c.label === label; }), "religion includes " + label);
 });
+assert(
+  !religion.choices.some(function (c) { return /no bar/i.test(c.label); }),
+  "religion has no no bar chip"
+);
+assert(
+  !browseAskChoices(visaQ).some(function (c) { return /no bar/i.test(c.label); }),
+  "visa has no no bar chip"
+);
 
 const caste = findBrowseAskQuestion("caste");
-assert(caste.choices.some(function (c) { return c.label === "Any"; }), "caste includes Any");
+assertEq(BROWSE_ASK_CASTE_NO_BAR_LABEL, "Caste no bar", "exact Caste no bar label, no hyphen");
+assert(caste.choices.some(function (c) { return c.label === BROWSE_ASK_CASTE_NO_BAR_LABEL; }), "caste leftover includes Caste no bar");
+assert(caste.choices.some(function (c) { return c.id === BROWSE_ASK_CASTE_NO_BAR_ID; }), "Caste no bar has a stable id");
+assert(!caste.choices.some(function (c) { return c.label === "Any"; }), "caste no longer uses Any");
+assert(!caste.choices.some(function (c) { return c.label.includes("-"); }), "Caste no bar has no hyphen");
+assert(!isBrowseAskNoAnswer(BROWSE_ASK_CASTE_NO_BAR_ID), "Caste no bar is not Don't want to answer");
+assert(!isBrowseAskNoAnswer(BROWSE_ASK_CASTE_NO_BAR_LABEL), "Caste no bar label is not a skip");
+assert(isCasteNoBar(BROWSE_ASK_CASTE_NO_BAR_ID), "caste_no_bar is Caste no bar");
+assert(isCasteNoBar(BROWSE_ASK_CASTE_NO_BAR_LABEL), "Caste no bar label is Caste no bar");
 caste.choices.forEach(function (c) {
-  if (c.id === "any") return;
+  if (c.id === BROWSE_ASK_CASTE_NO_BAR_ID) {
+    assertEq(c.fold, "", "Caste no bar fold is empty");
+    return;
+  }
   assert(KEYWORD_ALIASES[c.id], "caste chip reuses an existing community alias: " + c.id);
 });
 
@@ -296,7 +320,23 @@ assert(hasCriteria(parseSearchQuery(indiaSkipCity)), "India region is searchable
 const visaFold = foldBrowseAnswers(thinPrompt, [{ questionId: "visa", choiceId: "H-1B" }]);
 assert(parseSearchQuery(visaFold).keywords.includes("H-1B"), "folded visa reuses the stored label");
 assertEq(foldPhraseForAnswer("visa", "prefer_not"), "", "Prefer not to say fold is empty");
-assertEq(foldPhraseForAnswer("caste", "any"), "", "Any community fold is empty");
+assertEq(foldPhraseForAnswer("caste", BROWSE_ASK_CASTE_NO_BAR_ID), "", "Caste no bar fold is empty");
+assertEq(foldPhraseForAnswer("caste", BROWSE_ASK_CASTE_NO_BAR_LABEL), "", "Caste no bar label fold is empty");
+assertEq(foldPhraseForAnswer("caste", "reddy"), "Reddy", "Reddy still folds the community word");
+assertEq(
+  foldBrowseAnswers("Dallas groom", [{ questionId: "caste", choiceId: BROWSE_ASK_CASTE_NO_BAR_ID }]),
+  "Dallas groom",
+  "Caste no bar does not fold a community into the box"
+);
+assert(
+  !parseSearchQuery(foldBrowseAnswers("Dallas groom", [{ questionId: "caste", choiceId: BROWSE_ASK_CASTE_NO_BAR_ID }])).keywords.some(function (kw) {
+    return /reddy|kamma|caste|community/i.test(kw);
+  }),
+  "Caste no bar does not add a caste or community search keyword"
+);
+assertEq(casteChoiceFromPrompt("Dallas groom caste no bar"), BROWSE_ASK_CASTE_NO_BAR_ID, "typed Caste no bar is remembered as no bar");
+assert(promptHasCaste("Dallas groom caste no bar"), "typed Caste no bar skips the caste leftover");
+assertEq(casteChoiceFromPrompt("Dallas groom Reddy"), "reddy", "typed Reddy is still that community");
 
 userFacingBrowseAskCopy().forEach(function (text) {
   assert(!emDash.test(text), "user-facing copy has no em dash: " + text);
@@ -306,6 +346,16 @@ userFacingBrowseAskCopy().forEach(function (text) {
 });
 assertEq(browseAskProgress(0, 6), "1 of 6", "progress has no slash or hyphen");
 assert(/filter/i.test(userFacingBrowseAskCopy().join(" ")), "user-facing ask copy names filters");
+assert(
+  userFacingBrowseAskCopy().includes(BROWSE_ASK_CASTE_NO_BAR_LABEL),
+  "user-facing copy includes Caste no bar"
+);
+assert(
+  !userFacingBrowseAskCopy().some(function (text) {
+    return /caste-no-bar|caste no-bar|no-bar/i.test(text);
+  }),
+  "Caste no bar has no hyphen in user-facing copy"
+);
 
 const page = read("app/page.tsx");
 const ui = read("app/components/BrowseAsk.tsx");
@@ -342,6 +392,7 @@ assert(page.includes("askQueue[0]"), "one question at a time");
 assert(!/askQueue\.map/.test(page), "do not render a wall of leftover questions");
 assert(page.includes("sessionAnswers"), "answers are remembered in this session");
 assert(page.includes("prefsToAnswers"), "remembered prefs become leftover answers");
+assert(page.includes("mergeBrowseAskAnswers"), "this-round skip still advances leftover without persisting caste");
 
 const enlargedAt = page.indexOf("data-search-enlarged");
 const askAt = page.indexOf("<BrowseAsk\n") >= 0 ? page.indexOf("<BrowseAsk\n") : page.indexOf("<BrowseAsk ");
@@ -533,6 +584,52 @@ assertEq(
   "bride",
   "typed prompt still beats registration"
 );
+const casteSkipPrefs = applyAnswerToPrefs(emptyBrowsePrefs(), "caste", BROWSE_ASK_NO_ANSWER_ID);
+assertEq(casteSkipPrefs.caste, "", "Don't want to answer does not record a caste preference");
+assert(
+  !prefsToAnswers(casteSkipPrefs).some(function (a) { return a.questionId === "caste"; }),
+  "Don't want to answer is not a remembered caste answer"
+);
+assert(
+  remainingBrowseQuestions("pediatrician", prefsToAnswers(casteSkipPrefs)).some(function (q) {
+    return q.id === "caste";
+  }),
+  "Don't want to answer asks caste again on the next search"
+);
+
+const casteNoBarPrefs = applyAnswerToPrefs(emptyBrowsePrefs(), "caste", BROWSE_ASK_CASTE_NO_BAR_ID);
+assertEq(casteNoBarPrefs.caste, BROWSE_ASK_CASTE_NO_BAR_ID, "Caste no bar is remembered");
+assert(
+  !remainingBrowseQuestions("pediatrician", prefsToAnswers(casteNoBarPrefs)).some(function (q) {
+    return q.id === "caste";
+  }),
+  "remembered Caste no bar skips the caste leftover later"
+);
+assertEq(
+  foldMatchPrefsIntoQuery("pediatrician", casteNoBarPrefs),
+  "pediatrician",
+  "remembered Caste no bar does not fold Reddy, Kamma, or another community"
+);
+assertEq(
+  applyPromptToPrefs("Dallas groom Reddy", casteNoBarPrefs).caste,
+  "reddy",
+  "typing a community beats remembered Caste no bar"
+);
+assertEq(
+  sanitizeBrowsePrefs({ caste: "any" }).caste,
+  BROWSE_ASK_CASTE_NO_BAR_ID,
+  "legacy Any community becomes Caste no bar"
+);
+assertEq(
+  sanitizeBrowsePrefs({ caste: BROWSE_ASK_NO_ANSWER_ID }).caste,
+  "",
+  "stored Don't want to answer is not a caste preference"
+);
+assert(
+  browseAskReadyForShortlist(thinPrompt, allSkipped.concat([{ questionId: "caste", choiceId: BROWSE_ASK_NO_ANSWER_ID }])),
+  "this-round Don't want to answer still unlocks the shortlist"
+);
+
 assertEq(BROWSE_PREFS_STORAGE_KEY, "bandham.browse.prefs", "prefs key is device localStorage");
 assertEq(persistBrowsePrefsToServer(), false, "leftover prefs are not written to browse_prompts");
 assert(typeof seedBrowsePrefsFromRegistration === "function", "registration can seed leftover prefs");

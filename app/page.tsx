@@ -35,6 +35,7 @@ import {
   browseAskReadyForShortlist,
   foldBrowseAnswers,
   foldPhraseForAnswer,
+  mergeBrowseAskAnswers,
   remainingBrowseQuestions,
   searchQueryFromBox,
   type BrowseAskAnswer,
@@ -239,7 +240,10 @@ export default function Home() {
 
   function chooseAsk(choiceId: string) {
     const source = (query.trim() || askPrompt).trim();
-    const current = remainingBrowseQuestions(source, prefsToAnswers(prefsRef.current))[0];
+    const current = remainingBrowseQuestions(
+      source,
+      mergeBrowseAskAnswers(prefsToAnswers(prefsRef.current), askAnswers)
+    )[0];
     if (!current) return;
     const nextPrefs = applyAnswerToPrefs(prefsRef.current, current.id, choiceId);
     persistPrefs(nextPrefs);
@@ -248,8 +252,8 @@ export default function Home() {
     setQuery(nextQuery);
     lastVisibleRef.current = nextQuery;
     setAskPrompt(nextQuery);
-    const combined = prefsToAnswers(nextPrefs);
     const nextAnswers = askAnswers.concat({ questionId: current.id, choiceId: choiceId });
+    const combined = mergeBrowseAskAnswers(prefsToAnswers(nextPrefs), nextAnswers);
     if (browseAskReadyForShortlist(nextQuery, combined)) {
       clearAsk();
       runSearch(searchQueryFromBox(foldBrowseAnswers(nextQuery, combined)));
@@ -539,7 +543,7 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
-  const combinedAskAnswers = prefsToAnswers(prefs);
+  const combinedAskAnswers = mergeBrowseAskAnswers(prefsToAnswers(prefs), askAnswers);
   const askSource = (query.trim() || askPrompt).trim();
   const askQueue = askPrompt ? remainingBrowseQuestions(askSource, combinedAskAnswers) : [];
   const askQuestion = askQueue[0] || null;
