@@ -228,6 +228,12 @@ assert(!/onClick=\{function \(\) \{ submitPrompt\(\); \}\}[\s\S]{0,80}disabled=\
 assert(page.includes("foldBrowseAnswers"), "answers fold into search q");
 assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until leftover filters are resolved or skipped");
 assert(page.includes("SEARCH_FILTER_HELPER"), "quiet helper sits under the search box");
+assert(
+  page.indexOf("aria-label=\"Search profiles\"") < page.indexOf("{SEARCH_FILTER_HELPER}"),
+  "helper copy is under the input box, not above it"
+);
+assert(page.includes("SEARCH_HINT"), "loved search hint stays");
+assert(page.indexOf("{SEARCH_HINT}") < page.indexOf("{SEARCH_FILTER_HELPER}"), "hint stays above the box");
 assert(page.includes("showBrowseShortlist"), "shortlist render is gated");
 assert(page.includes("data-search-enlarged"), "search box marks enlarged");
 assert(page.includes("data-browse-shortlist"), "shortlist ready/waiting is marked");

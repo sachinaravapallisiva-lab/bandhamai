@@ -680,13 +680,6 @@ export default function Home() {
               <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 12, color: MUTED }}>
                 {SEARCH_HINT}
               </p>
-              <p
-                className="bm-sans"
-                data-search-filter-helper="true"
-                style={{ margin: "-4px 0 10px", fontSize: 12, color: MUTED, lineHeight: 1.45 }}
-              >
-                {SEARCH_FILTER_HELPER}
-              </p>
 
               <input
                 value={query}
@@ -712,6 +705,13 @@ export default function Home() {
                   boxSizing: "border-box",
                 }}
               />
+              <p
+                className="bm-sans"
+                data-search-filter-helper="true"
+                style={{ margin: "8px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.45 }}
+              >
+                {SEARCH_FILTER_HELPER}
+              </p>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                 <button
