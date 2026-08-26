@@ -11,15 +11,10 @@ export const VOICE_RESOLVED_STATUS = "closed";
 
 /** Server-only destination for Support human handoff. Never prefix NEXT_PUBLIC_. */
 export const SUPPORT_HANDOFF_E164_ENV = "BANDHAM_SUPPORT_HANDOFF_E164";
+/** Optional server-only subscribe outbound block. Empty means no extra inbound block. */
+export const SUBSCRIBE_OUTBOUND_E164_ENV = "BANDHAM_SUBSCRIBE_OUTBOUND_E164";
 /** Public Bandham Support inbound. Transfer caller ID stays this number. */
 export const SUPPORT_PUBLIC_CALLER_ID_E164 = "+18032655233";
-/**
- * Operator default for BANDHAM_SUPPORT_HANDOFF_E164.
- * Server only. Never speak. Never publish on Contact, footer, Plans, or UI.
- */
-export const SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT = "+14709620438";
-/** Subscribe outbound. Never a transfer destination, caller ID, or spoken number. */
-export const SUBSCRIBE_OUTBOUND_BLOCK_E164 = "+16408379459";
 
 export const VOICE_SUPPORT_TOOLS = [
   "identify_member",
@@ -99,24 +94,36 @@ function canonicalVoiceTool(value: string): VoiceSupportTool | "" {
   return isVoiceSupportTool(normalized) ? normalized : "";
 }
 
-export function isSubscribeOutboundNumber(value: string) {
-  return phonesMatch(value, SUBSCRIBE_OUTBOUND_BLOCK_E164);
-}
-
 export function isSupportPublicNumber(value: string) {
   return phonesMatch(value, SUPPORT_PUBLIC_CALLER_ID_E164);
 }
 
+function asE164OrEmpty(value: string) {
+  const normalized = normalizeVoicePhone(value);
+  if (!normalized) return "";
+  return normalized.startsWith("+") ? normalized : "+" + normalized.replace(/\D/g, "");
+}
+
+/** Server-only subscribe outbound. Empty env means no extra inbound block. */
+export function subscribeOutboundE164() {
+  const e164 = asE164OrEmpty((process.env[SUBSCRIBE_OUTBOUND_E164_ENV] || "").trim());
+  if (!e164 || isSupportPublicNumber(e164)) return "";
+  return e164;
+}
+
+export function isSubscribeOutboundNumber(value: string) {
+  const blocked = subscribeOutboundE164();
+  if (!blocked || !value) return false;
+  return phonesMatch(value, blocked);
+}
+
 /**
- * Server-only E.164 for the human handoff. Empty means stay on Support.
- * Env wins. Operator default is SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT.
+ * Server-only E.164 for the human handoff. Empty env means stay on Support.
  * Never returns the subscribe outbound number or the public Support number.
  */
 export function supportHandoffE164() {
-  const offered = (process.env[SUPPORT_HANDOFF_E164_ENV] || "").trim();
-  const normalized = normalizeVoicePhone(offered);
-  const chosen = normalized || SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT;
-  const e164 = chosen.startsWith("+") ? chosen : "+" + chosen.replace(/\D/g, "");
+  const e164 = asE164OrEmpty((process.env[SUPPORT_HANDOFF_E164_ENV] || "").trim());
+  if (!e164) return "";
   if (isSubscribeOutboundNumber(e164) || isSupportPublicNumber(e164)) return "";
   return e164;
 }

@@ -530,9 +530,10 @@ Until the voice SQL is applied, identify still works; create / get / resolve ret
 | Name | Purpose |
 | --- | --- |
 | `BANDHAM_VOICE_SUPPORT_SECRET` | Shared secret for the phone agent. Stub in `.env.example` only. Set the live value in Vercel. |
-| `BANDHAM_SUPPORT_HANDOFF_E164` | Server-only human handoff destination. Operator default is `+14709620438`. Never publish this number on Contact, footer, Plans, or spoken prompt text. Transfer caller ID stays `+1 803 265 5233` (`+18032655233`). Do not set this to `+16408379459`. |
+| `BANDHAM_SUPPORT_HANDOFF_E164` | Server-only human handoff destination. Empty means stay on Support. Set the live E.164 in Vercel only. Never publish it on Contact, footer, Plans, or spoken prompt text. Transfer caller ID stays `+1 803 265 5233` (`+18032655233`). |
+| `BANDHAM_SUBSCRIBE_OUTBOUND_E164` | Optional server-only subscribe outbound block. Empty means no extra inbound block. Never a handoff destination or caller ID. |
 
-Do **not** patch the live Vapi Support assistant from a preview PR. After merge, Sai can point the existing Support `transferCall` / server URL at this route. Vapi `transfer-destination-request` and `transfer_to_human` both return a warm-transfer destination with `callerId` `+18032655233` and `fallbackPlan.endCallEnabled: false` so a no-answer stays on Support. Do not use the 640 subscribe outbound number. Do not leave a voicemail as Bandham from 640. Live Vapi update waits for merge + Sai yes.
+Do **not** patch the live Vapi Support assistant from a preview PR. After merge, Sai can point the existing Support `transferCall` / server URL at this route. Vapi `transfer-destination-request` and `transfer_to_human` both return a warm-transfer destination with `callerId` `+18032655233` and `fallbackPlan.endCallEnabled: false` so a no-answer stays on Support. Do not use the subscribe outbound number as dest or caller ID. Do not leave a voicemail from that outbound line. Live Vapi update waits for merge + Sai yes.
 
 Subscribe caller assistant files (if any) are a different bot. Do not wire this handoff there.
 
@@ -548,7 +549,7 @@ Messaging is **$9.99/mo**. VerifyAI is **$4.99** one-time. The phone agent must 
 4. With the live secret: identify by a known account email. Then create a billing ticket. A `source=voice` row appears. Sai’s inbox gets the notify if Resend is set.
 5. get_ticket / resolve_ticket with a **different** email or phone must not see or close that row.
 6. Signed-in in-app **Open ticket** still uses `/api/support/tickets` and `source=assistant`.
-7. `npm run check:voice-support`, `npm run check:support-handoff`, `npm run check:contact-call`, `npm run check:support-tickets`, and `npm run check:guru-search`. Do not dial 803, the handoff destination, or 640 to test.
+7. `npm run check:voice-support`, `npm run check:support-handoff`, `npm run check:contact-call`, `npm run check:support-tickets`, and `npm run check:guru-search`. Do not dial Support or the handoff destination to test.
 
 ## Learn More
 

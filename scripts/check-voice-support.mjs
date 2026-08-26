@@ -263,6 +263,8 @@ assert(env.includes("BANDHAM_VOICE_SUPPORT_SECRET="), "env example stubs the sec
 assert(!/BANDHAM_VOICE_SUPPORT_SECRET=\S+/.test(env), "do not invent a live secret");
 assert(env.includes("BANDHAM_SUPPORT_HANDOFF_E164="), "env example stubs the handoff dest");
 assert(!/BANDHAM_SUPPORT_HANDOFF_E164=\S+/.test(env), "do not put the live handoff dest on the assignment line");
+assert(env.includes("BANDHAM_SUBSCRIBE_OUTBOUND_E164="), "env example stubs the subscribe outbound block");
+assert(!/BANDHAM_SUBSCRIBE_OUTBOUND_E164=\S+/.test(env), "do not put a live subscribe outbound on the assignment line");
 
 const readme = read("README.md");
 assert(readme.toLowerCase().includes("voice") || readme.includes("/api/voice/support"), "README notes phone voice support");
