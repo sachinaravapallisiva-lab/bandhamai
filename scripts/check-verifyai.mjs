@@ -237,20 +237,25 @@ assert(
 );
 assert(badge.includes("title={phrase}") || badge.includes('title="Profile has been verified biometrically."'), "title lock");
 assert(badge.includes("aria-label={phrase}") || badge.includes('aria-label="Profile has been verified biometrically."'), "aria-label lock");
-assert(badge.includes('width="12"') || badge.includes('width="13"') || badge.includes("fontSize: 10"), "badge stays small");
+assert(
+  badge.includes('width="15"') || badge.includes('width="14"') || badge.includes('width="16"'),
+  "shield stays compact at 14 to 16px"
+);
+assert(badge.includes("fontSize: 11"), "Verified label stays about 11px");
 assert(!badge.includes('width="18"'), "badge is not the larger 18px chip");
-assert(badge.includes("padding: 0"), "badge is not a padded chip");
+assert(badge.includes("padding: 0"), "tooltip stays unpadded");
 assert(badge.includes('background: "transparent"'), "badge has no chip fill");
 assert(badge.includes("VIOLET"), "badge uses theme VIOLET");
 assert(badge.includes("VIOLET_DEEP"), "badge uses theme VIOLET_DEEP");
-assert(!/\bGOLD\b/.test(badge), "badge is not gold");
+assert(/\bGOLD\b/.test(badge), "thin gold rim uses theme GOLD");
+assert(badge.includes('stroke="white"'), "white check sits inside the shield");
 assert(!/\bCREAM\b/.test(badge), "tap line is not a cream toast");
 assert(!badge.includes("boxShadow"), "tap line is not a dating toast");
 assert(!badge.includes("borderRadius"), "tap line is not a rounded toast");
-assert(!/#C4A36A|#FFD700|#F5C518/i.test(badge), "no gold hex on the badge");
+assert(!/#C4A36A|#FFD700|#F5C518/i.test(badge), "gold rim uses GOLD token, not a hex");
 assert(!/#16[Aa]34[Aa]|#22[Cc]55[Ee]|#15803[Dd]|#10[Bb]981/i.test(badge), "badge is not green");
 assert(!/#1[Dd]9[Bb][Ff]0|#1[Dd][Aa]1[Ff]2|#1877[Ff]2|#0[Aa]66[Cc]2/i.test(badge), "badge is not a blue tick");
-assert(!/#FFFFFF/.test(badge), "no white tick inside the shield");
+assert(!/#FFFFFF/.test(badge), "white check is the SVG keyword, not a hex chip");
 assert(!badge.includes('title="VerifyAI"'), "old icon-only title is gone");
 assert(!badge.includes('aria-label="VerifyAI"'), "old icon-only name is gone");
 assert(!/Verified with VerifyAI/.test(badge), "badge does not invent Verified with VerifyAI");
@@ -270,4 +275,4 @@ assert(account.includes("signedIn={false}"), "signed-out Account still shows Get
 
 assert(!/price_[a-zA-Z0-9]{10,}/.test(checkout + offer + device), "no invented Stripe Price ID on VerifyAI");
 
-console.log("verifyai violet badge + $4.99 checkout rules ok");
+console.log("verifyai gold rim badge + $4.99 checkout rules ok");
