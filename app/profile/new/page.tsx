@@ -21,6 +21,7 @@ import {
 } from "../../../lib/biodata-share";
 import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
+import { seedBrowsePrefsFromRegistration } from "../../../lib/browse-prefs";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
 import BiodataShareField from "../../components/BiodataShareField";
@@ -99,6 +100,7 @@ export default function NewProfilePage() {
               if (data && !data.error) {
                 setMine({ profile: data.profile || null, linked: !!data.linked });
                 if (data.profile) {
+                  seedBrowsePrefsFromRegistration(data.profile);
                   setDone(true);
                   setForm(function (prev) {
                     return { ...prev, instagram: data.profile.instagram || "" };
@@ -286,6 +288,7 @@ export default function NewProfilePage() {
             return;
           }
           setDone(true);
+          seedBrowsePrefsFromRegistration(data.data?.[0] || form);
           setMine({
             profile: data.data?.[0] || {
               status: "pending",

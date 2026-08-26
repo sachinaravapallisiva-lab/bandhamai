@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import {
+  BROWSE_ASK_CASTE_NO_BAR_ID,
+  BROWSE_ASK_CASTE_NO_BAR_LABEL,
   BROWSE_ASK_FIELD_ORDER,
   BROWSE_ASK_HINT,
   BROWSE_ASK_LABEL,
@@ -8,22 +10,47 @@ import {
   BROWSE_ASK_NO_ANSWER_LABEL,
   BROWSE_ASK_QUESTIONS,
   BROWSE_ASK_VISA_NO_ANSWER_LABEL,
+  appendFoldPhrase,
   browseAskAlreadyAnswered,
   browseAskChoices,
   browseAskProgress,
   browseAskReadyForShortlist,
+  casteChoiceFromPrompt,
   findBrowseAskQuestion,
   browseAskRegionFolds,
   foldBrowseAnswers,
   foldPhraseForAnswer,
+  foldsIntoSearchBox,
   isBrowseAskNoAnswer,
+  isCasteNoBar,
+  lookingForFromPrompt,
+  matchCountryFromPrompt,
   promptHasCaste,
   promptHasLocation,
+  promptHasLookingFor,
   promptHasReligion,
+  promptHasSeekerCountry,
   promptHasVisa,
+  regionIdFromPlace,
   remainingBrowseQuestions,
+  searchQueryFromBox,
+  seekerCountryFromPrompt,
   userFacingBrowseAskCopy,
 } from "../lib/browse-ask.ts";
+import {
+  BROWSE_PREFS_STORAGE_KEY,
+  applyAnswerToPrefs,
+  applyPromptToPrefs,
+  dropRemovedMatchPrefs,
+  emptyBrowsePrefs,
+  foldMatchPrefsIntoQuery,
+  hydratePrefsFromProfile,
+  lookingForFromOwnGender,
+  persistBrowsePrefsToServer,
+  prefsToAnswers,
+  sanitizeBrowsePrefs,
+  seedBrowsePrefsFromRegistration,
+} from "../lib/browse-prefs.ts";
 import { hasCriteria, parseSearchQuery } from "../lib/profile-search.ts";
 import { VISA_STATUS_GROUPS, VISA_STATUS_UNGROUPED } from "../lib/visa-status.ts";
 import { KEYWORD_ALIASES, SEARCH_CITIES } from "../lib/desi-search-aliases.ts";
@@ -56,8 +83,8 @@ assert(!/bandhan\b/i.test(BROWSE_ASK_HINT), "product is Bandham, not Bandhan");
 assert(BROWSE_ASK_LABEL === "FILTERS", "ask eyebrow says FILTERS");
 assertEq(
   BROWSE_ASK_FIELD_ORDER.join(" "),
-  "location visa religion caste",
-  "locked filter order"
+  "looking_for seeker location visa religion caste",
+  "leftover order is bride or groom, seeker country, then the four filters"
 );
 
 const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
@@ -65,10 +92,10 @@ const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
 });
 assertEq(
   ids.join(" "),
-  "location visa religion caste",
-  "bank order is the four search filters"
+  "looking_for seeker location visa religion caste",
+  "bank order is looking for, seeker, then the four search filters"
 );
-assert(!ids.includes("city"), "city is a follow-up, not one of the 4");
+assert(!ids.includes("city"), "city is a follow-up, not a bank id");
 assert(!ids.includes("mother_tongue"), "mother tongue is not a Browse filter");
 assert(!ids.includes("diet"), "diet is not a Browse filter");
 assert(!ids.includes("family_living"), "joint family is not a Browse filter");
@@ -76,7 +103,7 @@ assert(!ids.includes("parents"), "parents in the decision is not a Browse filter
 assert(!ids.includes("work"), "work after marriage is not a Browse filter");
 assert(!ids.includes("timeline"), "timeline is not a Browse filter");
 assert(!ids.includes("children"), "kids is not a Browse filter");
-assert(!ids.includes("gender"), "gender is not one of the four");
+assert(!ids.includes("gender"), "gender is not a leftover tap id");
 
 BROWSE_ASK_QUESTIONS.forEach(function (q) {
   assert(!dating.test(q.prompt), "not dating prompt: " + q.id);
@@ -129,11 +156,30 @@ const religion = findBrowseAskQuestion("religion");
 ["Hindu", "Muslim", "Christian", "Sikh", "Jain", "Buddhist", "Other"].forEach(function (label) {
   assert(religion.choices.some(function (c) { return c.label === label; }), "religion includes " + label);
 });
+assert(
+  !religion.choices.some(function (c) { return /no bar/i.test(c.label); }),
+  "religion has no no bar chip"
+);
+assert(
+  !browseAskChoices(visaQ).some(function (c) { return /no bar/i.test(c.label); }),
+  "visa has no no bar chip"
+);
 
 const caste = findBrowseAskQuestion("caste");
-assert(caste.choices.some(function (c) { return c.label === "Any"; }), "caste includes Any");
+assertEq(BROWSE_ASK_CASTE_NO_BAR_LABEL, "Caste no bar", "exact Caste no bar label, no hyphen");
+assert(caste.choices.some(function (c) { return c.label === BROWSE_ASK_CASTE_NO_BAR_LABEL; }), "caste leftover includes Caste no bar");
+assert(caste.choices.some(function (c) { return c.id === BROWSE_ASK_CASTE_NO_BAR_ID; }), "Caste no bar has a stable id");
+assert(!caste.choices.some(function (c) { return c.label === "Any"; }), "caste no longer uses Any");
+assert(!caste.choices.some(function (c) { return c.label.includes("-"); }), "Caste no bar has no hyphen");
+assert(!isBrowseAskNoAnswer(BROWSE_ASK_CASTE_NO_BAR_ID), "Caste no bar is not Don't want to answer");
+assert(!isBrowseAskNoAnswer(BROWSE_ASK_CASTE_NO_BAR_LABEL), "Caste no bar label is not a skip");
+assert(isCasteNoBar(BROWSE_ASK_CASTE_NO_BAR_ID), "caste_no_bar is Caste no bar");
+assert(isCasteNoBar(BROWSE_ASK_CASTE_NO_BAR_LABEL), "Caste no bar label is Caste no bar");
 caste.choices.forEach(function (c) {
-  if (c.id === "any") return;
+  if (c.id === BROWSE_ASK_CASTE_NO_BAR_ID) {
+    assertEq(c.fold, "", "Caste no bar fold is empty");
+    return;
+  }
   assert(KEYWORD_ALIASES[c.id], "caste chip reuses an existing community alias: " + c.id);
 });
 
@@ -155,19 +201,27 @@ assert(!browseAskReadyForShortlist(thinPrompt), "thin prompt must not render the
 const thin = remainingBrowseQuestions(thinPrompt);
 assertEq(
   thin.map(function (q) { return q.id; }).join(" "),
-  "location visa religion caste",
-  "thin prompt asks the four leftover filters in order"
+  "seeker location visa religion caste",
+  "thin girl prompt skips bride or groom and asks seeker then the four filters"
 );
-assertEq(thin[0].id, "location", "first leftover question is location");
-assertEq(thin[0].prompt, "Where should we look?", "location copy");
+assertEq(thin[0].id, "seeker", "first leftover question is seeker country when looking for is known");
+assertEq(thin[0].prompt, "Where are you now?", "seeker copy");
+assertEq(findBrowseAskQuestion("location").prompt, "Where should they be from?", "match country copy");
+assert(promptHasLookingFor(thinPrompt), "girl in the prompt is a bride or groom answer");
+assertEq(lookingForFromPrompt(thinPrompt), "bride", "girl maps to bride");
 
 const dallas = remainingBrowseQuestions("indian girl with family values in Dallas");
-assertEq(dallas[0].id, "visa", "in Dallas skips location");
-assert(!dallas.some(function (q) { return q.id === "location" || q.id === "city"; }), "city in the prompt skips the location taps");
-assert(browseAskAlreadyAnswered("location", "indian girl with family values in Dallas"), "Dallas is a location answer");
+assertEq(dallas[0].id, "seeker", "in Dallas still asks where the seeker is");
+assert(!dallas.some(function (q) { return q.id === "location" || q.id === "city"; }), "city in the prompt skips the match location taps");
+assert(browseAskAlreadyAnswered("location", "indian girl with family values in Dallas"), "Dallas is a match location answer");
+
+const dallasKnownSeeker = remainingBrowseQuestions("indian girl with family values in Dallas", [
+  { questionId: "seeker", choiceId: "us" },
+]);
+assertEq(dallasKnownSeeker[0].id, "visa", "known seeker plus Dallas starts at visa");
 
 const h1b = remainingBrowseQuestions("indian girl with family values H1B");
-assertEq(h1b[0].id, "location", "H1B still asks location first");
+assertEq(h1b[0].id, "seeker", "H1B still asks seeker country first");
 assert(!h1b.some(function (q) { return q.id === "visa"; }), "H1B skips visa");
 assert(promptHasVisa("h1b"), "visa aliases skip visa");
 assert(promptHasVisa("green card doctor"), "green card skips visa");
@@ -176,28 +230,45 @@ const faith = remainingBrowseQuestions("Hindu Reddy girl in Dallas");
 assert(!faith.some(function (q) { return q.id === "location"; }), "Dallas skips location");
 assert(!faith.some(function (q) { return q.id === "religion"; }), "Hindu skips religion");
 assert(!faith.some(function (q) { return q.id === "caste"; }), "Reddy skips caste");
-assertEq(faith[0].id, "visa", "still ask visa when unknown");
+assertEq(faith[0].id, "seeker", "still ask seeker country when unknown");
+assertEq(
+  remainingBrowseQuestions("Hindu Reddy girl in Dallas", [{ questionId: "seeker", choiceId: "us" }])[0].id,
+  "visa",
+  "still ask visa when unknown"
+);
 
-const afterUs = remainingBrowseQuestions(thinPrompt, [{ questionId: "location", choiceId: "us" }]);
+const afterUs = remainingBrowseQuestions(thinPrompt, [
+  { questionId: "seeker", choiceId: "india" },
+  { questionId: "location", choiceId: "us" },
+]);
 assertEq(afterUs[0].id, "city", "US region can ask a city from the existing list");
 afterUs[0].choices.forEach(function (c) {
   assert(SEARCH_CITIES.includes(c.fold), "city tap is already in SEARCH_CITIES: " + c.fold);
 });
 
 const afterUsSkipCity = remainingBrowseQuestions(thinPrompt, [
+  { questionId: "seeker", choiceId: "india" },
   { questionId: "location", choiceId: "us" },
   { questionId: "city", choiceId: BROWSE_ASK_NO_ANSWER_ID },
 ]);
 assertEq(afterUsSkipCity[0].id, "visa", "skip city keeps the region and continues to visa");
 assert(!afterUsSkipCity.some(function (q) { return q.id === "city"; }), "city is not asked again after skip");
 
-const afterAu = remainingBrowseQuestions(thinPrompt, [{ questionId: "location", choiceId: "australia" }]);
+const afterAu = remainingBrowseQuestions(thinPrompt, [
+  { questionId: "seeker", choiceId: "india" },
+  { questionId: "location", choiceId: "australia" },
+]);
 assertEq(afterAu[0].id, "visa", "Australia has no invented city list, so visa is next");
 
-const afterSkip = remainingBrowseQuestions(thinPrompt, [{ questionId: "location", choiceId: BROWSE_ASK_NO_ANSWER_ID }]);
+const afterSkip = remainingBrowseQuestions(thinPrompt, [
+  { questionId: "seeker", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "location", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+]);
 assertEq(afterSkip[0].id, "visa", "Don't want to answer on location skips city and goes to visa");
 
 const allSkipped = [
+  { questionId: "looking_for", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+  { questionId: "seeker", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "location", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "visa", choiceId: "prefer_not" },
   { questionId: "religion", choiceId: BROWSE_ASK_NO_ANSWER_ID },
@@ -249,7 +320,23 @@ assert(hasCriteria(parseSearchQuery(indiaSkipCity)), "India region is searchable
 const visaFold = foldBrowseAnswers(thinPrompt, [{ questionId: "visa", choiceId: "H-1B" }]);
 assert(parseSearchQuery(visaFold).keywords.includes("H-1B"), "folded visa reuses the stored label");
 assertEq(foldPhraseForAnswer("visa", "prefer_not"), "", "Prefer not to say fold is empty");
-assertEq(foldPhraseForAnswer("caste", "any"), "", "Any community fold is empty");
+assertEq(foldPhraseForAnswer("caste", BROWSE_ASK_CASTE_NO_BAR_ID), "", "Caste no bar fold is empty");
+assertEq(foldPhraseForAnswer("caste", BROWSE_ASK_CASTE_NO_BAR_LABEL), "", "Caste no bar label fold is empty");
+assertEq(foldPhraseForAnswer("caste", "reddy"), "Reddy", "Reddy still folds the community word");
+assertEq(
+  foldBrowseAnswers("Dallas groom", [{ questionId: "caste", choiceId: BROWSE_ASK_CASTE_NO_BAR_ID }]),
+  "Dallas groom",
+  "Caste no bar does not fold a community into the box"
+);
+assert(
+  !parseSearchQuery(foldBrowseAnswers("Dallas groom", [{ questionId: "caste", choiceId: BROWSE_ASK_CASTE_NO_BAR_ID }])).keywords.some(function (kw) {
+    return /reddy|kamma|caste|community/i.test(kw);
+  }),
+  "Caste no bar does not add a caste or community search keyword"
+);
+assertEq(casteChoiceFromPrompt("Dallas groom caste no bar"), BROWSE_ASK_CASTE_NO_BAR_ID, "typed Caste no bar is remembered as no bar");
+assert(promptHasCaste("Dallas groom caste no bar"), "typed Caste no bar skips the caste leftover");
+assertEq(casteChoiceFromPrompt("Dallas groom Reddy"), "reddy", "typed Reddy is still that community");
 
 userFacingBrowseAskCopy().forEach(function (text) {
   assert(!emDash.test(text), "user-facing copy has no em dash: " + text);
@@ -257,8 +344,18 @@ userFacingBrowseAskCopy().forEach(function (text) {
   assert(!dating.test(text), "not dating copy: " + text);
   assert(!/dealbreaker/i.test(text), "search box copy must not say dealbreaker: " + text);
 });
-assertEq(browseAskProgress(0, 4), "1 of 4", "progress has no slash or hyphen");
+assertEq(browseAskProgress(0, 6), "1 of 6", "progress has no slash or hyphen");
 assert(/filter/i.test(userFacingBrowseAskCopy().join(" ")), "user-facing ask copy names filters");
+assert(
+  userFacingBrowseAskCopy().includes(BROWSE_ASK_CASTE_NO_BAR_LABEL),
+  "user-facing copy includes Caste no bar"
+);
+assert(
+  !userFacingBrowseAskCopy().some(function (text) {
+    return /caste-no-bar|caste no-bar|no-bar/i.test(text);
+  }),
+  "Caste no bar has no hyphen in user-facing copy"
+);
 
 const page = read("app/page.tsx");
 const ui = read("app/components/BrowseAsk.tsx");
@@ -268,6 +365,14 @@ assert(page.includes("remainingBrowseQuestions"), "Browse asks remaining questio
 assert(page.includes("submitPrompt"), "typed/spoken prompt goes through ask first");
 assert(!/onClick=\{function \(\) \{ submitPrompt\(\); \}\}[\s\S]{0,80}disabled=\{searching\}/.test(page), "Search stays tappable while the default shortlist is still looking");
 assert(page.includes("foldBrowseAnswers"), "answers fold into search q");
+assert(page.includes("appendFoldPhrase"), "taps append a phrase into the visible search input");
+assert(page.includes("setQuery(nextQuery)") || page.includes("setQuery(visible)"), "the PROFILE SEARCH box text updates when they tap");
+assert(page.includes("loadBrowsePrefs"), "prefs load from localStorage");
+assert(page.includes("saveBrowsePrefs"), "prefs save on this device");
+assert(page.includes("hydratePrefsFromProfile"), "signed in profile can fill seeker or looking for");
+assert(page.includes("persistBrowsePrefsToServer"), "server persist is attempted and fails closed");
+assert(page.includes("foldMatchPrefsIntoQuery"), "remembered match prefs can appear in the box");
+assert(page.includes("searchQueryFromBox"), "seeker words are stripped before the search request");
 assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until leftover filters are resolved or skipped");
 assert(page.includes("SEARCH_FILTER_HELPER"), "quiet helper sits under the search box");
 assert(
@@ -286,6 +391,8 @@ assert(!/fetch\(\s*["']\/api\/(chat|guru)/.test(page), "Browse still never opens
 assert(page.includes("askQueue[0]"), "one question at a time");
 assert(!/askQueue\.map/.test(page), "do not render a wall of leftover questions");
 assert(page.includes("sessionAnswers"), "answers are remembered in this session");
+assert(page.includes("prefsToAnswers"), "remembered prefs become leftover answers");
+assert(page.includes("mergeBrowseAskAnswers"), "this-round skip still advances leftover without persisting caste");
 
 const enlargedAt = page.indexOf("data-search-enlarged");
 const askAt = page.indexOf("<BrowseAsk\n") >= 0 ? page.indexOf("<BrowseAsk\n") : page.indexOf("<BrowseAsk ");
@@ -333,6 +440,212 @@ assert(!/dealbreaker/i.test(page.slice(page.indexOf("SEARCH_HINT"), page.indexOf
 assert(page.includes("MeetupRail"), "home meetup rail stays");
 assert(page.includes("PinnedRow"), "home pinned row stays");
 assert(page.includes('data-home-shell="true"'), "home shell stays locked");
+
+assertEq(appendFoldPhrase("Dallas groom", "Hindu"), "Dallas groom Hindu", "religion tap lands in the box");
+assertEq(appendFoldPhrase("Dallas groom Hindu", "H-1B"), "Dallas groom Hindu H-1B", "visa tap lands in the box");
+assertEq(appendFoldPhrase("Dallas groom", "groom"), "Dallas groom", "do not repeat a phrase already in the box");
+assertEq(foldPhraseForAnswer("looking_for", "groom"), "groom", "groom tap folds the word groom");
+assertEq(foldPhraseForAnswer("looking_for", "bride"), "bride", "bride tap folds the word bride");
+assertEq(foldPhraseForAnswer("seeker", "us"), "", "seeker country never folds into search");
+assert(!foldsIntoSearchBox("seeker"), "seeker answers stay out of the query");
+assert(foldsIntoSearchBox("location"), "match country still folds");
+assertEq(
+  foldBrowseAnswers("Dallas groom", [
+    { questionId: "seeker", choiceId: "us" },
+    { questionId: "religion", choiceId: "hindu" },
+  ]),
+  "Dallas groom Hindu",
+  "seeker country is omitted while religion folds"
+);
+assertEq(lookingForFromPrompt("Dallas groom"), "groom", "groom in the prompt is looking for");
+assertEq(parseSearchQuery("Dallas groom").gender, "Male", "groom is a male match search");
+assertEq(parseSearchQuery("Dallas bride").gender, "Female", "bride is a female match search");
+assert(!promptHasLocation("I am in the United States"), "seeker country is not a match location");
+assert(promptHasSeekerCountry("I am in the United States"), "I am in marks seeker country");
+assertEq(seekerCountryFromPrompt("I am in India"), "india", "I am in India is seeker country");
+assertEq(
+  searchQueryFromBox("I am in the United States looking for a Dallas groom"),
+  "looking for a Dallas groom",
+  "seeker country is stripped from the search q"
+);
+assertEq(matchCountryFromPrompt("Dallas groom"), "us", "Dallas is a US match location");
+assertEq(matchCountryFromPrompt("I am in the United States looking for a Dallas groom"), "us", "Dallas is still the match place");
+assertEq(regionIdFromPlace("Hyderabad"), "india", "profile city Hyderabad is India");
+assertEq(regionIdFromPlace("Dallas"), "us", "profile city Dallas is the United States");
+assert(
+  remainingBrowseQuestions("I am in the United States looking for a groom").some(function (q) {
+    return q.id === "location";
+  }),
+  "seeker phrase still asks where they should be from"
+);
+assert(
+  !remainingBrowseQuestions("I am in the United States looking for a groom").some(function (q) {
+    return q.id === "seeker" || q.id === "looking_for";
+  }),
+  "I am in plus groom skips seeker and looking for"
+);
+
+const remembered = applyAnswerToPrefs(emptyBrowsePrefs(), "looking_for", "groom");
+const withSeeker = applyAnswerToPrefs(remembered, "seeker", "us");
+const withMatch = applyAnswerToPrefs(withSeeker, "location", "india");
+assertEq(prefsToAnswers(withMatch).map(function (a) { return a.questionId; }).join(" "), "looking_for seeker location", "prefs become answers");
+assertEq(foldMatchPrefsIntoQuery("pediatrician", withMatch), "pediatrician groom India", "remembered match prefs fold, seeker does not");
+assertEq(applyPromptToPrefs("bride in India", withMatch).lookingFor, "bride", "typed bride beats saved groom");
+assertEq(applyPromptToPrefs("bride in India", withMatch).matchCountry, "india", "typed India stays the match country");
+assertEq(
+  dropRemovedMatchPrefs("Dallas groom", "Dallas groom Hindu", applyAnswerToPrefs(emptyBrowsePrefs(), "religion", "hindu")).religion,
+  "",
+  "editing Hindu out of the box clears that pref"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { city: "Dallas", wants: "looking for a groom" }).seekerCountry,
+  "us",
+  "profile city can fill seeker country"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { city: "Dallas", wants: "looking for a groom" }).lookingFor,
+  "groom",
+  "profile wants can fill bride or groom"
+);
+assertEq(lookingForFromOwnGender("F"), "groom", "a woman registering is seeking a groom");
+assertEq(lookingForFromOwnGender("M"), "bride", "a man registering is seeking a bride");
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "F", city: "Dallas" }).lookingFor,
+  "groom",
+  "registration gender seeds bride or groom when looking_for is absent"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "F", city: "Dallas" }).matchCountry,
+  "",
+  "own city is seeker country, not preferred match country"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).lookingFor,
+  "bride",
+  "own gender seeds looking for when wants has no bride or groom"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).seekerCountry,
+  "india",
+  "Hyderabad registration is seeker India"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).matchCountry,
+  "india",
+  "wants text can seed preferred match country"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).visa,
+  "H-1B",
+  "own visa_status seeds leftover visa"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).religion,
+  "hindu",
+  "wants can seed religion"
+);
+assertEq(
+  hydratePrefsFromProfile(emptyBrowsePrefs(), {
+    gender: "M",
+    city: "Hyderabad",
+    visa_status: "H-1B",
+    wants: "Hindu Reddy doctor in India",
+  }).caste,
+  "reddy",
+  "wants can seed community"
+);
+assertEq(
+  applyPromptToPrefs("bride in Australia", hydratePrefsFromProfile(emptyBrowsePrefs(), { gender: "M", city: "Dallas" })).lookingFor,
+  "bride",
+  "typed prompt still beats registration"
+);
+const casteSkipPrefs = applyAnswerToPrefs(emptyBrowsePrefs(), "caste", BROWSE_ASK_NO_ANSWER_ID);
+assertEq(casteSkipPrefs.caste, "", "Don't want to answer does not record a caste preference");
+assert(
+  !prefsToAnswers(casteSkipPrefs).some(function (a) { return a.questionId === "caste"; }),
+  "Don't want to answer is not a remembered caste answer"
+);
+assert(
+  remainingBrowseQuestions("pediatrician", prefsToAnswers(casteSkipPrefs)).some(function (q) {
+    return q.id === "caste";
+  }),
+  "Don't want to answer asks caste again on the next search"
+);
+
+const casteNoBarPrefs = applyAnswerToPrefs(emptyBrowsePrefs(), "caste", BROWSE_ASK_CASTE_NO_BAR_ID);
+assertEq(casteNoBarPrefs.caste, BROWSE_ASK_CASTE_NO_BAR_ID, "Caste no bar is remembered");
+assert(
+  !remainingBrowseQuestions("pediatrician", prefsToAnswers(casteNoBarPrefs)).some(function (q) {
+    return q.id === "caste";
+  }),
+  "remembered Caste no bar skips the caste leftover later"
+);
+assertEq(
+  foldMatchPrefsIntoQuery("pediatrician", casteNoBarPrefs),
+  "pediatrician",
+  "remembered Caste no bar does not fold Reddy, Kamma, or another community"
+);
+assertEq(
+  applyPromptToPrefs("Dallas groom Reddy", casteNoBarPrefs).caste,
+  "reddy",
+  "typing a community beats remembered Caste no bar"
+);
+assertEq(
+  sanitizeBrowsePrefs({ caste: "any" }).caste,
+  BROWSE_ASK_CASTE_NO_BAR_ID,
+  "legacy Any community becomes Caste no bar"
+);
+assertEq(
+  sanitizeBrowsePrefs({ caste: BROWSE_ASK_NO_ANSWER_ID }).caste,
+  "",
+  "stored Don't want to answer is not a caste preference"
+);
+assert(
+  browseAskReadyForShortlist(thinPrompt, allSkipped.concat([{ questionId: "caste", choiceId: BROWSE_ASK_NO_ANSWER_ID }])),
+  "this-round Don't want to answer still unlocks the shortlist"
+);
+
+assertEq(BROWSE_PREFS_STORAGE_KEY, "bandham.browse.prefs", "prefs key is device localStorage");
+assertEq(persistBrowsePrefsToServer(), false, "leftover prefs are not written to browse_prompts");
+assert(typeof seedBrowsePrefsFromRegistration === "function", "registration can seed leftover prefs");
+
+const prefsLib = read("lib/browse-prefs.ts");
+assert(prefsLib.includes("localStorage"), "prefs persist on the device");
+assert(!prefsLib.includes("from("), "prefs do not invent a SQL write");
+assert(prefsLib.includes("lookingForFromOwnGender"), "registration gender can seed looking for");
+assert(prefsLib.includes("visa_status"), "own visa_status can seed leftover visa");
+assert(prefsLib.includes("preferred_country"), "preferred match country is read if that column exists");
+assert(read("app/profile/new/page.tsx").includes("seedBrowsePrefsFromRegistration"), "profile create seeds leftover prefs");
+assert(!read("app/profile/new/page.tsx").includes("looking_for"), "do not invent a looking_for signup field");
+assert(!askLib.includes("mother_tongue"), "Browse ask still has no mother tongue path");
+assert(findBrowseAskQuestion("looking_for"), "bride or groom is a leftover tap");
+assert(findBrowseAskQuestion("seeker"), "seeker country is a leftover tap");
+assert(!/Ask me anything|working in IT in Bangalore|Recent Results/i.test(page + ui + askLib), "no Manasi leftover copy");
 
 console.log("browse ask one by one ok", {
   fields: BROWSE_ASK_FIELD_ORDER.slice(),

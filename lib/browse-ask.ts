@@ -4,8 +4,9 @@
  * After a typed or spoken prompt, enlarge the search box and ask leftover
  * search filters as tap chips, one at a time. These are filters, not
  * dealbreakers. Dealbreakers stay on Speed Match / when they talk.
- * Answers fold into the same q / parseSearchQuery path. Session answers
- * stay until reload. A short prompt is never blocked; it still gets chips.
+ * Taps fold into the visible PROFILE SEARCH input so they can edit the
+ * words. Seeker country is remembered only; it is not a match filter.
+ * Session + localStorage remember prefs. A short prompt is never blocked.
  */
 
 import { SEARCH_CITIES } from "./desi-search-aliases";
@@ -22,12 +23,22 @@ export const BROWSE_ASK_NO_ANSWER_ID = "dont_answer";
 export const BROWSE_ASK_NO_ANSWER_ALIAS = "prefer_not";
 export const BROWSE_ASK_NO_ANSWER_LABEL = "Don't want to answer";
 export const BROWSE_ASK_VISA_NO_ANSWER_LABEL = "Prefer not to say";
+/** Explicit preference that community does not matter. Not Don't want to answer. */
+export const BROWSE_ASK_CASTE_NO_BAR_ID = "caste_no_bar";
+export const BROWSE_ASK_CASTE_NO_BAR_LABEL = "Caste no bar";
 
 export const BROWSE_ASK_LABEL = "FILTERS";
 export const BROWSE_ASK_HINT = "Tap one filter. Bandham AI uses this for the shortlist.";
 
-/** Locked filter order. City is an optional follow-up after a region, not one of the 4. */
-export const BROWSE_ASK_FIELD_ORDER = ["location", "visa", "religion", "caste"] as const;
+/** Leftover order. City is an optional follow-up after match country, not a bank id. */
+export const BROWSE_ASK_FIELD_ORDER = [
+  "looking_for",
+  "seeker",
+  "location",
+  "visa",
+  "religion",
+  "caste",
+] as const;
 
 export type BrowseAskField = (typeof BROWSE_ASK_FIELD_ORDER)[number];
 
@@ -57,10 +68,12 @@ export type BrowseAskAnswer = {
 };
 
 const SEARCH_FILTER_PROMPTS: Record<BrowseAskField, string> = {
-  location: "Where should we look?",
+  looking_for: "Bride or groom?",
+  seeker: "Where are you now?",
+  location: "Where should they be from?",
   visa: "Which visa status should we look for?",
   religion: "Any faith we should look for?",
-  caste: "Any community we should look for?",
+  caste: "Which community should we look for?",
 };
 
 /**
@@ -76,6 +89,34 @@ const LOCATION_CHOICES: BrowseAskChoice[] = [
   { id: "ireland", label: "Ireland", fold: "Ireland" },
   { id: "india", label: "India", fold: "India" },
 ];
+
+const LOOKING_FOR_CHOICES: BrowseAskChoice[] = [
+  { id: "bride", label: "Bride", fold: "bride" },
+  { id: "groom", label: "Groom", fold: "groom" },
+];
+
+const LOOKING_FOR_BRIDE_TERMS = ["bride", "brides"];
+const LOOKING_FOR_GROOM_TERMS = ["groom", "grooms"];
+
+const REGION_DETECT: { id: string; terms: string[] }[] = [
+  { id: "us", terms: ["united states", "usa", "u s a"] },
+  { id: "australia", terms: ["australia"] },
+  { id: "uk", terms: ["united kingdom", "britain", "uk"] },
+  { id: "europe", terms: ["europe"] },
+  { id: "ireland", terms: ["ireland"] },
+  { id: "india", terms: ["india"] },
+];
+
+const EXTRA_SEEKER_CITIES: Record<string, string> = {
+  london: "uk",
+  birmingham: "uk",
+  manchester: "uk",
+  sydney: "australia",
+  melbourne: "australia",
+  dublin: "ireland",
+};
+
+const SEEKER_LEAD = "(?:i am|i'm|im|i live|we are|we're)\\s+in\\s+(?:the\\s+)?";
 
 const RELIGION_CHOICES: BrowseAskChoice[] = [
   { id: "hindu", label: "Hindu", fold: "Hindu" },
@@ -191,9 +232,9 @@ export const BROWSE_ASK_NO_ANSWER_CHOICE: BrowseAskChoice = {
   fold: "",
 };
 
-const CASTE_ANY_CHOICE: BrowseAskChoice = {
-  id: "any",
-  label: "Any",
+export const BROWSE_ASK_CASTE_NO_BAR_CHOICE: BrowseAskChoice = {
+  id: BROWSE_ASK_CASTE_NO_BAR_ID,
+  label: BROWSE_ASK_CASTE_NO_BAR_LABEL,
   fold: "",
 };
 
@@ -210,7 +251,7 @@ function titleLabel(value: string) {
 function communityChoices(): BrowseAskChoice[] {
   return COMMUNITY_CHIP_IDS.map(function (id) {
     return { id: id, label: titleLabel(id), fold: titleLabel(id) };
-  }).concat(CASTE_ANY_CHOICE);
+  }).concat(BROWSE_ASK_CASTE_NO_BAR_CHOICE);
 }
 
 function cityChoice(city: string): BrowseAskChoice {
@@ -248,6 +289,24 @@ function visaQuestion(): BrowseAskQuestion {
   };
 }
 
+function lookingForQuestion(): BrowseAskQuestion {
+  return {
+    id: "looking_for",
+    prompt: SEARCH_FILTER_PROMPTS.looking_for,
+    choices: LOOKING_FOR_CHOICES,
+  };
+}
+
+function seekerQuestion(): BrowseAskQuestion {
+  return {
+    id: "seeker",
+    prompt: SEARCH_FILTER_PROMPTS.seeker,
+    choices: LOCATION_CHOICES.map(function (choice) {
+      return { id: choice.id, label: choice.label, fold: "" };
+    }),
+  };
+}
+
 function locationQuestion(): BrowseAskQuestion {
   return {
     id: "location",
@@ -281,6 +340,8 @@ function casteQuestion(): BrowseAskQuestion {
 }
 
 export const BROWSE_ASK_QUESTIONS: BrowseAskQuestion[] = [
+  lookingForQuestion(),
+  seekerQuestion(),
   locationQuestion(),
   visaQuestion(),
   religionQuestion(),
@@ -294,9 +355,14 @@ export function isBrowseAskNoAnswer(choiceId: string | null | undefined) {
     key === BROWSE_ASK_NO_ANSWER_ID ||
     key === BROWSE_ASK_NO_ANSWER_ALIAS ||
     key === BROWSE_ASK_NO_ANSWER_LABEL.toLowerCase() ||
-    key === BROWSE_ASK_VISA_NO_ANSWER_LABEL.toLowerCase() ||
-    key === "any"
+    key === BROWSE_ASK_VISA_NO_ANSWER_LABEL.toLowerCase()
   );
+}
+
+export function isCasteNoBar(choiceId: string | null | undefined) {
+  if (!choiceId) return false;
+  const key = choiceId.toLowerCase().replace(/\s+/g, " ").trim();
+  return key === BROWSE_ASK_CASTE_NO_BAR_ID || key === BROWSE_ASK_CASTE_NO_BAR_LABEL.toLowerCase();
 }
 
 export function browseAskChoices(question: BrowseAskQuestion) {
@@ -347,6 +413,96 @@ function haystack(raw: string, criteria: SearchCriteria) {
   );
 }
 
+function citySetHas(set: Set<string>, place: string) {
+  const needle = place.trim().toLowerCase();
+  if (!needle) return false;
+  for (const city of set) {
+    if (city.toLowerCase() === needle) return true;
+  }
+  return false;
+}
+
+function regionTerms() {
+  return REGION_DETECT.flatMap(function (region) {
+    return region.terms;
+  });
+}
+
+export function stripSeekerPhrases(raw: string) {
+  let text = typeof raw === "string" ? raw : "";
+  regionTerms().forEach(function (term) {
+    text = text.replace(new RegExp("\\b" + SEEKER_LEAD + escapeRe(term) + "\\b", "ig"), " ");
+  });
+  return text.replace(/\s+/g, " ").trim();
+}
+
+export function regionIdFromPlace(place: string) {
+  const hay = normalizeHay(place);
+  if (!hay) return "";
+  for (let i = 0; i < REGION_DETECT.length; i += 1) {
+    if (hasTerm(hay, REGION_DETECT[i].terms)) return REGION_DETECT[i].id;
+  }
+  if (citySetHas(US_CITY_SET, hay)) return "us";
+  if (citySetHas(INDIA_CITY_SET, hay)) return "india";
+  return EXTRA_SEEKER_CITIES[hay] || "";
+}
+
+export function lookingForFromPrompt(raw: string, criteria?: SearchCriteria) {
+  const parsed = criteria || parseSearchQuery(raw);
+  const hay = haystack(raw, parsed);
+  if (hasTerm(hay, LOOKING_FOR_BRIDE_TERMS)) return "bride";
+  if (hasTerm(hay, LOOKING_FOR_GROOM_TERMS)) return "groom";
+  if (parsed.gender === "Female") return "bride";
+  if (parsed.gender === "Male") return "groom";
+  return "";
+}
+
+export function seekerCountryFromPrompt(raw: string) {
+  const hay = normalizeHay(raw);
+  if (!hay) return "";
+  for (let i = 0; i < REGION_DETECT.length; i += 1) {
+    const terms = REGION_DETECT[i].terms;
+    for (let t = 0; t < terms.length; t += 1) {
+      if (new RegExp("\\b" + SEEKER_LEAD + escapeRe(terms[t]) + "\\b", "i").test(hay)) {
+        return REGION_DETECT[i].id;
+      }
+    }
+  }
+  return "";
+}
+
+export function matchCountryFromPrompt(raw: string, criteria?: SearchCriteria) {
+  const matchText = stripSeekerPhrases(raw);
+  if (!matchText) return "";
+  const parsed = criteria || parseSearchQuery(matchText);
+  if (parsed.city) {
+    const fromCity = regionIdFromPlace(parsed.city);
+    if (fromCity) return fromCity;
+  }
+  const hay = haystack(matchText, parsed);
+  for (let i = 0; i < REGION_DETECT.length; i += 1) {
+    if (hasTerm(hay, REGION_DETECT[i].terms)) return REGION_DETECT[i].id;
+  }
+  return "";
+}
+
+export function promptHasLookingFor(raw: string, criteria?: SearchCriteria) {
+  return !!lookingForFromPrompt(raw, criteria);
+}
+
+export function promptHasSeekerCountry(raw: string) {
+  return !!seekerCountryFromPrompt(raw);
+}
+
+/** Append a tap phrase to the visible search box. Does not invent words. */
+export function appendFoldPhrase(prompt: string, phrase: string) {
+  const text = typeof prompt === "string" ? prompt.trim() : "";
+  const add = typeof phrase === "string" ? phrase.trim() : "";
+  if (!add) return text;
+  if (hasTerm(normalizeHay(text), [add])) return text;
+  return (text ? text + " " + add : add).replace(/\s+/g, " ").trim();
+}
+
 function escapeRe(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -376,10 +532,17 @@ export function mergeBrowseAskAnswers(base: BrowseAskAnswer[], extra: BrowseAskA
   return Array.from(map.values());
 }
 
-export function promptHasLocation(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
+export function promptHasLocation(raw: string, _criteria?: SearchCriteria) {
+  const matchText = stripSeekerPhrases(raw);
+  if (!matchText) return false;
+  const parsed = parseSearchQuery(matchText);
   if (parsed.city) return true;
-  return hasTerm(haystack(raw, parsed), LOCATION_REGION_TERMS);
+  return hasTerm(haystack(matchText, parsed), LOCATION_REGION_TERMS);
+}
+
+/** Search q with seeker country removed so it cannot act as a match filter. */
+export function searchQueryFromBox(raw: string) {
+  return stripSeekerPhrases(raw).replace(/\s+/g, " ").trim();
 }
 
 export function promptHasVisa(raw: string, criteria?: SearchCriteria) {
@@ -400,6 +563,7 @@ export function promptHasReligion(raw: string, criteria?: SearchCriteria) {
 }
 
 export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
+  if (isCasteNoBar(casteChoiceFromPrompt(raw))) return true;
   const parsed = criteria || parseSearchQuery(raw);
   const hay = haystack(raw, parsed);
   if (hasTerm(hay, COMMUNITY_ALIAS_TERMS)) return true;
@@ -407,6 +571,50 @@ export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
     const lower = kw.toLowerCase();
     return COMMUNITY_ALIAS_TERMS.indexOf(lower) >= 0;
   });
+}
+
+export function religionChoiceFromPrompt(raw: string) {
+  const hay = normalizeHay(raw);
+  if (hasTerm(hay, ["islam", "islamic"])) return "muslim";
+  if (hasTerm(hay, ["buddhism"])) return "buddhist";
+  for (let i = 0; i < RELIGION_CHOICES.length; i += 1) {
+    const choice = RELIGION_CHOICES[i];
+    if (hasTerm(hay, [choice.id, choice.label])) return choice.id;
+  }
+  return "";
+}
+
+export function casteChoiceFromPrompt(raw: string) {
+  const hay = normalizeHay(raw);
+  if (hasTerm(hay, ["caste no bar"]) || hasTerm(hay, ["no caste bar"])) {
+    return BROWSE_ASK_CASTE_NO_BAR_ID;
+  }
+  for (let i = 0; i < COMMUNITY_CHIP_IDS.length; i += 1) {
+    const id = COMMUNITY_CHIP_IDS[i];
+    if (hasTerm(hay, [id])) return id;
+  }
+  return "";
+}
+
+export function visaChoiceFromPrompt(raw: string) {
+  const parsed = parseSearchQuery(raw);
+  for (let i = 0; i < parsed.keywords.length; i += 1) {
+    const resolved = resolveVisaAlias(parsed.keywords[i]);
+    if (resolved) return resolved;
+    if (isVisaStatusOption(parsed.keywords[i])) return parsed.keywords[i];
+  }
+  const hay = normalizeHay(raw);
+  const aliases = Object.keys(VISA_STATUS_ALIASES).sort(function (a, b) {
+    return b.length - a.length;
+  });
+  for (let i = 0; i < aliases.length; i += 1) {
+    if (hasTerm(hay, [aliases[i]])) return VISA_STATUS_ALIASES[aliases[i]];
+  }
+  return "";
+}
+
+export function foldsIntoSearchBox(questionId: string) {
+  return questionId !== "seeker";
 }
 
 export function browseAskAlreadyAnswered(
@@ -417,8 +625,10 @@ export function browseAskAlreadyAnswered(
 ) {
   if (answerFor(answers, questionId)) return true;
   const parsed = criteria || parseSearchQuery(raw);
+  if (questionId === "looking_for") return promptHasLookingFor(raw, parsed);
+  if (questionId === "seeker") return promptHasSeekerCountry(raw);
   if (questionId === "location") return promptHasLocation(raw, parsed);
-  if (questionId === "city") return !!parsed.city;
+  if (questionId === "city") return !!parseSearchQuery(stripSeekerPhrases(raw)).city;
   if (questionId === "visa") return promptHasVisa(raw, parsed);
   if (questionId === "religion") return promptHasReligion(raw, parsed);
   if (questionId === "caste") return promptHasCaste(raw, parsed);
@@ -448,7 +658,7 @@ function findChoice(question: BrowseAskQuestion, choiceId: string) {
 }
 
 export function foldPhraseForAnswer(questionId: string, choiceId: string) {
-  if (isBrowseAskNoAnswer(choiceId)) return "";
+  if (isBrowseAskNoAnswer(choiceId) || isCasteNoBar(choiceId)) return "";
   if (questionId === "city") {
     const fromUs = citiesForRegion("us").find(function (choice) {
       return choice.id === choiceId || choice.label.toLowerCase() === choiceId.toLowerCase();
@@ -491,6 +701,12 @@ export function remainingBrowseQuestions(
   const parsed = criteria || parseSearchQuery(text);
   const needed: BrowseAskQuestion[] = [];
 
+  if (!browseAskAlreadyAnswered("looking_for", text, parsed, answers)) {
+    needed.push(lookingForQuestion());
+  }
+  if (!browseAskAlreadyAnswered("seeker", text, parsed, answers)) {
+    needed.push(seekerQuestion());
+  }
   if (!browseAskAlreadyAnswered("location", text, parsed, answers)) {
     needed.push(locationQuestion());
   }
@@ -538,8 +754,8 @@ export function userFacingBrowseAskCopy() {
     BROWSE_ASK_HINT,
     BROWSE_ASK_NO_ANSWER_LABEL,
     BROWSE_ASK_VISA_NO_ANSWER_LABEL,
-    browseAskProgress(0, 4),
-    CASTE_ANY_CHOICE.label,
+    browseAskProgress(0, 6),
+    BROWSE_ASK_CASTE_NO_BAR_LABEL,
   ]
     .concat(fromQuestions)
     .concat(

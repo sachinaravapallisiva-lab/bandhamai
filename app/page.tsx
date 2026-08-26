@@ -31,12 +31,28 @@ import {
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
 import {
+  appendFoldPhrase,
   browseAskReadyForShortlist,
   foldBrowseAnswers,
+  foldPhraseForAnswer,
   mergeBrowseAskAnswers,
   remainingBrowseQuestions,
+  searchQueryFromBox,
   type BrowseAskAnswer,
 } from "../lib/browse-ask";
+import {
+  applyAnswerToPrefs,
+  applyPromptToPrefs,
+  dropRemovedMatchPrefs,
+  emptyBrowsePrefs,
+  foldMatchPrefsIntoQuery,
+  hydratePrefsFromProfile,
+  loadBrowsePrefs,
+  persistBrowsePrefsToServer,
+  prefsToAnswers,
+  saveBrowsePrefs,
+  type BrowseSearchPrefs,
+} from "../lib/browse-prefs";
 import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
 import { emptyCriteria } from "../lib/profile-search";
 import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-test-pond";
@@ -103,11 +119,15 @@ export default function Home() {
   const [askPrompt, setAskPrompt] = useState("");
   const [askAnswers, setAskAnswers] = useState<BrowseAskAnswer[]>([]);
   const [sessionAnswers, setSessionAnswers] = useState<BrowseAskAnswer[]>([]);
+  const [prefs, setPrefs] = useState<BrowseSearchPrefs>(emptyBrowsePrefs);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const searchRef = useRef<((text?: string) => void) | null>(null);
   const searchGenRef = useRef(0);
+  const lastVisibleRef = useRef("");
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
 
   function runSearch(text?: string) {
     const q = typeof text === "string" ? text : query;
@@ -171,22 +191,20 @@ export default function Home() {
     setAskAnswers([]);
   }
 
-  function submitPrompt(text?: string) {
-    const q = (typeof text === "string" ? text : query).trim();
-    if (!q) {
-      clearAsk();
-      runSearch("");
-      return;
-    }
+  function persistPrefs(next: BrowseSearchPrefs) {
+    prefsRef.current = next;
+    setPrefs(next);
+    const answers = prefsToAnswers(next);
+    setSessionAnswers(answers);
+    saveBrowsePrefs(next);
+    persistBrowsePrefsToServer();
+  }
+
+  function beginLeftoverAsk(visible: string) {
     searchGenRef.current += 1;
-    setAskPrompt(q);
+    setAskPrompt(visible);
     setAskAnswers([]);
     setNote("");
-    if (browseAskReadyForShortlist(q, sessionAnswers)) {
-      clearAsk();
-      runSearch(foldBrowseAnswers(q, sessionAnswers));
-      return;
-    }
     setSearching(false);
     setLoadedOnce(true);
     setProfiles([]);
@@ -195,16 +213,50 @@ export default function Home() {
     setCriteria(emptyCriteria());
   }
 
-  function chooseAsk(choiceId: string) {
-    const source = askPrompt || query.trim();
-    const current = remainingBrowseQuestions(source, mergeBrowseAskAnswers(sessionAnswers, askAnswers))[0];
-    if (!current) return;
-    const nextAnswers = askAnswers.concat({ questionId: current.id, choiceId: choiceId });
-    const combined = mergeBrowseAskAnswers(sessionAnswers, nextAnswers);
-    if (browseAskReadyForShortlist(source, combined)) {
-      setSessionAnswers(combined);
+  function submitPrompt(text?: string) {
+    const typed = (typeof text === "string" ? text : query).trim();
+    if (!typed) {
       clearAsk();
-      runSearch(foldBrowseAnswers(source, combined));
+      lastVisibleRef.current = "";
+      runSearch("");
+      return;
+    }
+    const nextPrefs = applyPromptToPrefs(
+      typed,
+      dropRemovedMatchPrefs(typed, lastVisibleRef.current, prefsRef.current)
+    );
+    persistPrefs(nextPrefs);
+    const visible = foldMatchPrefsIntoQuery(typed, nextPrefs);
+    setQuery(visible);
+    lastVisibleRef.current = visible;
+    const combined = prefsToAnswers(nextPrefs);
+    if (browseAskReadyForShortlist(visible, combined)) {
+      clearAsk();
+      runSearch(searchQueryFromBox(foldBrowseAnswers(visible, combined)));
+      return;
+    }
+    beginLeftoverAsk(visible);
+  }
+
+  function chooseAsk(choiceId: string) {
+    const source = (query.trim() || askPrompt).trim();
+    const current = remainingBrowseQuestions(
+      source,
+      mergeBrowseAskAnswers(prefsToAnswers(prefsRef.current), askAnswers)
+    )[0];
+    if (!current) return;
+    const nextPrefs = applyAnswerToPrefs(prefsRef.current, current.id, choiceId);
+    persistPrefs(nextPrefs);
+    const phrase = foldPhraseForAnswer(current.id, choiceId);
+    const nextQuery = phrase ? appendFoldPhrase(source, phrase) : source;
+    setQuery(nextQuery);
+    lastVisibleRef.current = nextQuery;
+    setAskPrompt(nextQuery);
+    const nextAnswers = askAnswers.concat({ questionId: current.id, choiceId: choiceId });
+    const combined = mergeBrowseAskAnswers(prefsToAnswers(nextPrefs), nextAnswers);
+    if (browseAskReadyForShortlist(nextQuery, combined)) {
+      clearAsk();
+      runSearch(searchQueryFromBox(foldBrowseAnswers(nextQuery, combined)));
       return;
     }
     setAskAnswers(nextAnswers);
@@ -231,6 +283,8 @@ export default function Home() {
           .then(function (data) {
             setProfileLinked(!!data.linked);
             setMyStatus(data.profile?.status || null);
+            const hydrated = hydratePrefsFromProfile(prefsRef.current, data.profile || null);
+            persistPrefs(hydrated);
           })
           .catch(function () { /* keep browse usable */ });
       });
@@ -260,6 +314,8 @@ export default function Home() {
       setTab(fromQuery);
     }
     if (searchRef.current) searchRef.current("");
+    const stored = loadBrowsePrefs();
+    persistPrefs(stored);
   }, []);
 
   useEffect(function () {
@@ -487,8 +543,9 @@ export default function Home() {
   const live = micState === "listening";
   const busy = micState === "thinking" || searching;
   const matches = liked;
-  const combinedAskAnswers = mergeBrowseAskAnswers(sessionAnswers, askAnswers);
-  const askQueue = askPrompt ? remainingBrowseQuestions(askPrompt, combinedAskAnswers) : [];
+  const combinedAskAnswers = mergeBrowseAskAnswers(prefsToAnswers(prefs), askAnswers);
+  const askSource = (query.trim() || askPrompt).trim();
+  const askQueue = askPrompt ? remainingBrowseQuestions(askSource, combinedAskAnswers) : [];
   const askQuestion = askQueue[0] || null;
   const asking = !!askQuestion;
   const showBrowseShortlist = !asking;
@@ -817,7 +874,7 @@ export default function Home() {
                 </span>
                 {query ? (
                   <button
-                    onClick={function () { setQuery(""); setNote(""); clearAsk(); runSearch(""); }}
+                    onClick={function () { setQuery(""); setNote(""); clearAsk(); lastVisibleRef.current = ""; runSearch(""); }}
                     className="bm-focus"
                     style={{ background: "none", border: "none", color: MUTED, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
                   >
