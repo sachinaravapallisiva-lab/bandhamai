@@ -53,22 +53,28 @@ assert(BILLING_COPY.includedWhenAsked.toLowerCase().includes("messaging"), "aske
 assert(BILLING_COPY.notConfigured.toLowerCase().includes("billing is not configured"), "dev-safe copy");
 assert(!/messaging plan|\$9\.99 for messaging/i.test(copy), "no messaging-plan phrasing");
 
+const LOCKED_PLANS_INCLUDED =
+  "View numbers and socials. Send unlimited messages. Call on the app. Browse, search, Speed Match, and profile stay free.";
+const LOCKED_PLANS_VERIFY = "Profile verification. Adds a verification badge on your Bandham profile.";
+
 const plansLib = readFileSync(new URL("../lib/plans.ts", import.meta.url), "utf8");
 const plansPanel = readFileSync(new URL("../app/components/PlansPanel.tsx", import.meta.url), "utf8");
 assert(
   /PLANS_SUBSCRIBE_BODY\s*=\s*BILLING_COPY\.body/.test(plansLib),
   "plans default body is the quiet pay monthly line"
 );
+assert(plansLib.includes(LOCKED_PLANS_INCLUDED), "tapped Bandham include is the locked two sentence list");
+assert(plansLib.includes('PLANS_INCLUDED_BODY'), "Plans keeps a tapped include constant");
+assert(plansLib.includes(LOCKED_PLANS_VERIFY), "VerifyAI default body is the locked badge sentences");
 assert(
-  !/view numbers|unlimited messages|View numbers and socials|call on the app/i.test(plansLib),
-  "default Plans subscribe body does not list messaging inclusions"
+  plansLib.includes('PLANS_VERIFY_BODY = "' + LOCKED_PLANS_VERIFY + '"'),
+  "VerifyAI default body assignment is exact"
 );
-assert(
-  /PLANS_INCLUDED_BODY\s*=\s*BILLING_COPY\.includedWhenAsked/.test(plansLib),
-  "asked-only include string stays off the default body"
-);
-assert(!/View numbers and socials/.test(plansLib + plansPanel), "plans source dropped the old inclusion dump");
+assert(!/Messaging\./.test(plansLib), "tapped include does not start with Messaging");
+assert(!/That is messaging/i.test(plansLib + plansPanel), "do not say That is messaging");
 assert(plansPanel.includes("PLANS_INCLUDED_CTA"), "Plans has an explicit What's included tap");
+assert(plansPanel.includes("PLANS_INCLUDED_BODY"), "tapped include is rendered from the locked constant");
+assert(plansPanel.includes("PLANS_VERIFY_BODY"), "VerifyAI card uses the locked body");
 assert(plansPanel.includes("<details"), "inclusions stay closed until tapped");
 assert(plansPanel.includes("BILLING_COPY.lawyer"), "Plans keeps the lawyer line");
 assert(plansPanel.includes("startVerifyaiCheckout"), "VerifyAI uses existing checkout");

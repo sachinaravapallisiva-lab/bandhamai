@@ -241,9 +241,10 @@ assert(
 assert(PLANS_INCLUDED_CTA === "What's included", "inclusions stay behind an explicit tap");
 assert(
   PLANS_INCLUDED_BODY ===
-    "Messaging. Browse, search, Speed Match, and creating a profile stay free. VerifyAI and meetup are separate.",
-  "asked-only include lock"
+    "View numbers and socials. Send unlimited messages. Call on the app. Browse, search, Speed Match, and profile stay free.",
+  "tapped Bandham include lock"
 );
+assert(!/^Messaging\./.test(PLANS_INCLUDED_BODY), "tapped include does not start with Messaging");
 assert(plansPanel.includes("PLANS_INCLUDED_CTA"), "Plans renders the What's included tap");
 assert(plansPanel.includes("<details"), "What's included stays closed until tapped");
 assert(PLANS_SUBSCRIBE_CTA === "Subscribe $9.99 a month", "Bandham AI button lock");
@@ -255,7 +256,7 @@ assert(
 );
 assert(PLANS_VERIFY_HEADLINE === "VerifyAI $4.99 one time", "VerifyAI price line lock");
 assert(
-  PLANS_VERIFY_BODY === "One time identity check. Paying does not show the badge.",
+  PLANS_VERIFY_BODY === "Profile verification. Adds a verification badge on your Bandham profile.",
   "VerifyAI description lock"
 );
 assert(PLANS_MEETUP_HEADLINE === "Meetup this month", "meetup card title lock");
