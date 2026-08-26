@@ -106,12 +106,13 @@ assert(labels.includes("Inbox"), "inbox item");
 assert(!labels.includes("Messages"), "Inbox replaces the Messages label");
 assert(labels.includes("VerifyAI"), "verifyai item");
 assert(labels.includes("Help / Support"), "help item");
+assert(labels.includes("Send a feature idea"), "feature idea item");
 assert(labels.includes("Call us"), "call us item");
 assert(
   ACCOUNT_MENU_ITEMS.map(function (item) {
     return item.id;
-  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,call,settings,block",
-  "Inbox, Call us, Block, and Plans stay in order"
+  }).join(",") === "profile,preferences,browse,meetup,inbox,verifyai,plans,help,idea,call,settings,block",
+  "Inbox, Call us, Block, Plans, and idea stay in order"
 );
 assert(labels.includes("Plans"), "Plans item");
 assert(labels.includes("Settings / Account"), "settings item");
@@ -132,6 +133,8 @@ assert(hrefs.includes("/account#verify"), "verify anchor");
 assert(hrefs.includes("/plans"), "plans route");
 assert(ALLOWED_NEXT_PATHS.includes("/plans"), "plans is a real next path");
 assert(hrefs.includes("/contact"), "support route");
+assert(hrefs.includes("/idea"), "feature idea route");
+assert(ALLOWED_NEXT_PATHS.includes("/idea"), "idea is a real next path");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");
 assert(hrefs.includes("/account#blocked"), "block route");

@@ -494,6 +494,39 @@ Do not commit secrets. Redeploy after saving env vars.
 6. Ask to report a person / harassment. The assistant should point to Block and Report, not open this ticket.
 7. `npm run check:support-tickets` and `npm run check:guru-search`.
 
+## Send a feature idea
+
+Friends and members can send a product idea from **Send a feature idea** in the footer and the account menu. This is the same `support_tickets` queue (category `idea`, source `idea`). It is not `public.feedback` (that table is swipe / profile actions). Do not invent a second inbox.
+
+The Bandham assistant may point people here. It does not collect the idea itself.
+
+### What the app does
+
+1. `POST /api/support/ideas` — auth required. Inserts `public.support_tickets` (own `user_id`, optional account email, category `idea`, derived subject, body, `status=open`, `source=idea`).
+2. Then emails Sai with the same Resend helper as app issue tickets. If `RESEND_API_KEY` is missing or Resend errors, the row still stays saved and the error is logged.
+3. The member sees **We got your idea. Thank you.**
+
+Signed-out visitors are asked to sign in. Public Support is **+1 803 265 5233**. Do not invent a public support inbox.
+
+### Supabase (Sai)
+
+1. Run [`supabase/support_tickets.sql`](supabase/support_tickets.sql) if you have not already.
+2. Then run [`supabase/feature_ideas.sql`](supabase/feature_ideas.sql). That allows `category=idea` and `source=idea`. Existing ticket rows stay as they are.
+
+Until the idea SQL is applied, submit returns **503** and asks you to run it.
+
+Review ideas in the same Supabase table editor as tickets.
+
+### Test steps
+
+1. Apply both SQL files. Confirm `category` and `source` accept `idea`.
+2. Footer and account menu both show **Send a feature idea**.
+3. Signed out: the page asks you to sign in. No row yet.
+4. Sign in. Send a short idea. A row appears with your `user_id`, category `idea`, `source` `idea`, `status` `open`. The screen says **We got your idea. Thank you.**
+5. If `RESEND_API_KEY` is set, Sai’s inbox gets the notify. If the key is missing, the row still exists and the server log mentions the skip.
+6. Ask the Bandham assistant to send a feature idea. It should point at **Send a feature idea**, not open a ticket chip.
+7. `npm run check:feature-ideas`, `npm run check:support-tickets`, and `npm run check:account-drawer`.
+
 ## Phone support (Grok Voice Agent)
 
 This is **Bandham Support on the phone**. It is not the in-app Bandham assistant / love guru. The guru still never writes sendable dating text and never searches profiles.

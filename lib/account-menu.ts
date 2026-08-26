@@ -23,6 +23,7 @@ export const ACCOUNT_MENU_ITEMS = [
   { id: "verifyai", label: "VerifyAI", href: "/account#verify" },
   { id: "plans", label: "Plans", href: "/plans" },
   { id: "help", label: "Help / Support", href: "/contact" },
+  { id: "idea", label: "Send a feature idea", href: "/idea" },
   { id: "call", label: "Call us", href: "/contact#call" },
   { id: "settings", label: "Settings / Account", href: "/account" },
   { id: "block", label: "Block", href: "/account#blocked" },

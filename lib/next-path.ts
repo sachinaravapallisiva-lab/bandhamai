@@ -12,6 +12,7 @@ export const ALLOWED_NEXT_PATHS = [
   "/meetup",
   "/safety",
   "/contact",
+  "/idea",
   "/login",
   "/logout",
   "/terms",

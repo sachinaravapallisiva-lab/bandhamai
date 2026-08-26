@@ -43,6 +43,7 @@ type IconName =
   | "plans"
   | "biodata"
   | "help"
+  | "idea"
   | "call"
   | "settings"
   | "upgrade"
@@ -155,6 +156,19 @@ function MenuIcon({ name }: { name: IconName }) {
       </svg>
     );
   }
+  if (name === "idea") {
+    return (
+      <svg {...common}>
+        <path
+          d="M12 4.4c-2.8 0-5 2.1-5 4.8 0 1.7.9 3.1 2.3 3.9.4.2.7.7.7 1.2v.6h4v-.6c0-.5.3-1 .7-1.2 1.4-.8 2.3-2.2 2.3-3.9 0-2.7-2.2-4.8-5-4.8Z"
+          stroke={stroke}
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path d="M10 16.8h4M10.6 19h2.8" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (name === "call") {
     return (
       <svg {...common}>
@@ -222,6 +236,7 @@ function iconForItem(id: string): IconName {
   if (id === "verifyai") return "verifyai";
   if (id === "plans") return "plans";
   if (id === "help") return "help";
+  if (id === "idea") return "idea";
   if (id === "call") return "call";
   if (id === "settings") return "settings";
   if (id === "admin") return "admin";
