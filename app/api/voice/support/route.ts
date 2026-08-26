@@ -1,9 +1,13 @@
 /**
- * Service API for the xAI Grok Voice phone support agent.
+ * Service API for the Bandham Support phone agent (xAI Voice or Vapi).
  *
  * This is not the in-app Bandham assistant / love guru.
  * Phone callers are not signed in. Auth is a shared secret, not a member JWT.
  * Fail closed if BANDHAM_VOICE_SUPPORT_SECRET is unset.
+ *
+ * Human handoff stays on this same Support bot. Destination is server-only
+ * (BANDHAM_SUPPORT_HANDOFF_E164). Caller ID on the transfer stays the public
+ * 803 Support number. Do not patch the live Vapi assistant from a preview.
  */
 import { NextResponse } from "next/server";
 import {
@@ -27,12 +31,15 @@ import {
   VOICE_TICKET_SOURCE,
   authorizeVoiceSupport,
   callerMissing,
+  flattenVoiceSupportBody,
+  isIgnorableVoiceEvent,
   publicVoiceTicket,
   readVoiceCaller,
   readVoiceTool,
   spokenTicketCreated,
   spokenTicketResolved,
   spokenTicketStatus,
+  supportHandoffPayload,
   ticketBelongsToCaller,
   type VoiceTicketRow,
 } from "../../../../lib/voice-support";
@@ -106,11 +113,31 @@ export async function POST(request: Request) {
     }
 
     const url = new URL(request.url);
-    const tool = readVoiceTool(body, url.searchParams.get("tool"));
+    if (isIgnorableVoiceEvent(body)) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const flat = flattenVoiceSupportBody(body);
+    const tool = readVoiceTool(flat, url.searchParams.get("tool"));
     if (!tool) {
       return NextResponse.json(
-        { error: "Send a tool name: identify_member, create_ticket, get_ticket, or resolve_ticket." },
+        {
+          error:
+            "Send a tool name: identify_member, create_ticket, get_ticket, resolve_ticket, or transfer_to_human.",
+        },
         { status: 400 }
+      );
+    }
+
+    if (tool === "transfer_to_human") {
+      const inbound =
+        typeof flat.inbound_number === "string" ? flat.inbound_number : "";
+      const toolCallId = typeof flat.tool_call_id === "string" ? flat.tool_call_id : "";
+      return NextResponse.json(
+        supportHandoffPayload({
+          inboundNumber: inbound,
+          toolCallId,
+        })
       );
     }
 
@@ -118,7 +145,7 @@ export async function POST(request: Request) {
     if (!supabase) return missingConfigResponse();
 
     if (tool === "identify_member") {
-      const caller = readVoiceCaller(body);
+      const caller = readVoiceCaller(flat);
       if (callerMissing(caller)) {
         return NextResponse.json(
           { error: "Ask for the email or phone on their Bandham account." },
@@ -152,7 +179,7 @@ export async function POST(request: Request) {
       return voiceSqlMissingResponse();
     }
 
-    const caller = readVoiceCaller(body);
+    const caller = readVoiceCaller(flat);
     if (callerMissing(caller)) {
       return NextResponse.json(
         { error: "Pass the email or phone the caller spoke." },
@@ -163,7 +190,7 @@ export async function POST(request: Request) {
     const member = await identifyVoiceMember(supabase, caller);
 
     if (tool === "create_ticket") {
-      const draft = normalizeTicketDraft(body);
+      const draft = normalizeTicketDraft(flat);
       if (!draft) {
         return NextResponse.json(
           { error: "Need a short subject and a summary before opening a ticket." },
@@ -227,7 +254,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const ticketId = readTicketId(body);
+    const ticketId = readTicketId(flat);
     if (!ticketId) {
       return NextResponse.json({ error: "Pass the ticket id." }, { status: 400 });
     }

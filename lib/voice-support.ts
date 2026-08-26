@@ -9,11 +9,24 @@ export const VOICE_SUPPORT_SECRET_HEADER = "x-bandham-voice-support-secret";
 export const VOICE_TICKET_SOURCE = "voice";
 export const VOICE_RESOLVED_STATUS = "closed";
 
+/** Server-only destination for Support human handoff. Never prefix NEXT_PUBLIC_. */
+export const SUPPORT_HANDOFF_E164_ENV = "BANDHAM_SUPPORT_HANDOFF_E164";
+/** Public Bandham Support inbound. Transfer caller ID stays this number. */
+export const SUPPORT_PUBLIC_CALLER_ID_E164 = "+18032655233";
+/**
+ * Operator default for BANDHAM_SUPPORT_HANDOFF_E164.
+ * Server only. Never speak. Never publish on Contact, footer, Plans, or UI.
+ */
+export const SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT = "+14709620438";
+/** Subscribe outbound. Never a transfer destination, caller ID, or spoken number. */
+export const SUBSCRIBE_OUTBOUND_BLOCK_E164 = "+16408379459";
+
 export const VOICE_SUPPORT_TOOLS = [
   "identify_member",
   "create_ticket",
   "get_ticket",
   "resolve_ticket",
+  "transfer_to_human",
 ] as const;
 
 export type VoiceSupportTool = (typeof VOICE_SUPPORT_TOOLS)[number];
@@ -41,6 +54,12 @@ export const VOICE_SPOKEN_REFUND =
 export const VOICE_SPOKEN_NOT_FOUND =
   "I could not match that email or phone to a Bandham account. I can still open a ticket with the details you gave.";
 
+export const VOICE_SPOKEN_HANDOFF = "I am connecting you now. Please stay on the line.";
+export const VOICE_SPOKEN_HANDOFF_UNAVAILABLE =
+  "They are not available right now. I can keep helping you here.";
+/** Only if the caller asks who they will get. First name only. */
+export const VOICE_SPOKEN_HANDOFF_WHO = "You will get Sai.";
+
 export function voiceSupportSecret() {
   return (process.env.BANDHAM_VOICE_SUPPORT_SECRET || "").trim();
 }
@@ -49,6 +68,169 @@ export function isVoiceSupportTool(value: string): value is VoiceSupportTool {
   return VOICE_SUPPORT_TOOLS.some(function (item) {
     return item === value;
   });
+}
+
+function asObject(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as Record<string, unknown>;
+}
+
+function firstNonEmpty(values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function asArgs(raw: unknown): Record<string, unknown> {
+  if (typeof raw === "string") {
+    try {
+      return asObject(JSON.parse(raw));
+    } catch {
+      return {};
+    }
+  }
+  return asObject(raw);
+}
+
+function canonicalVoiceTool(value: string): VoiceSupportTool | "" {
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (normalized === "transfer_call" || normalized === "transfercall") return "transfer_to_human";
+  return isVoiceSupportTool(normalized) ? normalized : "";
+}
+
+export function isSubscribeOutboundNumber(value: string) {
+  return phonesMatch(value, SUBSCRIBE_OUTBOUND_BLOCK_E164);
+}
+
+export function isSupportPublicNumber(value: string) {
+  return phonesMatch(value, SUPPORT_PUBLIC_CALLER_ID_E164);
+}
+
+/**
+ * Server-only E.164 for the human handoff. Empty means stay on Support.
+ * Env wins. Operator default is SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT.
+ * Never returns the subscribe outbound number or the public Support number.
+ */
+export function supportHandoffE164() {
+  const offered = (process.env[SUPPORT_HANDOFF_E164_ENV] || "").trim();
+  const normalized = normalizeVoicePhone(offered);
+  const chosen = normalized || SUPPORT_HANDOFF_E164_OPERATOR_DEFAULT;
+  const e164 = chosen.startsWith("+") ? chosen : "+" + chosen.replace(/\D/g, "");
+  if (isSubscribeOutboundNumber(e164) || isSupportPublicNumber(e164)) return "";
+  return e164;
+}
+
+/** Unknown inbound is allowed (xAI). Subscribe outbound is never allowed. Support 803 only. */
+export function inboundAllowsSupportHandoff(inbound: string) {
+  if (!inbound) return true;
+  if (isSubscribeOutboundNumber(inbound)) return false;
+  return isSupportPublicNumber(inbound);
+}
+
+export function supportHandoffDestination() {
+  const number = supportHandoffE164();
+  if (!number) return null;
+  return {
+    type: "number" as const,
+    number,
+    callerId: SUPPORT_PUBLIC_CALLER_ID_E164,
+    description: "Human handoff from Bandham Support. Do not speak this number.",
+    message: VOICE_SPOKEN_HANDOFF,
+    transferPlan: {
+      mode: "warm-transfer-experimental" as const,
+      timeout: 25,
+      voicemailDetectionType: "transcript" as const,
+      message: "Bandham Support has a caller who asked for you. Are you available?",
+      fallbackPlan: {
+        message: VOICE_SPOKEN_HANDOFF_UNAVAILABLE,
+        endCallEnabled: false,
+      },
+    },
+  };
+}
+
+export function supportHandoffPayload(input?: { inboundNumber?: string; toolCallId?: string }) {
+  const inbound = (input && input.inboundNumber) || "";
+  if (!inboundAllowsSupportHandoff(inbound) || !supportHandoffDestination()) {
+    const payload: Record<string, unknown> = {
+      ok: true,
+      transferred: false,
+      stay_on_support: true,
+      message: VOICE_SPOKEN_HANDOFF_UNAVAILABLE,
+    };
+    if (input && input.toolCallId) {
+      payload.results = [{ toolCallId: input.toolCallId, result: VOICE_SPOKEN_HANDOFF_UNAVAILABLE }];
+    }
+    return payload;
+  }
+  const destination = supportHandoffDestination();
+  const payload: Record<string, unknown> = {
+    ok: true,
+    transferred: true,
+    stay_on_support: false,
+    message: VOICE_SPOKEN_HANDOFF,
+    caller_id: SUPPORT_PUBLIC_CALLER_ID_E164,
+    destination,
+  };
+  if (input && input.toolCallId) {
+    payload.results = [{ toolCallId: input.toolCallId, result: VOICE_SPOKEN_HANDOFF }];
+  }
+  return payload;
+}
+
+/**
+ * Flatten xAI `{ tool, ... }` and Vapi tool-calls / transfer-destination-request
+ * envelopes onto one record. Does not invent a second Support bot.
+ */
+export function flattenVoiceSupportBody(raw: Record<string, unknown>): Record<string, unknown> {
+  const message = asObject(raw.message);
+  const call = asObject(message.call || raw.call);
+  const phoneNumber = asObject(call.phoneNumber || message.phoneNumber || raw.phoneNumber);
+  const monitor = asObject(call.monitor);
+  const listed = message.toolCallList || message.toolCalls || message.toolWithToolCallList || raw.toolCalls;
+  const first = Array.isArray(listed) && listed[0] ? asObject(listed[0]) : {};
+  const nested = asObject(first.toolCall);
+  const fn = asObject(nested.function || first.function || message.functionCall || raw.functionCall);
+  const params = {
+    ...asArgs(fn.arguments || fn.parameters),
+    ...asArgs(nested.parameters || nested.arguments || first.parameters || first.arguments),
+  };
+  const extractedName = firstNonEmpty([
+    raw.tool,
+    raw.name,
+    raw.action,
+    first.name,
+    nested.name,
+    fn.name,
+    asObject(first.tool).name,
+  ]);
+  const inbound = firstNonEmpty([
+    raw.inbound_number,
+    raw.called_number,
+    phoneNumber.number,
+    typeof call.phoneNumber === "string" ? call.phoneNumber : "",
+  ]);
+  const type = firstNonEmpty([message.type, raw.type]);
+  return {
+    ...params,
+    ...raw,
+    tool: raw.tool || extractedName || (type === "transfer-destination-request" ? "transfer_to_human" : ""),
+    inbound_number: inbound,
+    tool_call_id: firstNonEmpty([nested.id, nested.toolCallId, first.id, first.toolCallId, fn.id]),
+    vapi_message_type: type,
+    control_url: firstNonEmpty([monitor.controlUrl, asObject(raw.monitor).controlUrl]),
+  };
+}
+
+const VAPI_TOOL_TYPES = ["tool-calls", "function-call", "function.call", "tool_calls"];
+
+export function isIgnorableVoiceEvent(raw: Record<string, unknown>) {
+  const type = firstNonEmpty([asObject(raw.message).type, raw.type]).toLowerCase();
+  if (!type) return false;
+  if (type === "transfer-destination-request") return false;
+  if (VAPI_TOOL_TYPES.includes(type)) return false;
+  return true;
 }
 
 export function normalizeVoiceEmail(value: unknown) {
@@ -90,12 +272,11 @@ export function firstNameOnly(fullName: unknown) {
 }
 
 export function readVoiceTool(raw: unknown, queryTool?: string | null) {
-  const fromQuery = asTrimmed(queryTool, 64).toLowerCase();
-  if (isVoiceSupportTool(fromQuery)) return fromQuery;
+  const fromQuery = canonicalVoiceTool(asTrimmed(queryTool, 64));
+  if (fromQuery) return fromQuery;
   if (!raw || typeof raw !== "object") return "";
   const record = raw as { tool?: unknown; name?: unknown; action?: unknown };
-  const candidate = asTrimmed(record.tool ?? record.name ?? record.action, 64).toLowerCase();
-  return isVoiceSupportTool(candidate) ? candidate : "";
+  return canonicalVoiceTool(asTrimmed(record.tool ?? record.name ?? record.action, 64));
 }
 
 function headerSecret(request: Request) {
@@ -265,6 +446,20 @@ export const VOICE_SUPPORT_TOOL_SPECS = {
         phone: { type: "string" },
       },
       required: ["ticket_id"],
+    },
+  },
+  transfer_to_human: {
+    name: "transfer_to_human",
+    description:
+      "Warm transfer this Bandham Support call to a person when the caller asks for Sai, a person, or the founder, or they want further human help and are not satisfied with the bot. Do not use for ordinary product questions the bot can answer. Never say the destination number. Caller ID stays the Bandham Support number they called. If the person does not pick up, stay on Support.",
+    parameters: {
+      type: "object",
+      properties: {
+        reason: {
+          type: "string",
+          description: "Short reason, such as asked for Sai or wants a person.",
+        },
+      },
     },
   },
 } as const;
