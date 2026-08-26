@@ -11,12 +11,15 @@ export const METRICS_TITLE = "Where members are from";
 export const METRICS_LEAD =
   "Counts from signed in profiles. Place uses city. Age group uses date of birth or age when those fields exist.";
 export const METRICS_TOTAL_LABEL = "Signed in profiles";
-export const METRICS_PLACE_TITLE = "Place";
+export const METRICS_PLACE_TITLE = "Where they are";
 export const METRICS_REGION_TITLE = "Country and region";
 export const METRICS_CITY_TITLE = "Top cities";
-export const METRICS_AGE_TITLE = "Age group";
+export const METRICS_AGE_TITLE = "Age groups";
 export const METRICS_EMPTY_TITLE = "No signed in profiles to count yet.";
 export const METRICS_EMPTY_BODY = "Empty groups show 0. Nothing here is a visitor count.";
+export const METRICS_EMPTY_MARK = "Empty";
+export const METRICS_EMPTY_CITIES = "No cities to rank yet.";
+export const METRICS_SHARE_HINT = "Bar width is share of the total.";
 export const METRICS_READ_FAILED = "Counts are not available.";
 export const METRICS_UNKNOWN = "Unknown";
 
@@ -43,6 +46,16 @@ export const METRICS_REGION_LABELS = [
 ] as const;
 
 export type MetricsRegionLabel = (typeof METRICS_REGION_LABELS)[number];
+
+/** Short chips for the six known regions. Unknown stays in the ranked rows. */
+export const METRICS_REGION_CHIPS: { label: string; region: Exclude<MetricsRegionLabel, "Unknown"> }[] = [
+  { label: "US", region: "United States" },
+  { label: "India", region: "India" },
+  { label: "Australia", region: "Australia" },
+  { label: "UK", region: "United Kingdom" },
+  { label: "Europe", region: "Europe" },
+  { label: "Ireland", region: "Ireland" },
+];
 
 export const METRICS_TOP_CITIES = 12;
 
@@ -124,8 +137,14 @@ export function metricsUserCopy() {
     METRICS_AGE_TITLE,
     METRICS_EMPTY_TITLE,
     METRICS_EMPTY_BODY,
+    METRICS_EMPTY_MARK,
+    METRICS_EMPTY_CITIES,
+    METRICS_SHARE_HINT,
     METRICS_READ_FAILED,
     METRICS_UNKNOWN,
+    ...METRICS_REGION_CHIPS.map(function (chip) {
+      return chip.label;
+    }),
     ...METRICS_AGE_LABELS,
     ...METRICS_REGION_LABELS,
   ];
@@ -294,4 +313,10 @@ export function aggregateMemberMetrics(rows: MetricsRow[], now = new Date()): Me
 
 export function emptyMemberMetrics(): MemberMetrics {
   return aggregateMemberMetrics([]);
+}
+
+/** Bar width as a percent of the queried total. Never a sample scale. */
+export function shareOfTotal(count: number, total: number) {
+  if (!(total > 0) || !(count > 0)) return 0;
+  return Math.min(100, (count / total) * 100);
 }

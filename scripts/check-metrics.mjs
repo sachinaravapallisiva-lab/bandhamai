@@ -7,12 +7,17 @@ import {
   METRICS_PATH,
   METRICS_REGION_LABELS,
   METRICS_UNKNOWN,
+  METRICS_AGE_TITLE,
+  METRICS_EMPTY_MARK,
+  METRICS_PLACE_TITLE,
+  METRICS_REGION_CHIPS,
   aggregateMemberMetrics,
   ageGroupFromYears,
   ageYearsFromProfile,
   canonicalCityName,
   metricsUserCopy,
   placeFromCity,
+  shareOfTotal,
 } from "../lib/metrics.ts";
 import { ALLOWED_NEXT_PATHS } from "../lib/next-path.ts";
 import { FOOTER_LINKS } from "../lib/site.ts";
@@ -107,6 +112,19 @@ const zeroEurope = totals.regions.find(function (row) {
   return row.label === "Europe";
 });
 assert(zeroEurope && zeroEurope.count === 0, "empty region stays 0");
+assertEq(shareOfTotal(1, 4), 25, "bar width is share of total");
+assertEq(shareOfTotal(0, 4), 0, "zero count has no fill");
+assertEq(shareOfTotal(3, 0), 0, "empty total has no fill");
+assertEq(METRICS_PLACE_TITLE, "Where they are", "place panel title");
+assertEq(METRICS_AGE_TITLE, "Age groups", "age panel title");
+assertEq(METRICS_EMPTY_MARK, "Empty", "empty mark");
+assertEq(
+  METRICS_REGION_CHIPS.map(function (chip) {
+    return chip.label;
+  }).join(" "),
+  "US India Australia UK Europe Ireland",
+  "region chip order"
+);
 
 const route = read("app/api/metrics/route.ts");
 const page = read("app/metrics/page.tsx");
@@ -141,6 +159,16 @@ assert(layout.includes("index: false"), "metrics is not indexed");
 assert(page.includes("MetricsView"), "page renders gated view");
 assert(view.includes("METRICS_UNAVAILABLE_TITLE"), "closed page is plain not available");
 assert(view.includes("authJsonHeaders"), "view uses existing session");
+assert(view.includes("bm-metrics-grid"), "desktop two column board");
+assert(view.includes("shareOfTotal"), "bars use share of total");
+assert(view.includes("METRICS_REGION_CHIPS"), "place has region chips");
+assert(view.includes("METRICS_EMPTY_MARK"), "empty state is marked Empty");
+assert(view.includes("fontSize: 16"), "body stays 16");
+assert(view.includes("minHeight: 44"), "rows keep a 44 tap height");
+assert(view.includes("127.0.0.1"), "empty preview is localhost only");
+assert(view.includes('preview") === "empty"'), "local preview is marked empty");
+assert(!view.includes("Hyderabad") && !view.includes("Dallas"), "no fake cities in the view");
+assert(!/recharts|chart\.js|d3-|victory|nivo|visx/.test(view), "no new chart library");
 assert(!view.includes("470") && !view.includes("640"), "no published 470 or 640");
 assert(!metrics.includes("470") && !metrics.includes("640"), "lib does not publish 470 or 640");
 
