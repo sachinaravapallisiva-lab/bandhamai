@@ -248,6 +248,37 @@ export default function Home() {
     return () => clearInterval(id);
   }, [micState]);
 
+  function browseRecorderMime(win: any) {
+    const Rec = win.MediaRecorder;
+    if (!Rec || typeof Rec.isTypeSupported !== "function") return "";
+    if (Rec.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
+    if (Rec.isTypeSupported("audio/webm")) return "audio/webm";
+    if (Rec.isTypeSupported("audio/mp4")) return "audio/mp4";
+    return "";
+  }
+
+  function startBrowseRecorder(win: any, stream: any) {
+    const mime = browseRecorderMime(win);
+    try {
+      return mime ? new win.MediaRecorder(stream, { mimeType: mime }) : new win.MediaRecorder(stream);
+    } catch {
+      try {
+        return new win.MediaRecorder(stream, { mimeType: "audio/mp4" });
+      } catch {
+        return new win.MediaRecorder(stream);
+      }
+    }
+  }
+
+  function browseRecordingBlob(rec: any, chunks: any[]) {
+    const raw = String((rec && rec.mimeType) || "audio/webm");
+    const mime = raw.split(";")[0] || "audio/webm";
+    const mp4 = mime.indexOf("mp4") !== -1 || mime.indexOf("m4a") !== -1 || mime.indexOf("aac") !== -1;
+    const type = mp4 ? "audio/mp4" : mime;
+    const name = mp4 ? "audio.mp4" : "audio.webm";
+    return { blob: new Blob(chunks, { type: type || "audio/webm" }), name };
+  }
+
   function startListening() {
     const nav: any = navigator;
     const win: any = window;
@@ -260,7 +291,7 @@ export default function Home() {
     nav.mediaDevices.getUserMedia({ audio: true }).then(function (stream: any) {
       streamRef.current = stream;
       const chunks: any[] = [];
-      const rec = new win.MediaRecorder(stream);
+      const rec = startBrowseRecorder(win, stream);
       recorderRef.current = rec;
 
       rec.ondataavailable = function (e: any) {
@@ -274,8 +305,9 @@ export default function Home() {
         }
         setMicState("thinking");
 
+        const recorded = browseRecordingBlob(rec, chunks);
         const form = new FormData();
-        form.append("file", new Blob(chunks, { type: "audio/webm" }), "audio.webm");
+        form.append("file", recorded.blob, recorded.name);
 
         // Search-only: STT → runSearch → /api/profiles/search. Never /api/guru.
         fetch("/api/transcribe", { method: "POST", body: form })

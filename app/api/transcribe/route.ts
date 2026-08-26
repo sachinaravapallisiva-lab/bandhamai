@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const form = new FormData();
     form.append("language", "en-IN");
     form.append("format", "true");
-    KEYTERMS.slice(0, 30).forEach(function (t) {
+    KEYTERMS.slice(0, 80).forEach(function (t) {
       form.append("keyterm", t);
     });
     form.append("file", file);
