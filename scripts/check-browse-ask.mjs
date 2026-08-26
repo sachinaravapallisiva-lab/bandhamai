@@ -13,6 +13,7 @@ import {
   browseAskProgress,
   browseAskReadyForShortlist,
   findBrowseAskQuestion,
+  browseAskRegionFolds,
   foldBrowseAnswers,
   foldPhraseForAnswer,
   isBrowseAskNoAnswer,
@@ -23,7 +24,7 @@ import {
   remainingBrowseQuestions,
   userFacingBrowseAskCopy,
 } from "../lib/browse-ask.ts";
-import { parseSearchQuery } from "../lib/profile-search.ts";
+import { hasCriteria, parseSearchQuery } from "../lib/profile-search.ts";
 import { VISA_STATUS_GROUPS, VISA_STATUS_UNGROUPED } from "../lib/visa-status.ts";
 import { KEYWORD_ALIASES, SEARCH_CITIES } from "../lib/desi-search-aliases.ts";
 
@@ -55,7 +56,7 @@ assert(!/bandhan\b/i.test(BROWSE_ASK_HINT), "product is Bandham, not Bandhan");
 assert(BROWSE_ASK_LABEL === "FILTERS", "ask eyebrow says FILTERS");
 assertEq(
   BROWSE_ASK_FIELD_ORDER.join(" "),
-  "location visa religion caste mother_tongue",
+  "location visa religion caste",
   "locked filter order"
 );
 
@@ -64,17 +65,18 @@ const ids = BROWSE_ASK_QUESTIONS.map(function (q) {
 });
 assertEq(
   ids.join(" "),
-  "location visa religion caste mother_tongue",
-  "bank order is the five search filters"
+  "location visa religion caste",
+  "bank order is the four search filters"
 );
-assert(!ids.includes("city"), "city is a follow-up, not one of the 5");
-assert(!ids.includes("diet"), "diet is not a main question");
-assert(!ids.includes("family_living"), "joint family is a Speed Match dealbreaker");
-assert(!ids.includes("parents"), "parents in the decision is a Speed Match dealbreaker");
-assert(!ids.includes("work"), "work after marriage is a Speed Match dealbreaker");
-assert(!ids.includes("timeline"), "timeline is a Speed Match dealbreaker");
-assert(!ids.includes("children"), "kids is a Speed Match dealbreaker");
-assert(!ids.includes("gender"), "gender is not one of the five");
+assert(!ids.includes("city"), "city is a follow-up, not one of the 4");
+assert(!ids.includes("mother_tongue"), "mother tongue is not a Browse filter");
+assert(!ids.includes("diet"), "diet is not a Browse filter");
+assert(!ids.includes("family_living"), "joint family is not a Browse filter");
+assert(!ids.includes("parents"), "parents in the decision is not a Browse filter");
+assert(!ids.includes("work"), "work after marriage is not a Browse filter");
+assert(!ids.includes("timeline"), "timeline is not a Browse filter");
+assert(!ids.includes("children"), "kids is not a Browse filter");
+assert(!ids.includes("gender"), "gender is not one of the four");
 
 BROWSE_ASK_QUESTIONS.forEach(function (q) {
   assert(!dating.test(q.prompt), "not dating prompt: " + q.id);
@@ -153,8 +155,8 @@ assert(!browseAskReadyForShortlist(thinPrompt), "thin prompt must not render the
 const thin = remainingBrowseQuestions(thinPrompt);
 assertEq(
   thin.map(function (q) { return q.id; }).join(" "),
-  "location visa religion caste mother_tongue",
-  "thin prompt asks the five leftover filters in order"
+  "location visa religion caste",
+  "thin prompt asks the four leftover filters in order"
 );
 assertEq(thin[0].id, "location", "first leftover question is location");
 assertEq(thin[0].prompt, "Where should we look?", "location copy");
@@ -182,6 +184,13 @@ afterUs[0].choices.forEach(function (c) {
   assert(SEARCH_CITIES.includes(c.fold), "city tap is already in SEARCH_CITIES: " + c.fold);
 });
 
+const afterUsSkipCity = remainingBrowseQuestions(thinPrompt, [
+  { questionId: "location", choiceId: "us" },
+  { questionId: "city", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+]);
+assertEq(afterUsSkipCity[0].id, "visa", "skip city keeps the region and continues to visa");
+assert(!afterUsSkipCity.some(function (q) { return q.id === "city"; }), "city is not asked again after skip");
+
 const afterAu = remainingBrowseQuestions(thinPrompt, [{ questionId: "location", choiceId: "australia" }]);
 assertEq(afterAu[0].id, "visa", "Australia has no invented city list, so visa is next");
 
@@ -193,9 +202,8 @@ const allSkipped = [
   { questionId: "visa", choiceId: "prefer_not" },
   { questionId: "religion", choiceId: BROWSE_ASK_NO_ANSWER_ID },
   { questionId: "caste", choiceId: BROWSE_ASK_NO_ANSWER_ID },
-  { questionId: "mother_tongue", choiceId: BROWSE_ASK_NO_ANSWER_ID },
 ];
-assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "five filter skips unlock the shortlist");
+assert(browseAskReadyForShortlist(thinPrompt, allSkipped), "four filter skips unlock the shortlist");
 assertEq(foldBrowseAnswers(thinPrompt, allSkipped), thinPrompt, "Don't want to answer omits filters");
 
 const cityFold = foldBrowseAnswers(thinPrompt, [
@@ -203,6 +211,40 @@ const cityFold = foldBrowseAnswers(thinPrompt, [
   { questionId: "city", choiceId: "dallas" },
 ]);
 assertEq(parseSearchQuery(cityFold).city, "Dallas", "folded city is parsed");
+assert(cityFold.includes("United States"), "region phrase stays when a city is also tapped");
+
+const regionSkipCity = foldBrowseAnswers(thinPrompt, [
+  { questionId: "location", choiceId: "us" },
+  { questionId: "city", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+]);
+assert(regionSkipCity.includes("United States"), "skip city still folds the United States phrase");
+const regionParsed = parseSearchQuery(regionSkipCity);
+assert(hasCriteria(regionParsed), "skipped city still leaves a searchable location");
+assert(
+  regionParsed.city === "United States" ||
+    regionParsed.keywords.some(function (kw) {
+      return /united|states/i.test(kw);
+    }),
+  "parseSearchQuery keeps the United States region: " + JSON.stringify(regionParsed)
+);
+
+["us", "australia", "uk", "europe", "ireland", "india"].forEach(function (regionId) {
+  const phrase = foldPhraseForAnswer("location", regionId);
+  assert(!!phrase, "region " + regionId + " folds a searchable phrase");
+  assert(!emDash.test(phrase), "region fold has no em dash: " + phrase);
+});
+assertEq(
+  browseAskRegionFolds().join(" | "),
+  "United States | Australia | United Kingdom | Europe | Ireland | India",
+  "region folds reuse existing English region labels"
+);
+
+const indiaSkipCity = foldBrowseAnswers(thinPrompt, [
+  { questionId: "location", choiceId: "india" },
+  { questionId: "city", choiceId: BROWSE_ASK_NO_ANSWER_ID },
+]);
+assert(indiaSkipCity.includes("India"), "skip city still folds India");
+assert(hasCriteria(parseSearchQuery(indiaSkipCity)), "India region is searchable without a city");
 
 const visaFold = foldBrowseAnswers(thinPrompt, [{ questionId: "visa", choiceId: "H-1B" }]);
 assert(parseSearchQuery(visaFold).keywords.includes("H-1B"), "folded visa reuses the stored label");
@@ -215,7 +257,7 @@ userFacingBrowseAskCopy().forEach(function (text) {
   assert(!dating.test(text), "not dating copy: " + text);
   assert(!/dealbreaker/i.test(text), "search box copy must not say dealbreaker: " + text);
 });
-assertEq(browseAskProgress(0, 5), "1 of 5", "progress has no slash or hyphen");
+assertEq(browseAskProgress(0, 4), "1 of 4", "progress has no slash or hyphen");
 assert(/filter/i.test(userFacingBrowseAskCopy().join(" ")), "user-facing ask copy names filters");
 
 const page = read("app/page.tsx");
@@ -267,15 +309,22 @@ assert(!/\bswipe\b/i.test(ui), "ask is not a swipe deck");
 const speed = read("app/components/SpeedMatch.tsx");
 const speedLib = read("lib/speed-match.ts");
 const surfaces = read("lib/surfaces.ts");
-assert(speedLib.includes("speedMatchDealbreakerQuestions"), "Speed Match uses the household dealbreaker bank");
+assert(!speedLib.includes("speedMatchDealbreakerQuestions"), "Speed Match is not rewritten onto a shared filter bank");
+assert(!speedLib.includes("from \"./dealbreakers\""), "Speed Match does not import dealbreakers.ts");
+assert(speedLib.includes('id: "diet"'), "Speed Match keeps diet from main");
+assert(speedLib.includes('id: "family_living"'), "Speed Match keeps family from main");
+assert(speedLib.includes('id: "location"'), "Speed Match keeps location from main");
+assert(speedLib.includes('id: "parents"'), "Speed Match keeps parents from main");
+assert(speedLib.includes('id: "timeline"'), "Speed Match keeps timeline from main");
+assert(speedLib.includes('id: "children"'), "Speed Match keeps kids from main");
 assert(speedLib.includes("SPEED_MATCH_QUESTION_COUNT = 10"), "Speed Match bank stays 10");
 assert(/not the speed match timer/i.test(askLib) || /not speed match/i.test(askLib), "Browse ask is not the timer");
 assert(askLib.toLowerCase().includes("filter"), "Browse ask lib names leftover taps filters");
+assert(!askLib.includes("mother_tongue"), "Browse ask has no mother tongue path");
 assert(!/diet/i.test(ids.join(" ")), "Browse bank has no diet id");
-assert(findBrowseAskQuestion("mother_tongue")?.id === "mother_tongue", "mother tongue is a Browse filter");
+assert(!findBrowseAskQuestion("mother_tongue"), "mother tongue is gone from Browse");
 assert(!findBrowseAskQuestion("work"), "work after marriage is not a Browse filter");
 assert(!findBrowseAskQuestion("family_living"), "joint family is not a Browse filter");
-assert(browseAskAlreadyAnswered("mother_tongue", "Telugu doctor"), "Telugu skips mother tongue");
 assert(askLib.includes("VISA_STATUS_GROUPS"), "visa taps reuse VISA_STATUS_GROUPS");
 assert(surfaces.includes('Add city, visa, and religion if you know them.'), "helper copy is Sai's line");
 assert(!emDash.test(surfaces.match(/SEARCH_FILTER_HELPER[\s\S]{0,80}/)?.[0] || ""), "helper has no em dash");

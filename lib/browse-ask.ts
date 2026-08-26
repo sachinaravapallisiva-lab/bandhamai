@@ -8,18 +8,6 @@
  * stay until reload. A short prompt is never blocked; it still gets chips.
  */
 
-import {
-  DEALBREAKER_COMMUNITY_ALIAS_TERMS,
-  DEALBREAKER_LANGUAGE_CHOICES,
-  DEALBREAKER_LANGUAGE_TERMS,
-  DEALBREAKER_LOCATION_CHOICES,
-  DEALBREAKER_RELIGION_CHOICES,
-  DEALBREAKER_RELIGION_TERMS,
-  DEALBREAKER_ANY_CHOICE,
-  SEARCH_FILTER_FIELD_ORDER,
-  SEARCH_FILTER_PROMPTS,
-  dealbreakerCommunityChoices,
-} from "./dealbreakers";
 import { SEARCH_CITIES } from "./desi-search-aliases";
 import { parseSearchQuery, type SearchCriteria } from "./profile-search";
 import {
@@ -38,8 +26,8 @@ export const BROWSE_ASK_VISA_NO_ANSWER_LABEL = "Prefer not to say";
 export const BROWSE_ASK_LABEL = "FILTERS";
 export const BROWSE_ASK_HINT = "Tap one filter. Bandham AI uses this for the shortlist.";
 
-/** Locked filter order. City is an optional follow-up after a region, not one of the 5. */
-export const BROWSE_ASK_FIELD_ORDER = SEARCH_FILTER_FIELD_ORDER;
+/** Locked filter order. City is an optional follow-up after a region, not one of the 4. */
+export const BROWSE_ASK_FIELD_ORDER = ["location", "visa", "religion", "caste"] as const;
 
 export type BrowseAskField = (typeof BROWSE_ASK_FIELD_ORDER)[number];
 
@@ -68,10 +56,87 @@ export type BrowseAskAnswer = {
   choiceId: string;
 };
 
-const RELIGION_CHOICES: BrowseAskChoice[] = DEALBREAKER_RELIGION_CHOICES;
-const RELIGION_TERMS = DEALBREAKER_RELIGION_TERMS;
-const COMMUNITY_ALIAS_TERMS = DEALBREAKER_COMMUNITY_ALIAS_TERMS;
-const LOCATION_CHOICES: BrowseAskChoice[] = DEALBREAKER_LOCATION_CHOICES;
+const SEARCH_FILTER_PROMPTS: Record<BrowseAskField, string> = {
+  location: "Where should we look?",
+  visa: "Which visa status should we look for?",
+  religion: "Any faith we should look for?",
+  caste: "Any community we should look for?",
+};
+
+/**
+ * Region labels already used as ordinary English in Browse.
+ * fold is the searchable phrase parseSearchQuery keeps (city or leftover keywords).
+ * Do not invent a country taxonomy beyond these existing names.
+ */
+const LOCATION_CHOICES: BrowseAskChoice[] = [
+  { id: "us", label: "United States", fold: "United States" },
+  { id: "australia", label: "Australia", fold: "Australia" },
+  { id: "uk", label: "United Kingdom", fold: "United Kingdom" },
+  { id: "europe", label: "Europe", fold: "Europe" },
+  { id: "ireland", label: "Ireland", fold: "Ireland" },
+  { id: "india", label: "India", fold: "India" },
+];
+
+const RELIGION_CHOICES: BrowseAskChoice[] = [
+  { id: "hindu", label: "Hindu", fold: "Hindu" },
+  { id: "muslim", label: "Muslim", fold: "Muslim" },
+  { id: "christian", label: "Christian", fold: "Christian" },
+  { id: "sikh", label: "Sikh", fold: "Sikh" },
+  { id: "jain", label: "Jain", fold: "Jain" },
+  { id: "buddhist", label: "Buddhist", fold: "Buddhist" },
+  { id: "other", label: "Other", fold: "Other" },
+];
+
+const RELIGION_TERMS = [
+  "hindu",
+  "muslim",
+  "islam",
+  "islamic",
+  "christian",
+  "sikh",
+  "jain",
+  "buddhist",
+  "buddhism",
+];
+
+const COMMUNITY_CHIP_IDS = [
+  "reddy",
+  "iyengar",
+  "iyer",
+  "nair",
+  "naidu",
+  "brahmin",
+  "patel",
+  "gowda",
+  "shetty",
+  "aggarwal",
+];
+
+const COMMUNITY_ALIAS_TERMS = [
+  "iyengar",
+  "iyer",
+  "reddy",
+  "nair",
+  "nambiar",
+  "menon",
+  "naidu",
+  "kamma",
+  "kapu",
+  "velama",
+  "raju",
+  "brahmin",
+  "namboodiri",
+  "pillai",
+  "chettiar",
+  "mudaliar",
+  "gowda",
+  "shetty",
+  "patel",
+  "aggarwal",
+  "agarwal",
+  "kayastha",
+  "syrian christian",
+];
 
 const LOCATION_REGION_TERMS = [
   "united states",
@@ -126,7 +191,27 @@ export const BROWSE_ASK_NO_ANSWER_CHOICE: BrowseAskChoice = {
   fold: "",
 };
 
-const CASTE_ANY_CHOICE: BrowseAskChoice = DEALBREAKER_ANY_CHOICE;
+const CASTE_ANY_CHOICE: BrowseAskChoice = {
+  id: "any",
+  label: "Any",
+  fold: "",
+};
+
+function titleLabel(value: string) {
+  return value
+    .split(/\s+/)
+    .map(function (part) {
+      if (!part) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join(" ");
+}
+
+function communityChoices(): BrowseAskChoice[] {
+  return COMMUNITY_CHIP_IDS.map(function (id) {
+    return { id: id, label: titleLabel(id), fold: titleLabel(id) };
+  }).concat(CASTE_ANY_CHOICE);
+}
 
 function cityChoice(city: string): BrowseAskChoice {
   return { id: city.toLowerCase().replace(/\s+/g, "_"), label: city, fold: city };
@@ -191,15 +276,7 @@ function casteQuestion(): BrowseAskQuestion {
   return {
     id: "caste",
     prompt: SEARCH_FILTER_PROMPTS.caste,
-    choices: dealbreakerCommunityChoices(),
-  };
-}
-
-function motherTongueQuestion(): BrowseAskQuestion {
-  return {
-    id: "mother_tongue",
-    prompt: SEARCH_FILTER_PROMPTS.mother_tongue,
-    choices: DEALBREAKER_LANGUAGE_CHOICES,
+    choices: communityChoices(),
   };
 }
 
@@ -208,7 +285,6 @@ export const BROWSE_ASK_QUESTIONS: BrowseAskQuestion[] = [
   visaQuestion(),
   religionQuestion(),
   casteQuestion(),
-  motherTongueQuestion(),
 ];
 
 export function isBrowseAskNoAnswer(choiceId: string | null | undefined) {
@@ -333,15 +409,6 @@ export function promptHasCaste(raw: string, criteria?: SearchCriteria) {
   });
 }
 
-export function promptHasMotherTongue(raw: string, criteria?: SearchCriteria) {
-  const parsed = criteria || parseSearchQuery(raw);
-  const hay = haystack(raw, parsed);
-  if (hasTerm(hay, DEALBREAKER_LANGUAGE_TERMS)) return true;
-  return parsed.keywords.some(function (kw) {
-    return DEALBREAKER_LANGUAGE_TERMS.indexOf(kw.toLowerCase()) >= 0;
-  });
-}
-
 export function browseAskAlreadyAnswered(
   questionId: string,
   raw: string,
@@ -355,7 +422,6 @@ export function browseAskAlreadyAnswered(
   if (questionId === "visa") return promptHasVisa(raw, parsed);
   if (questionId === "religion") return promptHasReligion(raw, parsed);
   if (questionId === "caste") return promptHasCaste(raw, parsed);
-  if (questionId === "mother_tongue") return promptHasMotherTongue(raw, parsed);
   return false;
 }
 
@@ -451,9 +517,6 @@ export function remainingBrowseQuestions(
   if (!browseAskAlreadyAnswered("caste", text, parsed, answers)) {
     needed.push(casteQuestion());
   }
-  if (!browseAskAlreadyAnswered("mother_tongue", text, parsed, answers)) {
-    needed.push(motherTongueQuestion());
-  }
   return needed;
 }
 
@@ -475,7 +538,7 @@ export function userFacingBrowseAskCopy() {
     BROWSE_ASK_HINT,
     BROWSE_ASK_NO_ANSWER_LABEL,
     BROWSE_ASK_VISA_NO_ANSWER_LABEL,
-    browseAskProgress(0, 5),
+    browseAskProgress(0, 4),
     CASTE_ANY_CHOICE.label,
   ]
     .concat(fromQuestions)
@@ -484,4 +547,14 @@ export function userFacingBrowseAskCopy() {
         return choice.label;
       })
     );
+}
+
+export function browseAskCommunityChipIds() {
+  return COMMUNITY_CHIP_IDS.slice();
+}
+
+export function browseAskRegionFolds() {
+  return LOCATION_CHOICES.map(function (choice) {
+    return choice.fold;
+  });
 }

@@ -1,7 +1,5 @@
 /** Locked Tier 2 Speed Match: 10 questions, 15 seconds each. */
 
-import { speedMatchDealbreakerQuestions } from "./dealbreakers";
-
 export const SPEED_MATCH_QUESTION_COUNT = 10;
 export const SPEED_MATCH_SECONDS = 15;
 export const SPEED_MATCH_TABLE = "speed_match_rounds";
@@ -43,21 +41,111 @@ export type SpeedMatchLocalRound = {
 };
 
 /**
- * Indian household dealbreakers for talking. Not Browse search filters.
- * Diet is not a main question. Location, visa, religion, caste, and mother
- * tongue stay in the search box. Not Western dating, not flirty, not party games.
+ * Indian / desi matrimony dealbreakers and hard filters only.
+ * Locked 10 from Sai's list. Not Western dating, not flirty, not party games.
+ * Parked (did not fit 10): language at home, alcohol / smoking comfort.
  */
-export const SPEED_MATCH_QUESTIONS: SpeedMatchQuestion[] = speedMatchDealbreakerQuestions().map(
-  function (question) {
-    return {
-      id: question.id,
-      prompt: question.prompt,
-      choices: question.choices.map(function (choice) {
-        return { id: choice.id, label: choice.label };
-      }),
-    };
-  }
-);
+export const SPEED_MATCH_QUESTIONS: SpeedMatchQuestion[] = [
+  {
+    id: "diet",
+    prompt: "Vegetarian or non-veg at home after marriage?",
+    choices: [
+      { id: "vegetarian", label: "Vegetarian only" },
+      { id: "eggetarian", label: "Eggetarian ok" },
+      { id: "nonveg", label: "Non-veg ok" },
+      { id: "decide", label: "Flexible" },
+    ],
+  },
+  {
+    id: "location",
+    prompt: "Live in India or abroad after marriage?",
+    choices: [
+      { id: "india", label: "India" },
+      { id: "abroad", label: "US / abroad" },
+      { id: "either", label: "Either" },
+      { id: "undecided", label: "Not sure yet" },
+    ],
+  },
+  {
+    id: "family_living",
+    prompt: "Joint family or nuclear after marriage?",
+    choices: [
+      { id: "joint", label: "Joint with parents" },
+      { id: "nearby", label: "Nuclear, parents nearby" },
+      { id: "nuclear", label: "Nuclear, distance ok" },
+      { id: "open", label: "Depends" },
+    ],
+  },
+  {
+    id: "parents",
+    prompt: "Should parents be involved in this match?",
+    choices: [
+      { id: "from_start", label: "From the start" },
+      { id: "after_talk", label: "After we talk" },
+      { id: "inform", label: "We decide, then inform" },
+      { id: "talking", label: "Still deciding" },
+    ],
+  },
+  {
+    id: "community",
+    prompt: "Same community preference?",
+    choices: [
+      { id: "same", label: "Prefer same community" },
+      { id: "values", label: "Open if values match" },
+      { id: "none", label: "No preference" },
+      { id: "family", label: "Deciding with family" },
+    ],
+  },
+  {
+    id: "dowry",
+    prompt: "Dowry — asking or offering?",
+    choices: [
+      { id: "refuse", label: "Never ask or accept" },
+      { id: "walk_away", label: "Dealbreaker if it comes up" },
+      { id: "both_clear", label: "Both families must refuse" },
+    ],
+  },
+  {
+    id: "faith",
+    prompt: "Temple, church, or mosque practice?",
+    choices: [
+      { id: "regular", label: "Regular practice" },
+      { id: "festivals", label: "Festivals / family rituals" },
+      { id: "private", label: "Private" },
+      { id: "not_central", label: "Not central" },
+    ],
+  },
+  {
+    id: "timeline",
+    prompt: "How soon do you want to marry?",
+    choices: [
+      { id: "year", label: "Within a year" },
+      { id: "two_years", label: "1–2 years" },
+      { id: "families", label: "When families are ready" },
+      { id: "none", label: "No timeline yet" },
+    ],
+  },
+  {
+    id: "children",
+    prompt: "Do you want children?",
+    choices: [
+      { id: "want", label: "Yes" },
+      { id: "dont", label: "No" },
+      { id: "open", label: "Open" },
+      { id: "undecided", label: "Still deciding" },
+    ],
+  },
+  {
+    id: "work",
+    prompt: "Should your spouse work after marriage?",
+    choices: [
+      { id: "working", label: "Yes, working partner" },
+      { id: "either", label: "Either path" },
+      { id: "home", label: "Prefer home focus" },
+      { id: "later", label: "Decide later" },
+    ],
+  },
+];
 
 export function isNoAnswerChoiceId(choiceId: string | null | undefined) {
   return (
