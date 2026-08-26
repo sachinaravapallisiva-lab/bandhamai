@@ -31,6 +31,10 @@ export const LOGIN_SIGN_UP_LABEL = "Sign up";
 
 export const LOGIN_AGE_NOTE =
   "Bandham AI is for people 18 and over. By signing in or signing up, you confirm you meet that age.";
+export const LOGIN_TERMS_AGREE = "I agree to the Terms and Privacy.";
+export const LOGIN_TERMS_NEED = "Agree to the Terms to create an account.";
+export const LOGIN_TERMS_PATH = "/terms";
+export const LOGIN_PRIVACY_PATH = "/privacy";
 export const LOGIN_FORGOT_SENT = "If that email has an account, a reset link is on its way.";
 export const LOGIN_RESEND_SENT =
   "If that email needs confirmation, another email was sent. If you already signed in, you do not need this.";
@@ -73,6 +77,11 @@ export function decideSignInIntent(email: string, password: string): SignInInten
   return hasLoginCredentials(email, password) ? "sign-in" : "need-fields";
 }
 
+/** Sign up create is blocked until the Terms checkbox is checked. Sign in and reset do not use this. */
+export function canCreateSignUpAccount(agreed: boolean) {
+  return agreed === true;
+}
+
 export function loginUserCopy() {
   return [
     LOGIN_PRODUCT,
@@ -94,6 +103,8 @@ export function loginUserCopy() {
     LOGIN_SIGN_IN_LABEL,
     LOGIN_SIGN_UP_LABEL,
     LOGIN_AGE_NOTE,
+    LOGIN_TERMS_AGREE,
+    LOGIN_TERMS_NEED,
     LOGIN_FORGOT_SENT,
     LOGIN_RESEND_SENT,
   ];

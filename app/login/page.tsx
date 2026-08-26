@@ -12,12 +12,16 @@ import {
   LOGIN_EMPTY_FIELDS,
   LOGIN_FORGOT_LABEL,
   LOGIN_FORGOT_SENT,
+  LOGIN_PRIVACY_PATH,
   LOGIN_RESEND_LABEL,
   LOGIN_RESEND_SENT,
   LOGIN_SIGN_IN_LABEL,
   LOGIN_SIGN_UP_LABEL,
   LOGIN_SIGN_UP_PROMPT,
   LOGIN_SIGN_UP_UNREACHABLE,
+  LOGIN_TERMS_NEED,
+  LOGIN_TERMS_PATH,
+  canCreateSignUpAccount,
   decideSignInIntent,
   decideSignUpIntent,
   loginAuthMode,
@@ -35,6 +39,7 @@ export default function LoginPage() {
   const [nextPassword, setNextPassword] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [mode, setMode] = useState<LoginPageMode>(function () {
     if (typeof window === "undefined") return "signin";
     return loginPageModeFromSearch(new URLSearchParams(window.location.search).get("mode"));
@@ -86,6 +91,11 @@ export default function LoginPage() {
       return;
     }
     if (intent === "create-account") {
+      if (!canCreateSignUpAccount(agreedTerms)) {
+        if (mode !== "signup") setMode("signup");
+        setStatus(LOGIN_TERMS_NEED);
+        return;
+      }
       setBusy(true);
       setStatus(LOGIN_CREATING);
       supabase.auth.signUp({ email: email.trim(), password: password }).then(function (result) {
@@ -286,7 +296,7 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <button type="submit" hidden>
+            <button type="submit" hidden disabled={mode === "signup" && !agreedTerms}>
               {mode === "signup" ? LOGIN_SIGN_UP_LABEL : LOGIN_SIGN_IN_LABEL}
             </button>
             <label className="bm-sans" style={{ display: "block", fontSize: 9.5, letterSpacing: ".14em", color: MUTED, marginBottom: 6 }}>
@@ -319,8 +329,49 @@ export default function LoginPage() {
                 setPassword(e.target.value);
               }}
               className="bm-sans bm-input bm-focus"
-              style={{ ...fieldStyle, marginBottom: 18 }}
+              style={{ ...fieldStyle, marginBottom: mode === "signup" ? 14 : 18 }}
             />
+
+            {mode === "signup" ? (
+              <label
+                htmlFor="agree-terms"
+                className="bm-sans"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  marginBottom: 18,
+                  fontSize: 13.5,
+                  color: INK,
+                  lineHeight: 1.45,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  id="agree-terms"
+                  name="agreeTerms"
+                  type="checkbox"
+                  required
+                  checked={agreedTerms}
+                  onChange={function (e) {
+                    setAgreedTerms(e.target.checked);
+                  }}
+                  className="bm-focus"
+                  style={{ marginTop: 3, width: 16, height: 16, accentColor: VIOLET }}
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link href={LOGIN_TERMS_PATH} className="bm-focus" style={{ color: VIOLET }}>
+                    Terms
+                  </Link>
+                  {" and "}
+                  <Link href={LOGIN_PRIVACY_PATH} className="bm-focus" style={{ color: VIOLET }}>
+                    Privacy
+                  </Link>
+                  .
+                </span>
+              </label>
+            ) : null}
 
             <div style={{ display: "flex", gap: 9 }}>
               <button
@@ -345,7 +396,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || (mode === "signup" && !agreedTerms)}
                 onClick={handleSignUp}
                 className="bm-sans bm-ghost bm-focus"
                 style={{
@@ -357,7 +408,8 @@ export default function LoginPage() {
                   padding: "13px",
                   fontSize: 14,
                   fontWeight: 600,
-                  cursor: busy ? "default" : "pointer",
+                  cursor: busy || (mode === "signup" && !agreedTerms) ? "default" : "pointer",
+                  opacity: mode === "signup" && !agreedTerms ? 0.55 : 1,
                 }}
               >
                 {LOGIN_SIGN_UP_LABEL}
