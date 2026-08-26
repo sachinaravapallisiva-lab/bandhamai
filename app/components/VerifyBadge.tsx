@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { VERIFYAI_COPY } from "../../lib/verifyai";
-import { GOLD, VIOLET, VIOLET_DEEP } from "../../lib/theme";
+import { CREAM, GOLD, VIOLET, VIOLET_DEEP } from "../../lib/theme";
 
 /** Quiet VerifyAI mark. Hidden unless `verified` is true. Violet shield, gold rim, white check, Verified. */
 export default function VerifyBadge({ verified }: { verified?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [place, setPlace] = useState<"right" | "left">("right");
   const tipId = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
+  const tipRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -24,6 +26,17 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKey);
     };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPlace("right");
+      return;
+    }
+    const node = tipRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 12) setPlace("left");
   }, [open]);
 
   if (!verified) return null;
@@ -100,23 +113,30 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
       </button>
       {open ? (
         <span
+          ref={tipRef}
           id={tipId}
           role="tooltip"
           className="bm-sans"
           style={{
             position: "absolute",
-            left: 0,
-            top: "calc(100% + 4px)",
-            zIndex: 4,
-            whiteSpace: "nowrap",
+            top: "50%",
+            left: place === "right" ? "calc(100% + 8px)" : "auto",
+            right: place === "left" ? "calc(100% + 8px)" : "auto",
+            transform: "translateY(-50%)",
+            zIndex: 8,
+            boxSizing: "border-box",
+            maxWidth: 208,
+            whiteSpace: "normal",
             margin: 0,
-            padding: 0,
-            border: "none",
-            background: "transparent",
+            padding: "8px 10px",
+            border: "1px solid " + GOLD,
+            borderRadius: 8,
+            background: CREAM,
+            boxShadow: "0 6px 16px rgba(30, 27, 54, .08)",
             color: VIOLET_DEEP,
-            fontSize: 11,
-            fontWeight: 500,
-            lineHeight: 1.3,
+            fontSize: 12,
+            fontWeight: 700,
+            lineHeight: 1.35,
           }}
         >
           {phrase}
