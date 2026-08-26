@@ -116,6 +116,7 @@ assert(
 assert(labels.includes("Plans"), "Plans item");
 assert(labels.includes("Settings / Account"), "settings item");
 assert(labels.includes("Block"), "block item");
+assert(!labels.includes("Admin"), "Admin is not a public drawer item");
 assert(labels.indexOf("Inbox") === labels.indexOf("Meetup this month") + 1, "Inbox stays where Messages was");
 assert(labels.indexOf("Block") === labels.indexOf("Settings / Account") + 1, "Block is added after Settings");
 
@@ -134,7 +135,12 @@ assert(hrefs.includes("/contact"), "support route");
 assert(hrefs.includes("/contact#call"), "call us route");
 assert(hrefs.includes("/account"), "account route");
 assert(hrefs.includes("/account#blocked"), "block route");
+assert(!hrefs.includes("/admin"), "Admin href stays off the public menu list");
 assert(ALLOWED_NEXT_PATHS.includes("/inbox"), "inbox is a real next path");
+assert(ALLOWED_NEXT_PATHS.includes("/admin"), "admin is a real next path");
+assert(drawer.includes("fetchAdminAccess"), "drawer asks the server if this account is admin");
+assert(drawer.includes("signedIn && isAdmin"), "Admin item is signed in admins only");
+assert(drawer.includes("ADMIN_MENU_ITEM"), "admin label comes from the admin menu item");
 
 assert(prefs.includes(PREFERENCES_TITLE) || prefs.includes("PREFERENCES_TITLE"), "preferences page titled Preferences");
 assert(prefs.includes("AppChrome"), "preferences uses AppChrome");

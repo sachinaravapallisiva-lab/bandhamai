@@ -43,9 +43,10 @@ copy.forEach(function (text) {
   assert(!/bandhan\b/i.test(text), "product name is Bandham, not Bandhan: " + text);
 });
 
-assertEq(METRICS_PATH, "/metrics", "metrics path");
-assertEq(METRICS_API_PATH, "/api/metrics", "metrics api path");
+assertEq(METRICS_PATH, "/admin/metrics", "metrics path");
+assertEq(METRICS_API_PATH, "/api/admin/metrics", "metrics api path");
 assert(ALLOWED_NEXT_PATHS.includes(METRICS_PATH), "login can return to metrics");
+assert(ALLOWED_NEXT_PATHS.includes("/admin"), "login can return to admin");
 
 assertEq(SUPPORT_INBOX_EMAIL_DEFAULT, "sachin.aravapallisiva@gmail.com", "founder email lock");
 assert(founderAdminEmails().includes(SUPPORT_INBOX_EMAIL_DEFAULT), "allowlist includes founder email");
@@ -126,10 +127,11 @@ assertEq(
   "region chip order"
 );
 
-const route = read("app/api/metrics/route.ts");
-const page = read("app/metrics/page.tsx");
+const route = read("app/api/admin/metrics/route.ts");
+const page = read("app/admin/metrics/page.tsx");
+const redirectPage = read("app/metrics/page.tsx");
 const view = read("app/components/MetricsView.tsx");
-const layout = read("app/metrics/layout.tsx");
+const layout = read("app/admin/metrics/layout.tsx");
 const admin = read("lib/internal-admin.ts");
 const metrics = read("lib/metrics.ts");
 const footer = read("app/components/SiteFooter.tsx");
@@ -144,15 +146,18 @@ assert(route.includes('const columns = ["city"]'), "select starts at city only")
 assert(!route.includes("full_name"), "no names in metrics select");
 assert(!route.includes("photo_url"), "no photos in metrics select");
 assert(!route.includes("phone"), "no phones in metrics select");
-assert(route.includes("user.email"), "gate reads the signed in email");
+assert(read("lib/admin-server.ts").includes("user.email"), "gate reads the signed in email");
 assert(!/\.select\([^)]*email/.test(route), "email is not a profile column select");
 assert(!route.includes('columns.push("user_id")'), "user_id is not a returned column");
 assert(!route.includes('columns.push("id")'), "id is not a returned column");
 assert(route.includes('.not("user_id", "is", null)'), "counts signed in profiles");
-assert(route.includes("isFounderAdminEmail"), "api uses founder gate");
-assert(route.includes('status: 404'), "non admin is not available, not 500");
-assert(!/status:\s*500/.test(route), "api does not 500");
+assert(route.includes("requireAdminRequest"), "api uses the admin gate");
+assert(redirectPage.includes("redirect"), "legacy /metrics redirects to admin metrics");
+assert(read("lib/admin-server.ts").includes("status: 404"), "non admin is not available, not 500");
+assert(!/status:\s*500/.test(route) && !/status:\s*500/.test(read("lib/admin-server.ts")), "api does not 500");
 assert(admin.includes("SUPPORT_INBOX_EMAIL_DEFAULT"), "gate reuses founder inbox");
+assert(admin.includes("BANDHAM_ADMIN_EMAILS"), "gate reads the server allowlist env");
+assert(!admin.includes("NEXT_PUBLIC_BANDHAM_ADMIN_EMAILS"), "allowlist stays server only");
 assert(!admin.includes("clerk") && !admin.includes("auth0"), "no new auth vendor");
 
 assert(layout.includes("index: false"), "metrics is not indexed");
@@ -181,7 +186,11 @@ assert(!ACCOUNT_MENU_ITEMS.some(function (item) {
   return item.href === METRICS_PATH || item.id === "metrics";
 }), "no public drawer item");
 assert(!menu.includes("/metrics"), "account menu has no metrics href");
-assert(!drawer.includes("/metrics"), "drawer has no metrics link");
+assert(!menu.includes("/admin"), "account menu list has no admin href");
+assert(!drawer.includes("/metrics"), "drawer has no public metrics link");
+assert(!ACCOUNT_MENU_ITEMS.some(function (item) {
+  return item.id === "admin";
+}), "Admin stays off the public menu list");
 
 assert(!read("package.json").includes("@vercel/analytics"), "no new analytics package");
 assert(!read("app/layout.tsx").includes("Analytics"), "no vercel analytics in layout");

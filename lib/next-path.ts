@@ -17,6 +17,8 @@ export const ALLOWED_NEXT_PATHS = [
   "/terms",
   "/privacy",
   "/metrics",
+  "/admin",
+  "/admin/metrics",
 ] as const;
 
 export type AllowedNextPath = (typeof ALLOWED_NEXT_PATHS)[number];

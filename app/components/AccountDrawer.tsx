@@ -17,6 +17,8 @@ import {
   ACCOUNT_MENU_UPGRADE_HREF,
   SIDEBAR_ALWAYS_OPEN,
 } from "../../lib/account-menu";
+import { ADMIN_MENU_ITEM } from "../../lib/admin";
+import { fetchAdminAccess } from "../../lib/client-admin";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { fetchEntitlement } from "../../lib/client-billing";
 import { loginHref } from "../../lib/next-path";
@@ -44,7 +46,8 @@ type IconName =
   | "call"
   | "settings"
   | "upgrade"
-  | "signin";
+  | "signin"
+  | "admin";
 
 function MenuIcon({ name }: { name: IconName }) {
   const common = {
@@ -186,6 +189,14 @@ function MenuIcon({ name }: { name: IconName }) {
       </svg>
     );
   }
+  if (name === "admin") {
+    return (
+      <svg {...common}>
+        <rect x="5.5" y="5.5" width="13" height="13" rx="2" stroke={stroke} strokeWidth="1.7" />
+        <path d="M8.4 9.2h7.2M8.4 12h7.2M8.4 14.8h4.6" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (name === "upgrade") {
     return (
       <svg {...common}>
@@ -213,6 +224,7 @@ function iconForItem(id: string): IconName {
   if (id === "help") return "help";
   if (id === "call") return "call";
   if (id === "settings") return "settings";
+  if (id === "admin") return "admin";
   return "profile";
 }
 
@@ -243,6 +255,7 @@ function useAccountSession() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [fullName, setFullName] = useState("");
   const [plan, setPlan] = useState<"free" | "paid" | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
@@ -254,6 +267,7 @@ function useAccountSession() {
         setHasProfile(false);
         setPhotoUrl("");
         setFullName("");
+        setIsAdmin(false);
         return;
       }
       setSignedIn(true);
@@ -261,6 +275,7 @@ function useAccountSession() {
       const userId = session.user.id || "";
       Promise.all([
         fetchEntitlement(),
+        fetchAdminAccess(),
         authJsonHeaders().then(function (headers) {
           if (!headers) return null;
           return fetch("/api/profiles", { headers }).then(function (res) {
@@ -270,9 +285,11 @@ function useAccountSession() {
       ])
         .then(function (result) {
           const entitlement = result[0];
-          const data = result[1];
+          const access = result[1];
+          const data = result[2];
           const profile = data && data.profile;
           setPlan(entitlement.canMessage ? "paid" : "free");
+          setIsAdmin(!!(access && access.admin));
           setHasProfile(!!(profile && profile.id));
           setPhotoUrl(sidebarOwnPhotoUrl(profile && profile.photo_url, userId));
           setFullName(typeof (profile && profile.full_name) === "string" ? profile.full_name : "");
@@ -282,11 +299,12 @@ function useAccountSession() {
           setHasProfile(false);
           setPhotoUrl("");
           setFullName("");
+          setIsAdmin(false);
         });
     });
   }, []);
 
-  return { signedIn, email, hasProfile, photoUrl, fullName, plan };
+  return { signedIn, email, hasProfile, photoUrl, fullName, plan, isAdmin };
 }
 
 type AccountPanelProps = {
@@ -296,6 +314,7 @@ type AccountPanelProps = {
   photoUrl: string;
   fullName: string;
   plan: "free" | "paid" | null;
+  isAdmin: boolean;
   titleId: string;
   closeControl?: ReactNode;
 };
@@ -307,6 +326,7 @@ function AccountPanel({
   photoUrl,
   fullName,
   plan,
+  isAdmin,
   titleId,
   closeControl,
 }: AccountPanelProps) {
@@ -415,6 +435,18 @@ function AccountPanel({
             </Link>
           );
         })}
+
+        {signedIn && isAdmin ? (
+          <Link
+            href={ADMIN_MENU_ITEM.href}
+            className="bm-sans bm-menu bm-focus"
+            style={ITEM_STYLE}
+            onClick={closePhoneMenu}
+          >
+            <MenuIcon name="admin" />
+            <span style={{ fontSize: 14.5, fontWeight: 600 }}>{ADMIN_MENU_ITEM.label}</span>
+          </Link>
+        ) : null}
 
         {signedIn ? (
           <div

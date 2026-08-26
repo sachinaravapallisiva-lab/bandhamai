@@ -1,8 +1,9 @@
 import { ageYearsFromDob } from "./biodata";
 import { CITY_ALIASES, SEARCH_CITIES } from "./desi-search-aliases";
 
-export const METRICS_PATH = "/metrics";
-export const METRICS_API_PATH = "/api/metrics";
+export const METRICS_PATH = "/admin/metrics";
+export const METRICS_API_PATH = "/api/admin/metrics";
+export const METRICS_LEGACY_PATH = "/metrics";
 
 export const METRICS_UNAVAILABLE_TITLE = "This page is not available.";
 export const METRICS_UNAVAILABLE_BODY = "Nothing to show here.";

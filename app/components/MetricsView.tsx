@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { ADMIN_PATH } from "../../lib/admin";
 import { authJsonHeaders } from "../../lib/client-auth";
 import {
   METRICS_AGE_LABELS,
@@ -13,6 +15,7 @@ import {
   METRICS_EMPTY_TITLE,
   METRICS_KICKER,
   METRICS_LEAD,
+  METRICS_PATH,
   METRICS_PLACE_TITLE,
   METRICS_READ_FAILED,
   METRICS_REGION_CHIPS,
@@ -27,6 +30,8 @@ import {
   shareOfTotal,
   type MetricsBucket,
 } from "../../lib/metrics";
+import { loginHref } from "../../lib/next-path";
+import { supabase } from "../../lib/supabase";
 import { CREAM, GOLD, INK, LINE, MUTED, PHONE_ACCOUNT_BREAKPOINT, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "./AppChrome";
 import BandhamMark from "./BandhamMark";
@@ -40,6 +45,7 @@ type MetricsPayload = {
 };
 
 type ViewState =
+  | { kind: "boot" }
   | { kind: "closed" }
   | { kind: "unread" }
   | { kind: "ready"; members: number; regions: MetricsBucket[]; cities: MetricsBucket[]; ages: MetricsBucket[] };
@@ -368,7 +374,8 @@ function MetricsBoard({
 }
 
 export default function MetricsView() {
-  const [view, setView] = useState<ViewState>({ kind: "closed" });
+  const router = useRouter();
+  const [view, setView] = useState<ViewState>({ kind: "boot" });
 
   useEffect(function () {
     let cancelled = false;
@@ -376,53 +383,66 @@ export default function MetricsView() {
       setView({ kind: "ready", ...FALLBACK });
       return;
     }
-    authJsonHeaders()
-      .then(function (headers) {
-        if (!headers) return Promise.resolve({ ok: false, data: null as MetricsPayload | null });
-        return fetch(METRICS_API_PATH, { headers, cache: "no-store" }).then(function (res) {
-          return res.json().then(function (data: MetricsPayload) {
-            return { ok: res.ok, data };
+    supabase.auth.getSession().then(function (sessionResult) {
+      if (cancelled) return;
+      if (!sessionResult.data.session) {
+        router.replace(loginHref(METRICS_PATH));
+        return;
+      }
+      authJsonHeaders()
+        .then(function (headers) {
+          if (!headers) return Promise.resolve({ ok: false, data: null as MetricsPayload | null });
+          return fetch(METRICS_API_PATH, { headers, cache: "no-store" }).then(function (res) {
+            return res.json().then(function (data: MetricsPayload) {
+              return { ok: res.ok, data };
+            });
           });
+        })
+        .then(function (result) {
+          if (cancelled) return;
+          if (!result.ok || !result.data) {
+            setView({ kind: "closed" });
+            return;
+          }
+          if (result.data.available === false) {
+            setView({ kind: "unread" });
+            return;
+          }
+          if (result.data.available !== true) {
+            setView({ kind: "closed" });
+            return;
+          }
+          const members = typeof result.data.members === "number" ? result.data.members : 0;
+          const regions = asBuckets(result.data.regions);
+          const cities = asBuckets(result.data.cities);
+          const ages = asBuckets(result.data.ages);
+          setView({
+            kind: "ready",
+            members: members,
+            regions: regions.length ? regions : FALLBACK.regions,
+            cities: cities,
+            ages: ages.length ? ages : FALLBACK.ages,
+          });
+        })
+        .catch(function () {
+          if (!cancelled) setView({ kind: "closed" });
         });
-      })
-      .then(function (result) {
-        if (cancelled) return;
-        if (!result.ok || !result.data) {
-          setView({ kind: "closed" });
-          return;
-        }
-        if (result.data.available === false) {
-          setView({ kind: "unread" });
-          return;
-        }
-        if (result.data.available !== true) {
-          setView({ kind: "closed" });
-          return;
-        }
-        const members = typeof result.data.members === "number" ? result.data.members : 0;
-        const regions = asBuckets(result.data.regions);
-        const cities = asBuckets(result.data.cities);
-        const ages = asBuckets(result.data.ages);
-        setView({
-          kind: "ready",
-          members: members,
-          regions: regions.length ? regions : FALLBACK.regions,
-          cities: cities,
-          ages: ages.length ? ages : FALLBACK.ages,
-        });
-      })
-      .catch(function () {
-        if (!cancelled) setView({ kind: "closed" });
-      });
+    });
     return function () {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
 
   return (
-    <AppChrome right={<ChromeLink href="/">Back to browse</ChromeLink>}>
+    <AppChrome
+      right={
+        <ChromeLink href={view.kind === "ready" || view.kind === "unread" ? ADMIN_PATH : "/"}>
+          {view.kind === "ready" || view.kind === "unread" ? "Admin" : "Back to browse"}
+        </ChromeLink>
+      }
+    >
       <style>{BOARD_CSS}</style>
-      {view.kind === "closed" ? (
+      {view.kind === "boot" ? null : view.kind === "closed" ? (
         <section
           className="bm-card"
           style={{
