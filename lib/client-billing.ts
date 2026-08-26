@@ -1,5 +1,6 @@
-import { authJsonHeaders } from "./client-auth";
 import { emptyEntitlement, type Entitlement } from "./billing";
+import { authJsonHeaders } from "./client-auth";
+import { VERIFYAI_COPY, VERIFYAI_DEFAULT_RETURN_PATH } from "./verifyai";
 
 export type { Entitlement };
 
@@ -93,6 +94,35 @@ export async function confirmEventTicket(sessionId: string) {
       ticketPaid: false,
       error: "Payment may have succeeded. Wait a moment, then refresh.",
     };
+  }
+}
+
+export async function startVerifyaiCheckout() {
+  const headers = await authJsonHeaders();
+  if (!headers) {
+    return { url: "", error: "Sign in to pay for VerifyAI.", code: "signed_out" };
+  }
+
+  try {
+    const res = await fetch("/api/verifyai/checkout", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        next: VERIFYAI_DEFAULT_RETURN_PATH,
+        return_path: VERIFYAI_DEFAULT_RETURN_PATH,
+      }),
+    });
+    const data = await readJson(res);
+    if (!res.ok || !data.url) {
+      return {
+        url: "",
+        error: data.error || VERIFYAI_COPY.notConfigured,
+        code: data.code || "",
+      };
+    }
+    return { url: String(data.url), error: "", code: "" };
+  } catch {
+    return { url: "", error: "Could not start VerifyAI checkout.", code: "network" };
   }
 }
 

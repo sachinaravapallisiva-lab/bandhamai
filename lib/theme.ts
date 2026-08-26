@@ -52,6 +52,8 @@ export const BM_CSS =
   ".bm-account-phone{display:none}" +
   ".bm-account-phone>summary{list-style:none}" +
   ".bm-account-phone>summary::-webkit-details-marker{display:none}" +
+  "[data-plans-included] summary{list-style:none}" +
+  "[data-plans-included] summary::-webkit-details-marker{display:none}" +
   ".bm-account-toggle{position:relative;z-index:90}" +
   ".bm-shell{flex-wrap:nowrap}" +
   "[data-meetup-rail]{flex:0 0 " +

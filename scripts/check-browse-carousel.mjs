@@ -44,9 +44,15 @@ import {
   browsePinnedPreview,
   browseShortlistPond,
 } from "../lib/browse-test-pond.ts";
+import { BILLING_COPY } from "../lib/billing.ts";
 import {
   GET_PRIORITY,
   PLANS_BODY,
+  PLANS_INCLUDED_BODY,
+  PLANS_INCLUDED_CTA,
+  PLANS_MEETUP_BODY,
+  PLANS_MEETUP_CTA,
+  PLANS_MEETUP_HEADLINE,
   PLANS_PATH,
   PLANS_PRIORITY_BODY,
   PLANS_PRIORITY_HEADLINE,
@@ -225,13 +231,21 @@ assert(!/STRIPE_PIN_PRICE_ID=price_/.test(envExample), "do not invent a live pin
 const plansPage = read("app/plans/page.tsx");
 const plansPanel = read("app/components/PlansPanel.tsx");
 const plansLib = read("lib/plans.ts");
-assert(plansPage.includes("PlansPanel"), "Plans page hosts the three costs");
+assert(plansPage.includes("PlansPanel"), "Plans page hosts the four options");
 assert(PLANS_SUBSCRIBE_HEADLINE === "Bandham AI subscription is $9.99 a month", "Bandham AI price line lock");
+assert(PLANS_SUBSCRIBE_BODY === BILLING_COPY.body, "Bandham AI default body is pay monthly, cancel anytime");
 assert(
-  PLANS_SUBSCRIBE_BODY ===
-    "View numbers and socials. Send unlimited messages. Call on the app. Browse, search, Speed Match, and profile stay free.",
-  "Bandham AI description lock"
+  !/view numbers|unlimited messages|socials|call on the app/i.test(PLANS_SUBSCRIBE_BODY),
+  "default subscribe body does not list inclusions"
 );
+assert(PLANS_INCLUDED_CTA === "What's included", "inclusions stay behind an explicit tap");
+assert(
+  PLANS_INCLUDED_BODY ===
+    "Messaging. Browse, search, Speed Match, and creating a profile stay free. VerifyAI and meetup are separate.",
+  "asked-only include lock"
+);
+assert(plansPanel.includes("PLANS_INCLUDED_CTA"), "Plans renders the What's included tap");
+assert(plansPanel.includes("<details"), "What's included stays closed until tapped");
 assert(PLANS_SUBSCRIBE_CTA === "Subscribe $9.99 a month", "Bandham AI button lock");
 assert(PLANS_PRIORITY_HEADLINE === "Priority $4.99 for 7 days", "Priority price line lock");
 assert(
@@ -241,13 +255,18 @@ assert(
 );
 assert(PLANS_VERIFY_HEADLINE === "VerifyAI $4.99 one time", "VerifyAI price line lock");
 assert(
-  PLANS_VERIFY_BODY === "Profile verification. Adds a verification badge on your Bandham profile.",
+  PLANS_VERIFY_BODY === "One time identity check. Paying does not show the badge.",
   "VerifyAI description lock"
 );
+assert(PLANS_MEETUP_HEADLINE === "Meetup this month", "meetup card title lock");
+assert(PLANS_MEETUP_BODY === "This is a feature demo. It is not on sale.", "meetup is a demo, not on sale");
+assert(PLANS_MEETUP_CTA === "Open meetup", "meetup card links, it does not charge");
 assert(plansPanel.includes("PLANS_PRIORITY_HEADLINE"), "Plans names Priority $4.99 for 7 days");
 assert(plansPanel.includes("PIN_CHECKOUT_PATH"), "Plans pin pay stays fail closed");
 assert(!/STRIPE_PIN_PRICE_ID=price_/.test(plansPanel), "Plans does not invent a pin Price");
-assert(PLANS_SUBSCRIBE_BODY.toLowerCase().includes("unlimited messages"), "unlimited messages is a required feature");
+assert(plansPanel.includes("startVerifyaiCheckout"), "Get verified starts existing VerifyAI checkout");
+assert(!/startEventTicketCheckout|\/api\/meetup\/checkout/.test(plansPanel), "meetup card has no ticket checkout");
+assert(!/\$\d/.test(PLANS_MEETUP_BODY + PLANS_MEETUP_CTA + PLANS_MEETUP_HEADLINE), "meetup card names no ticket amount");
 assert(!/approv/i.test(plansLib + plansPanel + plansPage + page), "Plans and Home do not mention approval");
 assert(!/monthly messaging/i.test(plansLib + plansPanel + plansPage + page), "do not write Monthly messaging");
 assert(!/messaging/i.test(plansLib + plansPanel + plansPage + page), "Plans and Home do not call the product messaging");
@@ -255,6 +274,7 @@ assert(!/\$9\.99 for messaging/i.test(plansLib + plansPanel + page), "do not say
 assert(plansPanel.includes('data-plan-card="bandham-ai"'), "Bandham AI is its own card");
 assert(plansPanel.includes('data-plan-card="priority"'), "Priority is its own card");
 assert(plansPanel.includes('data-plan-card="verifyai"'), "VerifyAI is its own card");
+assert(plansPanel.includes('data-plan-card="meetup"'), "Meetup this month is its own card");
 assert(plansPanel.includes("bm-serif"), "Bandham AI keeps a serif price line");
 assert(plansPanel.includes("WASH"), "Priority card is visually distinct");
 
@@ -311,10 +331,15 @@ assert(BROWSE_CAROUSEL_EMPTY_BODY.includes(PROFILE_PHOTO_SOON), "empty body name
   PLANS_SUBSCRIBE_HEADLINE,
   PLANS_SUBSCRIBE_BODY,
   PLANS_SUBSCRIBE_CTA,
+  PLANS_INCLUDED_CTA,
+  PLANS_INCLUDED_BODY,
   PLANS_PRIORITY_HEADLINE,
   PLANS_PRIORITY_BODY,
   PLANS_VERIFY_HEADLINE,
   PLANS_VERIFY_BODY,
+  PLANS_MEETUP_HEADLINE,
+  PLANS_MEETUP_BODY,
+  PLANS_MEETUP_CTA,
 ]
   .concat(
     BROWSE_TEST_SEEDS.flatMap(function (row) {

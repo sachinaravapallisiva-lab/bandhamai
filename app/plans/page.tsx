@@ -10,7 +10,7 @@ import PlansPanel from "../components/PlansPanel";
 
 export const metadata: Metadata = {
   title: PLANS_TITLE,
-  description: "Bandham AI, Priority, and VerifyAI plans.",
+  description: "Bandham AI, Priority, VerifyAI, and Meetup this month.",
 };
 
 export default function PlansPage() {
