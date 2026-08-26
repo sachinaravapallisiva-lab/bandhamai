@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { KEYTERMS } from "../lib/keyterms.ts";
 import {
   GURU_INTRO,
   GURU_ORB_LABEL,
@@ -53,6 +54,39 @@ assert(GURU_PATH === "/api/guru", "guru path lock");
 
 assert(page.includes("/api/profiles/search"), "Browse search hits /api/profiles/search");
 assert(page.includes("/api/transcribe"), "Browse mic uses STT");
+assert(page.includes("audio/webm"), "Browse mic still records webm on Chrome");
+assert(page.includes("audio/mp4"), "Browse mic falls back to mp4 on iPhone");
+
+const transcribe = readFileSync(new URL("../app/api/transcribe/route.ts", import.meta.url), "utf8");
+assert(transcribe.includes('form.append("language", "en-IN")'), "STT language stays en-IN");
+assert(transcribe.includes('form.append("format", "true")'), "STT format stays true");
+assert(transcribe.includes("KEYTERMS.slice(0, 80)"), "STT sends up to 80 keyterms");
+assert(!transcribe.includes("KEYTERMS.slice(0, 30)"), "old 30-term cap is gone");
+assert(transcribe.includes('form.append("keyterm", t)'), "STT still uses the keyterm field");
+
+assert(KEYTERMS.length > 30, "keyterms cover more than the old first 30");
+assert(KEYTERMS.length <= 80, "keyterms stay under 80");
+assert(KEYTERMS.length < 100, "keyterms stay under the xAI cap of 100");
+["H1B", "H-1B", "green card", "OCI", "NRI", "GC", "EAD", "citizen"].forEach(function (term) {
+  assert(KEYTERMS.includes(term), "visa/status keyterm present: " + term);
+});
+["Dallas", "New Jersey", "Edison", "Frisco", "Hyderabad", "Vizag"].forEach(function (term) {
+  assert(KEYTERMS.includes(term), "city keyterm present: " + term);
+});
+["Reddy", "Kamma", "Kapu", "Naidu", "Brahmin", "Velama"].forEach(function (term) {
+  assert(KEYTERMS.includes(term), "community keyterm present: " + term);
+});
+["Telugu", "Tamil", "Hindi"].forEach(function (term) {
+  assert(KEYTERMS.includes(term), "language keyterm present: " + term);
+});
+["vegetarian", "veg", "Hindu", "Muslim", "Christian"].forEach(function (term) {
+  assert(KEYTERMS.includes(term), "diet/religion keyterm present: " + term);
+});
+["Lakshmi", "Ramesh", "Srinivas", "Anitha", "Swathi", "Pravalika", "Ananya"].forEach(function (name) {
+  assert(!KEYTERMS.includes(name), "first names must not waste keyterm slots: " + name);
+});
+assert(KEYTERMS.slice(0, 8).includes("H1B"), "visa terms lead the list so they are not sliced off");
+assert(KEYTERMS.slice(0, 8).includes("NRI"), "NRI leads with visa/status");
 assert(page.includes("SEARCH_PLACEHOLDER"), "Browse uses shared search placeholder");
 assert(page.includes("BrowseCarousel"), "Browse middle slot is the live profile carousel");
 const discoverCard = readFileSync(new URL("../app/components/DiscoverCard.tsx", import.meta.url), "utf8");
