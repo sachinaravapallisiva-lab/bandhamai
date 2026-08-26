@@ -125,7 +125,7 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
             transform: "translateY(-50%)",
             zIndex: 8,
             boxSizing: "border-box",
-            maxWidth: 208,
+            maxWidth: 236,
             whiteSpace: "normal",
             margin: 0,
             padding: "8px 10px",
