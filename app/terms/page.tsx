@@ -71,7 +71,7 @@ export default function TermsPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            VerifyAI is an optional identity check on a Bandham profile. It costs $4.99 one-time, billed by Stripe Checkout, then you complete the VerifyAI flow (verifyai.llc). Paying does not verify the profile. A quiet badge appears only when we have a stored verified status after that flow succeeds. It is not a background check, a visa check, or a promise that someone is who they say they are.
+            VerifyAI is an optional identity check on a Bandham profile. It costs $4.99 one time, billed by Stripe Checkout, then you complete a device check on Bandham (Face ID, fingerprint, or device passcode). Paying does not verify the profile. A quiet badge appears only when we have a stored verified status after that check succeeds. We store pass or fail only. It is not a background check, a visa check, or a promise that someone is who they say they are.
           </p>
         </LegalSection>
 

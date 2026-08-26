@@ -21,7 +21,13 @@ import {
   normalizeVerifyaiStatus,
 } from "../../../lib/verifyai";
 import { asId, resolveProfileUserId } from "../../../lib/safety-server";
-import { hasPaidVerifyai, profileHasRequiredPhoto, verifyaiPhotoRequiredBody } from "../../../lib/verifyai-checkout";
+import {
+  hasPaidVerifyai,
+  profileHasRequiredPhoto,
+  profileIsUnder18,
+  verifyaiPhotoRequiredBody,
+  verifyaiUnderageBody,
+} from "../../../lib/verifyai-checkout";
 
 export const runtime = "nodejs";
 
@@ -166,6 +172,9 @@ export async function POST(request: Request) {
       }
       if (!(await profileHasRequiredPhoto(supabase, targetId))) {
         return NextResponse.json(verifyaiPhotoRequiredBody(), { status: 409 });
+      }
+      if (await profileIsUnder18(supabase, targetId)) {
+        return NextResponse.json(verifyaiUnderageBody(), { status: 409 });
       }
     }
 

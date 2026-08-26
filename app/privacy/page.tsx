@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            VerifyAI is the optional verification layer for Bandham profiles. If you pay $4.99, Stripe records the one-time payment and we send you into the VerifyAI flow. We may store a status on your profile (unverified, pending, verified, failed, or revoked). A quiet badge is shown only when that status is verified after VerifyAI succeeds. Payment alone does not verify you. VerifyAI is not a second matrimony product here, not a background check, and not a promise that someone is who they say they are.
+            VerifyAI is the optional verification layer for Bandham profiles. If you pay $4.99, Stripe records the one time payment and you complete a device check on Bandham. We may store a status on your profile (unverified, pending, verified, failed, or revoked). We store pass or fail only. A quiet badge is shown only when that status is verified after the check succeeds. Payment alone does not verify you. VerifyAI is not a second matrimony product here, not a background check, and not a promise that someone is who they say they are.
           </p>
         </LegalSection>
 

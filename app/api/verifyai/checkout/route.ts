@@ -23,7 +23,7 @@ import {
   safeVerifyaiReturnPath,
   verifyaiCheckoutReturnUrls,
 } from "../../../../lib/verifyai";
-import { loadVerifyaiState, verifyaiPhotoRequiredBody } from "../../../../lib/verifyai-checkout";
+import { loadVerifyaiState, verifyaiPhotoRequiredBody, verifyaiUnderageBody } from "../../../../lib/verifyai-checkout";
 import { appOrigin, getStripe, stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
 
 export const runtime = "nodejs";
@@ -73,6 +73,9 @@ export async function POST(request: Request) {
     }
     if (!state.hasPhoto) {
       return NextResponse.json(verifyaiPhotoRequiredBody(), { status: 409 });
+    }
+    if (state.under18) {
+      return NextResponse.json(verifyaiUnderageBody(), { status: 403 });
     }
 
     const stripe = getStripe();

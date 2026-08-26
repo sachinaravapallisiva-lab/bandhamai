@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { loginHref } from "../../lib/next-path";
 import { canStartVerifyai, TERMS_NEED_VERIFYAI } from "../../lib/terms-agree";
-import { safeVerifyaiReturnPath, VERIFYAI_COPY, VERIFYAI_PRICE_LABEL } from "../../lib/verifyai";
+import {
+  isFirstPartyVerifyaiStartUrl,
+  safeVerifyaiReturnPath,
+  VERIFYAI_COPY,
+  VERIFYAI_PRICE_LABEL,
+} from "../../lib/verifyai";
+import { runVerifyaiDeviceCheck, type VerifyaiDevicePublicKey } from "../../lib/verifyai-webauthn";
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
 import TermsAgreeField from "./TermsAgreeField";
 
@@ -14,8 +20,10 @@ type State = {
   verified: boolean;
   status: string | null;
   hasPhoto: boolean;
+  under18: boolean;
   checkoutConfigured: boolean;
   startConfigured: boolean;
+  firstParty: boolean;
   start_url?: string | null;
   message?: string;
   error?: string;
@@ -33,6 +41,23 @@ export default function VerifyOffer({
   const [note, setNote] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const autoCheck = useRef(false);
+  const checkStarted = useRef(false);
+
+  function applyState(data: Record<string, unknown>, extras?: Partial<State>) {
+    setState({
+      paid: !!data.paid,
+      verified: !!data.verified,
+      status: typeof data.status === "string" ? data.status : extras?.status || null,
+      hasPhoto: !!data.hasPhoto,
+      under18: !!data.under18,
+      checkoutConfigured: data.checkoutConfigured !== false,
+      startConfigured: data.startConfigured !== false && data.start_configured !== false,
+      firstParty: data.firstParty === true || data.first_party === true,
+      start_url: typeof data.start_url === "string" ? data.start_url : extras?.start_url || null,
+      ...extras,
+    });
+  }
 
   function load() {
     setNeedsAuth(false);
@@ -52,19 +77,83 @@ export default function VerifyOffer({
         })
         .then(function (data) {
           if (!data) return;
-          setState({
-            paid: !!data.paid,
-            verified: !!data.verified,
-            status: data.status || null,
-            hasPhoto: !!data.hasPhoto,
-            checkoutConfigured: data.checkoutConfigured !== false,
-            startConfigured: !!data.startConfigured,
-          });
+          applyState(data);
         })
         .catch(function () {
           setNote("Could not load verification status.");
         });
     });
+  }
+
+  function reportDeviceResult(
+    headers: HeadersInit,
+    payload: Record<string, unknown>
+  ) {
+    return fetch("/api/verifyai/device", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload),
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        applyState(data);
+        setNote(data.message || data.error || "");
+        setBusy(false);
+        return data;
+      });
+    });
+  }
+
+  function runDeviceCheck() {
+    if (!canStartVerifyai(agreedTerms)) {
+      setNote(TERMS_NEED_VERIFYAI);
+      setBusy(false);
+      return;
+    }
+    setBusy(true);
+    setNote("");
+    authJsonHeaders()
+      .then(function (headers) {
+        if (!headers) {
+          setBusy(false);
+          setNeedsAuth(true);
+          return null;
+        }
+        return fetch("/api/verifyai/device?agreed=1", { headers: headers }).then(function (res) {
+          if (res.status === 401) {
+            setBusy(false);
+            setNeedsAuth(true);
+            return null;
+          }
+          return res.json().then(function (data) {
+            if (!res.ok || !data.publicKey) {
+              applyState(data);
+              setNote(data.error || VERIFYAI_COPY.deviceFailed);
+              setBusy(false);
+              return null;
+            }
+            return runVerifyaiDeviceCheck(data.publicKey as VerifyaiDevicePublicKey).then(function (result) {
+              if (result.error) {
+                return reportDeviceResult(headers, {
+                  agreed: true,
+                  canceled: result.canceled,
+                  failed: !result.canceled,
+                  token: data.token,
+                });
+              }
+              return reportDeviceResult(headers, {
+                agreed: true,
+                token: data.token,
+                clientDataJSON: result.clientDataJSON,
+                authenticatorData: result.authenticatorData,
+              });
+            });
+          });
+        });
+      })
+      .catch(function () {
+        setBusy(false);
+        setNote(VERIFYAI_COPY.deviceFailed);
+      });
   }
 
   useEffect(function () {
@@ -74,6 +163,7 @@ export default function VerifyOffer({
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id") || "";
     if (params.get("verify") === "paid" && sessionId.startsWith("cs_")) {
+      autoCheck.current = true;
       queueMicrotask(function () {
         setBusy(true);
       });
@@ -94,18 +184,19 @@ export default function VerifyOffer({
             return null;
           }
           return r.json().then(function (data) {
-            setState({
-              paid: !!data.paid,
-              verified: !!data.verified,
-              status: data.status || "pending",
-              hasPhoto: !!data.hasPhoto,
-              checkoutConfigured: true,
-              startConfigured: !!data.start_configured,
+            applyState(data, {
+              status: typeof data.status === "string" ? data.status : "pending",
               start_url: data.start_url || null,
             });
             setNote(data.message || data.error || VERIFYAI_COPY.paid);
-            if (data.start_url && !data.verified && canStartVerifyai(agreedTerms)) {
-              window.location.assign(data.start_url);
+            const startUrl = typeof data.start_url === "string" ? data.start_url : "";
+            const firstParty = data.first_party === true || isFirstPartyVerifyaiStartUrl(startUrl, window.location.origin);
+            if (data.verified) {
+              setBusy(false);
+              return;
+            }
+            if (!firstParty && startUrl && canStartVerifyai(agreedTerms)) {
+              window.location.assign(startUrl);
               return;
             }
             setBusy(false);
@@ -127,6 +218,20 @@ export default function VerifyOffer({
       });
     }
   }, [signedIn]);
+
+  useEffect(function () {
+    if (!autoCheck.current || checkStarted.current) return;
+    if (!state || !state.paid || state.verified || !state.hasPhoto || state.under18) return;
+    if (!canStartVerifyai(agreedTerms)) return;
+    const startUrl = state.start_url || "";
+    const firstParty = state.firstParty || isFirstPartyVerifyaiStartUrl(startUrl, window.location.origin);
+    checkStarted.current = true;
+    if (!firstParty && startUrl) {
+      window.location.assign(startUrl);
+      return;
+    }
+    runDeviceCheck();
+  }, [agreedTerms, state]);
 
   function pay() {
     setBusy(true);
@@ -173,6 +278,12 @@ export default function VerifyOffer({
       setNote(TERMS_NEED_VERIFYAI);
       return;
     }
+    const startUrl = state && state.start_url ? state.start_url : "";
+    const firstParty = !state || state.firstParty || isFirstPartyVerifyaiStartUrl(startUrl, window.location.origin);
+    if (firstParty || !startUrl) {
+      runDeviceCheck();
+      return;
+    }
     setBusy(true);
     authJsonHeaders()
       .then(function (headers) {
@@ -193,19 +304,21 @@ export default function VerifyOffer({
           return;
         }
         return res.json().then(function (data) {
-          setBusy(false);
-          if (data.url) {
+          if (data.url && !isFirstPartyVerifyaiStartUrl(data.url, window.location.origin)) {
             window.location.assign(data.url);
             return;
           }
+          setBusy(false);
           const missingStart = res.status === 503 || data.error === VERIFYAI_COPY.startMissing;
           if (missingStart) {
             setState(function (prev) {
               if (!prev) return prev;
               return { ...prev, startConfigured: false };
             });
+            setNote(data.error || VERIFYAI_COPY.startMissing);
+            return;
           }
-          setNote(data.error || VERIFYAI_COPY.startMissing);
+          runDeviceCheck();
         });
       })
       .catch(function () {
@@ -261,6 +374,11 @@ export default function VerifyOffer({
   const verified = !!(state && state.verified);
   const paid = !!(state && state.paid);
   const hasPhoto = !!(state && state.hasPhoto);
+  const under18 = !!(state && state.under18);
+  const firstParty = !!(
+    state &&
+    (state.firstParty || isFirstPartyVerifyaiStartUrl(state.start_url || "", typeof window !== "undefined" ? window.location.origin : undefined))
+  );
   const startMissing = !!(
     paid &&
     !verified &&
@@ -316,6 +434,10 @@ export default function VerifyOffer({
             Add a photo
           </Link>
         </p>
+      ) : under18 ? (
+        <p className="bm-sans" style={{ margin: 0, fontSize: 14, color: INK, lineHeight: 1.5 }}>
+          {VERIFYAI_COPY.underage}
+        </p>
       ) : startMissing ? (
         <p
           className="bm-sans"
@@ -334,32 +456,35 @@ export default function VerifyOffer({
         </p>
       ) : paid ? (
         <div>
-        <div style={{ marginBottom: 14 }}>
-          <TermsAgreeField
-            id="verifyai-agree-terms"
-            checked={agreedTerms}
-            onChange={setAgreedTerms}
-            disabled={busy}
-          />
-        </div>
-        <button
-          type="button"
-          disabled={busy || !agreedTerms}
-          onClick={startFlow}
-          className="bm-sans bm-talk bm-focus"
-          style={{
-            background: VIOLET,
-            color: "#FFFFFF",
-            border: "none",
-            borderRadius: 999,
-            padding: "11px 16px",
-            fontSize: 13.5,
-            fontWeight: 600,
-            cursor: busy || !agreedTerms ? "default" : "pointer",
-          }}
-        >
-          {busy ? "One moment…" : "Continue to VerifyAI"}
-        </button>
+          <p className="bm-sans" style={{ margin: "0 0 12px", fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
+            {VERIFYAI_COPY.deviceHint}
+          </p>
+          <div style={{ marginBottom: 14 }}>
+            <TermsAgreeField
+              id="verifyai-agree-terms"
+              checked={agreedTerms}
+              onChange={setAgreedTerms}
+              disabled={busy}
+            />
+          </div>
+          <button
+            type="button"
+            disabled={busy || !agreedTerms}
+            onClick={startFlow}
+            className="bm-sans bm-talk bm-focus"
+            style={{
+              background: agreedTerms ? VIOLET : WASH,
+              color: agreedTerms ? "#FFFFFF" : MUTED,
+              border: "none",
+              borderRadius: 999,
+              padding: "11px 16px",
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: busy || !agreedTerms ? "default" : "pointer",
+            }}
+          >
+            {busy ? "One moment…" : firstParty ? VERIFYAI_COPY.deviceStart : "Continue to VerifyAI"}
+          </button>
         </div>
       ) : (
         <button

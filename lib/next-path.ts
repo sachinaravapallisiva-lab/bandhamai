@@ -16,6 +16,7 @@ export const ALLOWED_NEXT_PATHS = [
   "/logout",
   "/terms",
   "/privacy",
+  "/verifyai/start",
   "/metrics",
   "/admin",
   "/admin/metrics",

@@ -49,6 +49,11 @@ assert(start.includes("hasPhoto") || start.includes("photoRequired"), "start gat
 assert(start.includes("409") || start.includes("400"), "start photo reject is 400/409");
 assert(start.includes("verifyaiPhotoRequiredBody") || start.includes("VERIFYAI_COPY.photoRequired"), "start returns photo required error");
 
+const device = read("app/api/verifyai/device/route.ts");
+assert(device.includes("hasPhoto") || device.includes("photoRequired"), "device check gates on photo");
+assert(device.includes("verifyaiPhotoRequiredBody") || device.includes("VERIFYAI_COPY.photoRequired"), "device check returns photo required error");
+assert(device.includes("markVerifyaiSessionResult"), "device success uses markVerifyaiSessionResult");
+
 const checkout = read("app/api/verifyai/checkout/route.ts");
 assert(checkout.includes("hasPhoto") || checkout.includes("photoRequired"), "checkout gates on photo");
 assert(checkout.includes("verifyaiPhotoRequiredBody") || checkout.includes("VERIFYAI_COPY.photoRequired"), "checkout returns photo required error");
