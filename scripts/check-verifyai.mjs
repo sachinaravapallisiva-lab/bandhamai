@@ -121,6 +121,16 @@ assert(checkout.includes("hasPhoto") || checkout.includes("photoRequired"), "che
 const operator = read("app/api/verifyai/route.ts");
 assert(operator.includes("hasPaidVerifyai"), "operator cannot fake-verify without pay");
 
+const clientBilling = read("lib/client-billing.ts");
+assert(clientBilling.includes("/api/verifyai/checkout"), "client helper posts to existing VerifyAI checkout");
+assert(clientBilling.includes("VERIFYAI_DEFAULT_RETURN_PATH"), "VerifyAI return stays on an allowed path");
+assert(!/price_[a-zA-Z0-9]+/.test(clientBilling), "client billing does not invent a VerifyAI Price ID");
+
+const plansPanel = read("app/components/PlansPanel.tsx");
+assert(plansPanel.includes("startVerifyaiCheckout"), "Plans Get verified starts VerifyAI checkout");
+assert(plansPanel.includes("beginVerifyai"), "Plans wires Get verified to checkout, not a mash link");
+assert(!/price_[a-zA-Z0-9]+/.test(plansPanel), "Plans does not invent a VerifyAI Price ID");
+
 const offer = read("app/components/VerifyOffer.tsx");
 assert(offer.includes("$4.99") || offer.includes("VERIFYAI_PRICE_LABEL"), "offer shows $4.99");
 assert(offer.includes("/api/verifyai/checkout"), "offer uses real Checkout");
