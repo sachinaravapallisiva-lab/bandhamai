@@ -256,6 +256,10 @@ const startPage = read("app/verifyai/start/page.tsx");
 assert(startPage.includes("VerifyOffer"), "first-party start page hosts the same check");
 assert(!/https?:\/\/verifyai/i.test(startPage), "start page does not invent a hosted URL");
 
+const account = read("app/account/page.tsx");
+assert(account.includes("<VerifyOffer"), "Account still hosts VerifyOffer");
+assert(account.includes("signedIn={false}"), "signed-out Account still shows Get verified");
+
 assert(!/price_[a-zA-Z0-9]{10,}/.test(checkout + offer + device), "no invented Stripe Price ID on VerifyAI");
 
 console.log("verifyai violet badge + $4.99 checkout rules ok");

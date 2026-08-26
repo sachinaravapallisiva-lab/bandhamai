@@ -305,27 +305,32 @@ export default function AccountPage() {
       {!ready ? (
         <p className="bm-sans" style={{ color: MUTED }}>One moment…</p>
       ) : !signedIn ? (
-        <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "28px 18px" }}>
-          <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 14, color: MUTED }}>
-            Sign in to manage this account.
-          </p>
-          <Link
-            href="/login?next=/account"
-            className="bm-sans bm-talk bm-focus"
-            style={{
-              display: "inline-block",
-              background: VIOLET,
-              color: "#FFFFFF",
-              borderRadius: 999,
-              padding: "11px 18px",
-              fontSize: 14,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Go to login
-          </Link>
-        </section>
+        <>
+          <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "28px 18px" }}>
+            <p className="bm-sans" style={{ margin: "0 0 16px", fontSize: 14, color: MUTED }}>
+              Sign in to manage this account.
+            </p>
+            <Link
+              href="/login?next=/account"
+              className="bm-sans bm-talk bm-focus"
+              style={{
+                display: "inline-block",
+                background: VIOLET,
+                color: "#FFFFFF",
+                borderRadius: 999,
+                padding: "11px 18px",
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Go to login
+            </Link>
+          </section>
+          <div style={{ marginTop: 16 }}>
+            <VerifyOffer signedIn={false} nextPath="/account" />
+          </div>
+        </>
       ) : (
         <>
           <section className="bm-card" style={{ background: "#FFFFFF", border: "1px solid " + LINE, borderRadius: 14, padding: "22px 18px", marginBottom: 16 }}>
