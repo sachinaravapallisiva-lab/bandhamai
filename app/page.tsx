@@ -106,9 +106,11 @@ export default function Home() {
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
   const searchRef = useRef<((text?: string) => void) | null>(null);
+  const searchGenRef = useRef(0);
 
   function runSearch(text?: string) {
     const q = typeof text === "string" ? text : query;
+    const gen = ++searchGenRef.current;
     setSearching(true);
     setNote("");
 
@@ -123,6 +125,7 @@ export default function Home() {
         });
       })
       .then(function (result) {
+        if (gen !== searchGenRef.current) return;
         setSearching(false);
         setLoadedOnce(true);
         if (!result.ok || result.data.error) {
@@ -149,6 +152,7 @@ export default function Home() {
         setNote("");
       })
       .catch(function () {
+        if (gen !== searchGenRef.current) return;
         setSearching(false);
         setLoadedOnce(true);
         setProfiles([]);
@@ -173,6 +177,7 @@ export default function Home() {
       runSearch("");
       return;
     }
+    searchGenRef.current += 1;
     setAskPrompt(q);
     setAskAnswers([]);
     setNote("");
@@ -730,7 +735,6 @@ export default function Home() {
                 </button>
                 <button
                   onClick={function () { submitPrompt(); }}
-                  disabled={searching}
                   className="bm-sans bm-ghost bm-focus"
                   style={{
                     background: "transparent",
@@ -740,8 +744,8 @@ export default function Home() {
                     padding: "8px 14px",
                     fontSize: 12.5,
                     fontWeight: 600,
-                    cursor: searching ? "default" : "pointer",
-                    opacity: searching ? 0.55 : 1,
+                    cursor: "pointer",
+                    opacity: 1,
                   }}
                 >
                   Search

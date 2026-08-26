@@ -202,6 +202,7 @@ const askLib = read("lib/browse-ask.ts");
 
 assert(page.includes("remainingBrowseQuestions"), "Browse asks remaining questions after a prompt");
 assert(page.includes("submitPrompt"), "typed/spoken prompt goes through ask first");
+assert(!/onClick=\{function \(\) \{ submitPrompt\(\); \}\}[\s\S]{0,80}disabled=\{searching\}/.test(page), "Search stays tappable while the default shortlist is still looking");
 assert(page.includes("foldBrowseAnswers"), "answers fold into search q");
 assert(page.includes("browseAskReadyForShortlist"), "shortlist waits until the four are resolved or skipped");
 assert(page.includes("showBrowseShortlist"), "shortlist render is gated");
