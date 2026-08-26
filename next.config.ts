@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
         destination: "/login?mode=signup",
         permanent: false,
       },
+      {
+        source: "/metrics",
+        destination: "/admin/metrics",
+        permanent: false,
+      },
     ];
   },
 };
