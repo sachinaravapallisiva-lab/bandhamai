@@ -13,6 +13,9 @@ import {
   VOICE_RESOLVED_STATUS,
   VOICE_SPOKEN_INCLUDED_WHEN_ASKED,
   VOICE_SPOKEN_INTRO,
+  VOICE_SPOKEN_HANDOFF,
+  VOICE_SPOKEN_HANDOFF_UNAVAILABLE,
+  VOICE_SPOKEN_HANDOFF_WHO,
   VOICE_SPOKEN_NOT_FOUND,
   VOICE_SPOKEN_PRICES,
   VOICE_SPOKEN_REFUND,
@@ -64,7 +67,7 @@ assert(VOICE_SUPPORT_SECRET_ENV === "BANDHAM_VOICE_SUPPORT_SECRET", "secret env 
 assert(VOICE_SUPPORT_SECRET_HEADER === "x-bandham-voice-support-secret", "secret header");
 assert(VOICE_TICKET_SOURCE === "voice", "voice source");
 assert(VOICE_RESOLVED_STATUS === "closed", "resolve maps to existing closed status");
-assert(VOICE_SUPPORT_TOOLS.join(" ") === "identify_member create_ticket get_ticket resolve_ticket", "tool names");
+assert(VOICE_SUPPORT_TOOLS.join(" ") === "identify_member create_ticket get_ticket resolve_ticket transfer_to_human", "tool names");
 assert(isVoiceSupportTool("identify_member"), "identify tool");
 assert(!isVoiceSupportTool("propose_support_ticket"), "guru ticket tool is not a voice tool");
 assert(SUPPORT_CATEGORIES.join(" ") === "bug billing account other", "reuse in-app categories");
@@ -84,6 +87,8 @@ assert(readVoiceTool({ tool: "get_ticket" }) === "get_ticket", "tool from body")
 assert(readVoiceTool({}, "create_ticket") === "create_ticket", "tool from query");
 assert(readVoiceTool({ name: "identify_member" }) === "identify_member", "tool from name");
 assert(readVoiceTool({ tool: "search_profiles" }) === "", "unknown tool rejected");
+assert(readVoiceTool({ tool: "transfer_to_human" }) === "transfer_to_human", "handoff tool");
+assert(readVoiceTool({ name: "transferCall" }) === "transfer_to_human", "Vapi transferCall alias");
 assert(callerMissing(readVoiceCaller({})) === true, "caller needs email or phone");
 assert(callerMissing(readVoiceCaller({ email: "a@b.co" })) === false, "email is enough");
 
@@ -127,6 +132,9 @@ const spoken = [
   VOICE_SPOKEN_SAFETY,
   VOICE_SPOKEN_REFUND,
   VOICE_SPOKEN_NOT_FOUND,
+  VOICE_SPOKEN_HANDOFF,
+  VOICE_SPOKEN_HANDOFF_UNAVAILABLE,
+  VOICE_SPOKEN_HANDOFF_WHO,
   spokenTicketCreated("abc"),
   spokenTicketResolved("abc"),
   spokenTicketStatus({ ...ownTicket, status: "closed" }),
@@ -196,6 +204,8 @@ assert(route.includes("identify_member"), "identify tool");
 assert(route.includes("create_ticket"), "create tool");
 assert(route.includes("get_ticket"), "get tool");
 assert(route.includes("resolve_ticket"), "resolve tool");
+assert(route.includes("transfer_to_human"), "handoff tool");
+assert(route.includes("supportHandoffPayload"), "handoff uses shared payload");
 assert(!route.includes("getRequestUser"), "does not use member JWT");
 assert(!route.includes("hasBearerToken"), "does not reuse the signed-in tickets gate");
 assert(!route.includes("handleGuruChat") && !route.includes("GURU_SYSTEM_PROMPT"), "not the guru");
@@ -251,6 +261,10 @@ assert(spokenLines(prompt).length >= 1 || sayBlocks.includes("Bandham Support"),
 const env = read(".env.example");
 assert(env.includes("BANDHAM_VOICE_SUPPORT_SECRET="), "env example stubs the secret");
 assert(!/BANDHAM_VOICE_SUPPORT_SECRET=\S+/.test(env), "do not invent a live secret");
+assert(env.includes("BANDHAM_SUPPORT_HANDOFF_E164="), "env example stubs the handoff dest");
+assert(!/BANDHAM_SUPPORT_HANDOFF_E164=\S+/.test(env), "do not put the live handoff dest on the assignment line");
+assert(env.includes("BANDHAM_SUBSCRIBE_OUTBOUND_E164="), "env example stubs the subscribe outbound block");
+assert(!/BANDHAM_SUBSCRIBE_OUTBOUND_E164=\S+/.test(env), "do not put a live subscribe outbound on the assignment line");
 
 const readme = read("README.md");
 assert(readme.toLowerCase().includes("voice") || readme.includes("/api/voice/support"), "README notes phone voice support");
