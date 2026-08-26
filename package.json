@@ -31,6 +31,7 @@
     "check:metrics": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-metrics.mjs",
     "check:admin": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-admin.mjs",
     "check:login-signup": "node --experimental-strip-types scripts/check-login-signup.mjs",
+    "check:terms-agree": "node --experimental-strip-types scripts/check-terms-agree.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },

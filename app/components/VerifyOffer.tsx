@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authJsonHeaders } from "../../lib/client-auth";
 import { loginHref } from "../../lib/next-path";
+import { canStartVerifyai, TERMS_NEED_VERIFYAI } from "../../lib/terms-agree";
 import { safeVerifyaiReturnPath, VERIFYAI_COPY, VERIFYAI_PRICE_LABEL } from "../../lib/verifyai";
 import { INK, LINE, MUTED, VIOLET, WASH } from "../../lib/theme";
+import TermsAgreeField from "./TermsAgreeField";
 
 type State = {
   paid: boolean;
@@ -30,6 +32,7 @@ export default function VerifyOffer({
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   function load() {
     setNeedsAuth(false);
@@ -101,7 +104,7 @@ export default function VerifyOffer({
               start_url: data.start_url || null,
             });
             setNote(data.message || data.error || VERIFYAI_COPY.paid);
-            if (data.start_url && !data.verified) {
+            if (data.start_url && !data.verified && canStartVerifyai(agreedTerms)) {
               window.location.assign(data.start_url);
               return;
             }
@@ -166,6 +169,10 @@ export default function VerifyOffer({
   }
 
   function startFlow() {
+    if (!canStartVerifyai(agreedTerms)) {
+      setNote(TERMS_NEED_VERIFYAI);
+      return;
+    }
     setBusy(true);
     authJsonHeaders()
       .then(function (headers) {
@@ -173,7 +180,7 @@ export default function VerifyOffer({
           setNeedsAuth(true);
           return null;
         }
-        return fetch("/api/verifyai/start", { headers: headers });
+        return fetch("/api/verifyai/start?agreed=1", { headers: headers });
       })
       .then(function (res) {
         if (!res) {
@@ -326,9 +333,18 @@ export default function VerifyOffer({
           {VERIFYAI_COPY.startMissing}
         </p>
       ) : paid ? (
+        <div>
+        <div style={{ marginBottom: 14 }}>
+          <TermsAgreeField
+            id="verifyai-agree-terms"
+            checked={agreedTerms}
+            onChange={setAgreedTerms}
+            disabled={busy}
+          />
+        </div>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !agreedTerms}
           onClick={startFlow}
           className="bm-sans bm-talk bm-focus"
           style={{
@@ -339,11 +355,12 @@ export default function VerifyOffer({
             padding: "11px 16px",
             fontSize: 13.5,
             fontWeight: 600,
-            cursor: busy ? "default" : "pointer",
+            cursor: busy || !agreedTerms ? "default" : "pointer",
           }}
         >
           {busy ? "One moment…" : "Continue to VerifyAI"}
         </button>
+        </div>
       ) : (
         <button
           type="button"

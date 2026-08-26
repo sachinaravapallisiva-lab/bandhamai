@@ -19,6 +19,7 @@ import {
   verifyaiPhotoRequiredBody,
 } from "../../../../lib/verifyai-checkout";
 import { appOrigin } from "../../../../lib/stripe";
+import { canStartVerifyai, TERMS_NEED_VERIFYAI } from "../../../../lib/terms-agree";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,11 @@ export async function GET(request: Request) {
     if (!supabase) return missingConfigResponse();
     const { user, error: authError } = await getRequestUser(request, supabase);
     if (!user) return unauthorizedResponse(authError || "Sign in to continue.");
+
+    const agreed = new URL(request.url).searchParams.get("agreed");
+    if (!canStartVerifyai(agreed)) {
+      return NextResponse.json({ error: TERMS_NEED_VERIFYAI, url: null }, { status: 400 });
+    }
 
     const state = await loadVerifyaiState(supabase, user.id);
     if (state.verified) {

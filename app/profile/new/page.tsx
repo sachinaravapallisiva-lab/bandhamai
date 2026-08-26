@@ -22,12 +22,14 @@ import {
 import { parseInstagramInput } from "../../../lib/instagram";
 import { emptyPhotoUrls, PROFILE_PHOTO_REQUIRED_ERROR, type ProfilePhotoUrls } from "../../../lib/profile-photos";
 import { seedBrowsePrefsFromRegistration } from "../../../lib/browse-prefs";
+import { canWriteProfile, TERMS_NEED_PROFILE } from "../../../lib/terms-agree";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../../lib/theme";
 import AppChrome, { ChromeLink } from "../../components/AppChrome";
 import BiodataShareField from "../../components/BiodataShareField";
 import DownloadBiodata from "../../components/DownloadBiodata";
 import InstagramField from "../../components/InstagramField";
 import PhotoUpload from "../../components/PhotoUpload";
+import TermsAgreeField from "../../components/TermsAgreeField";
 import VerifyOffer from "../../components/VerifyOffer";
 
 type Mine = {
@@ -60,6 +62,7 @@ export default function NewProfilePage() {
   const [biodataShare, setBiodataShare] = useState(false);
   const [savingShare, setSavingShare] = useState(false);
   const [shareNote, setShareNote] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   useEffect(function () {
     let cancelled = false;
@@ -141,6 +144,10 @@ export default function NewProfilePage() {
   }
 
   function saveInstagram() {
+    if (!canWriteProfile(agreedTerms)) {
+      setSocialNote(TERMS_NEED_PROFILE);
+      return;
+    }
     const parsed = parseInstagramInput(form.instagram);
     if (parsed.error) {
       setSocialNote(parsed.error);
@@ -160,7 +167,7 @@ export default function NewProfilePage() {
         return fetch("/api/profiles", {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ instagram: form.instagram }),
+          body: JSON.stringify({ instagram: form.instagram, agreed: true }),
         });
       })
       .then(function (res) {
@@ -193,6 +200,10 @@ export default function NewProfilePage() {
   }
 
   function saveBiodataShare() {
+    if (!canWriteProfile(agreedTerms)) {
+      setShareNote(TERMS_NEED_PROFILE);
+      return;
+    }
     setSavingShare(true);
     setShareNote("");
     authJsonHeaders()
@@ -206,7 +217,7 @@ export default function NewProfilePage() {
         return fetch("/api/profiles", {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ biodata_share: biodataShare }),
+          body: JSON.stringify({ biodata_share: biodataShare, agreed: true }),
         });
       })
       .then(function (res) {
@@ -256,6 +267,10 @@ export default function NewProfilePage() {
       setError(instagram.error);
       return;
     }
+    if (!canWriteProfile(agreedTerms)) {
+      setError(TERMS_NEED_PROFILE);
+      return;
+    }
 
     setSaving(true);
     setError("");
@@ -275,6 +290,7 @@ export default function NewProfilePage() {
             photo_url: photos.photo_url || undefined,
             photo_blurred_url: photos.photo_blurred_url || undefined,
             biodata_share: biodataShare,
+            agreed: true,
           }),
         });
       })
@@ -374,6 +390,14 @@ export default function NewProfilePage() {
             />
           </div>
           <div style={{ textAlign: "left", margin: "0 0 22px" }}>
+            <TermsAgreeField
+              id="profile-save-agree-terms"
+              checked={agreedTerms}
+              onChange={setAgreedTerms}
+              disabled={savingSocial || savingShare}
+            />
+          </div>
+          <div style={{ textAlign: "left", margin: "0 0 22px" }}>
             <InstagramField
               value={form.instagram}
               onChange={function (value) {
@@ -383,7 +407,7 @@ export default function NewProfilePage() {
             />
             <button
               type="button"
-              disabled={savingSocial}
+              disabled={savingSocial || !agreedTerms}
               onClick={saveInstagram}
               className="bm-sans bm-talk bm-focus"
               style={{
@@ -395,8 +419,8 @@ export default function NewProfilePage() {
                 padding: "11px 18px",
                 fontSize: 13.5,
                 fontWeight: 600,
-                cursor: savingSocial ? "default" : "pointer",
-                opacity: savingSocial ? 0.7 : 1,
+                cursor: savingSocial || !agreedTerms ? "default" : "pointer",
+                opacity: savingSocial || !agreedTerms ? 0.7 : 1,
               }}
             >
               {savingSocial ? "Saving…" : "Save Instagram"}
@@ -422,7 +446,7 @@ export default function NewProfilePage() {
             />
             <button
               type="button"
-              disabled={savingShare}
+              disabled={savingShare || !agreedTerms}
               onClick={saveBiodataShare}
               className="bm-sans bm-talk bm-focus"
               style={{
@@ -434,8 +458,8 @@ export default function NewProfilePage() {
                 padding: "11px 18px",
                 fontSize: 13.5,
                 fontWeight: 600,
-                cursor: savingShare ? "default" : "pointer",
-                opacity: savingShare ? 0.7 : 1,
+                cursor: savingShare || !agreedTerms ? "default" : "pointer",
+                opacity: savingShare || !agreedTerms ? 0.7 : 1,
               }}
             >
               {savingShare ? BIODATA_SHARE_SAVING_LABEL : BIODATA_SHARE_SAVE_LABEL}
@@ -606,6 +630,12 @@ export default function NewProfilePage() {
                 onChange={setBiodataShare}
                 disabled={saving}
               />
+              <TermsAgreeField
+                id="profile-create-agree-terms"
+                checked={agreedTerms}
+                onChange={setAgreedTerms}
+                disabled={saving}
+              />
             </div>
 
             <div style={{ minHeight: 20, margin: "16px 0 14px" }}>
@@ -622,7 +652,7 @@ export default function NewProfilePage() {
 
             <button
               type="submit"
-              disabled={saving || photoBusy || !photos.photo_url}
+              disabled={saving || photoBusy || !photos.photo_url || !agreedTerms}
               className="bm-sans bm-talk bm-focus"
               style={{
                 width: "100%",
@@ -633,8 +663,8 @@ export default function NewProfilePage() {
                 padding: "13px",
                 fontSize: 14.5,
                 fontWeight: 600,
-                cursor: saving || photoBusy || !photos.photo_url ? "default" : "pointer",
-                opacity: saving || photoBusy || !photos.photo_url ? 0.7 : 1,
+                cursor: saving || photoBusy || !photos.photo_url || !agreedTerms ? "default" : "pointer",
+                opacity: saving || photoBusy || !photos.photo_url || !agreedTerms ? 0.7 : 1,
               }}
             >
               {saving ? "Submitting…" : "Submit for review"}

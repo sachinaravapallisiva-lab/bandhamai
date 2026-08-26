@@ -18,6 +18,7 @@ import {
   rememberVerifyaiExternalId,
 } from "../../../../lib/verifyai-checkout";
 import { appOrigin, asStripeId, getStripe, stripeSecretKey } from "../../../../lib/stripe";
+import { canStartVerifyai } from "../../../../lib/terms-agree";
 
 export const runtime = "nodejs";
 
@@ -88,6 +89,18 @@ export async function POST(request: Request) {
         start_configured: state.startConfigured,
         error: VERIFYAI_COPY.photoRequired,
         message: VERIFYAI_COPY.photoRequired,
+      });
+    }
+
+    if (!canStartVerifyai(body.agreed)) {
+      return NextResponse.json({
+        paid: true,
+        verified: isVerifyaiVerified(state.status),
+        status: state.status,
+        hasPhoto: true,
+        start_url: null,
+        start_configured: state.startConfigured,
+        message: VERIFYAI_COPY.paid,
       });
     }
 

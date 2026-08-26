@@ -23,6 +23,7 @@ import {
 } from "../../../lib/biodata-share";
 import { INSTAGRAM_COLUMN, INSTAGRAM_SQL_HINT, parseInstagramInput } from "../../../lib/instagram";
 import { isOwnStoredPhotoUrl, PROFILE_PHOTO_REQUIRED_ERROR } from "../../../lib/profile-photos";
+import { canWriteProfile, TERMS_NEED_PROFILE } from "../../../lib/terms-agree";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -92,6 +93,10 @@ export async function POST(request: Request) {
       body = await request.json();
     } catch {
       return NextResponse.json({ error: "Send a JSON profile." }, { status: 400 });
+    }
+
+    if (!canWriteProfile(body.agreed)) {
+      return NextResponse.json({ error: TERMS_NEED_PROFILE }, { status: 400 });
     }
 
     const fields = readWriteFields(body);
@@ -220,6 +225,10 @@ export async function PATCH(request: Request) {
       body = await request.json();
     } catch {
       return NextResponse.json({ error: "Send a JSON profile." }, { status: 400 });
+    }
+
+    if (!canWriteProfile(body.agreed)) {
+      return NextResponse.json({ error: TERMS_NEED_PROFILE }, { status: 400 });
     }
 
     const hasInstagram = Object.prototype.hasOwnProperty.call(body, "instagram");
