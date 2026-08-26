@@ -531,7 +531,7 @@ Until the voice SQL is applied, identify still works; create / get / resolve ret
 | --- | --- |
 | `BANDHAM_VOICE_SUPPORT_SECRET` | Shared secret for the phone agent. Stub in `.env.example` only. Set the live value in Vercel. |
 | `BANDHAM_SUPPORT_HANDOFF_E164` | Server-only human handoff destination. Empty means stay on Support. Set the live E.164 in Vercel only. Never publish it on Contact, footer, Plans, or spoken prompt text. Transfer caller ID stays `+1 803 265 5233` (`+18032655233`). |
-| `BANDHAM_SUBSCRIBE_OUTBOUND_E164` | Optional server-only subscribe outbound block. Empty means no extra inbound block. Never a handoff destination or caller ID. |
+| `BANDHAM_SUBSCRIBE_OUTBOUND_E164` | Extra server-only subscribe outbound block. Empty means no extra number. The subscribe outbound line is always blocked as dest, inbound, and caller ID. |
 
 Do **not** patch the live Vapi Support assistant from a preview PR. After merge, Sai can point the existing Support `transferCall` / server URL at this route. Vapi `transfer-destination-request` and `transfer_to_human` both return a warm-transfer destination with `callerId` `+18032655233` and `fallbackPlan.endCallEnabled: false` so a no-answer stays on Support. Do not use the subscribe outbound number as dest or caller ID. Do not leave a voicemail from that outbound line. Live Vapi update waits for merge + Sai yes.
 

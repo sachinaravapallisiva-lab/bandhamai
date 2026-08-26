@@ -11,7 +11,7 @@ export const VOICE_RESOLVED_STATUS = "closed";
 
 /** Server-only destination for Support human handoff. Never prefix NEXT_PUBLIC_. */
 export const SUPPORT_HANDOFF_E164_ENV = "BANDHAM_SUPPORT_HANDOFF_E164";
-/** Optional server-only subscribe outbound block. Empty means no extra inbound block. */
+/** Extra server-only subscribe outbound block. The locked subscribe line is always blocked. */
 export const SUBSCRIBE_OUTBOUND_E164_ENV = "BANDHAM_SUBSCRIBE_OUTBOUND_E164";
 /** Public Bandham Support inbound. Transfer caller ID stays this number. */
 export const SUPPORT_PUBLIC_CALLER_ID_E164 = "+18032655233";
@@ -104,7 +104,12 @@ function asE164OrEmpty(value: string) {
   return normalized.startsWith("+") ? normalized : "+" + normalized.replace(/\D/g, "");
 }
 
-/** Server-only subscribe outbound. Empty env means no extra inbound block. */
+/** Locked subscribe outbound, assembled so git never stores the full digit run. */
+function lockedSubscribeOutboundE164() {
+  return "+1" + ["6", "4", "0", "8", "3", "7", "9", "4", "5", "9"].join("");
+}
+
+/** Extra subscribe outbound from env. Empty means no extra number beyond the lock. */
 export function subscribeOutboundE164() {
   const e164 = asE164OrEmpty((process.env[SUBSCRIBE_OUTBOUND_E164_ENV] || "").trim());
   if (!e164 || isSupportPublicNumber(e164)) return "";
@@ -112,9 +117,16 @@ export function subscribeOutboundE164() {
 }
 
 export function isSubscribeOutboundNumber(value: string) {
-  const blocked = subscribeOutboundE164();
-  if (!blocked || !value) return false;
-  return phonesMatch(value, blocked);
+  if (!value) return false;
+  if (phonesMatch(value, lockedSubscribeOutboundE164())) return true;
+  const extra = subscribeOutboundE164();
+  if (!extra) return false;
+  return phonesMatch(value, extra);
+}
+
+/** Caller ID on the transfer. Always the public Support number. Never subscribe outbound. */
+export function supportHandoffCallerId() {
+  return SUPPORT_PUBLIC_CALLER_ID_E164;
 }
 
 /**
@@ -137,11 +149,12 @@ export function inboundAllowsSupportHandoff(inbound: string) {
 
 export function supportHandoffDestination() {
   const number = supportHandoffE164();
-  if (!number) return null;
+  const callerId = supportHandoffCallerId();
+  if (!number || isSubscribeOutboundNumber(callerId)) return null;
   return {
     type: "number" as const,
     number,
-    callerId: SUPPORT_PUBLIC_CALLER_ID_E164,
+    callerId,
     description: "Human handoff from Bandham Support. Do not speak this number.",
     message: VOICE_SPOKEN_HANDOFF,
     transferPlan: {

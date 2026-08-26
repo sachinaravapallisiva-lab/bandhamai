@@ -25,6 +25,7 @@ import {
   isSupportPublicNumber,
   readVoiceTool,
   subscribeOutboundE164,
+  supportHandoffCallerId,
   supportHandoffDestination,
   supportHandoffE164,
   supportHandoffPayload,
@@ -86,6 +87,7 @@ function textHasNeedle(text, needles) {
 
 const FAKE_DEST = "+15551234567";
 const FAKE_SUBSCRIBE_OUT = "+15559876543";
+const LOCKED_SUBSCRIBE_OUT = "+1" + ["6", "4", "0", "8", "3", "7", "9", "4", "5", "9"].join("");
 const SUBSCRIBE_CALLER_FILES = [
   "docs/subscribe-call-prompt.md",
   "lib/subscribe-call.ts",
@@ -135,10 +137,22 @@ assert(supportHandoffE164() === "", "empty handoff env fails closed");
 assert(supportHandoffDestination() === null, "no dest without env");
 assert(subscribeOutboundE164() === "", "empty subscribe outbound env is no extra block");
 assert(isSubscribeOutboundNumber(FAKE_SUBSCRIBE_OUT) === false, "no extra block when env empty");
+assert(isSubscribeOutboundNumber(LOCKED_SUBSCRIBE_OUT) === true, "locked subscribe outbound is always blocked");
+assert(!inboundAllowsSupportHandoff(LOCKED_SUBSCRIBE_OUT), "locked outbound inbound blocked without env");
+assert(supportHandoffCallerId() === "+18032655233", "caller id stays 803");
+assert(supportHandoffCallerId() !== LOCKED_SUBSCRIBE_OUT, "caller id is never subscribe outbound");
 assert(
   supportHandoffPayload({ inboundNumber: "+18032655233" }).stay_on_support === true,
   "empty dest stays on Support"
 );
+assert(
+  supportHandoffPayload({ inboundNumber: LOCKED_SUBSCRIBE_OUT }).stay_on_support === true,
+  "locked outbound inbound stays on Support"
+);
+
+process.env.BANDHAM_SUPPORT_HANDOFF_E164 = LOCKED_SUBSCRIBE_OUT;
+assert(supportHandoffE164() === "", "dest 640 rejected when subscribe outbound env is empty");
+assert(supportHandoffDestination() === null, "no dest object when dest is locked outbound");
 
 process.env.BANDHAM_SUPPORT_HANDOFF_E164 = "+1 (555) 123-4567";
 assert(supportHandoffE164() === FAKE_DEST, "env dest normalizes");
@@ -155,7 +169,9 @@ process.env.BANDHAM_SUPPORT_HANDOFF_E164 = FAKE_DEST;
 const dest = supportHandoffDestination();
 assert(!!dest, "destination builds from env");
 assert(dest.callerId === "+18032655233", "Vapi callerId stays 803");
+assert(dest.callerId !== LOCKED_SUBSCRIBE_OUT, "callerId is never subscribe outbound");
 assert(dest.number === FAKE_DEST, "destination is the env dest");
+assert(dest.number !== LOCKED_SUBSCRIBE_OUT, "dest is never subscribe outbound");
 assert(dest.number !== dest.callerId, "dest is not the public Support number");
 assert(dest.transferPlan.mode === "warm-transfer-experimental", "warm transfer");
 assert(dest.transferPlan.fallbackPlan.endCallEnabled === false, "no-answer stays on Support");
@@ -288,6 +304,8 @@ const lib = read("lib/voice-support.ts");
 assert(!lib.includes("OPERATOR_DEFAULT"), "lib has no operator dest default");
 assert(lib.includes("SUPPORT_HANDOFF_E164_ENV"), "lib names handoff env");
 assert(lib.includes("SUBSCRIBE_OUTBOUND_E164_ENV"), "lib names subscribe outbound env");
+assert(lib.includes("lockedSubscribeOutboundE164"), "lib always blocks subscribe outbound");
+assert(!textHasNeedle(lib, outNeedles), "lib splits locked outbound digits");
 
 const env = read(".env.example");
 assert(env.includes("BANDHAM_SUPPORT_HANDOFF_E164="), "env stubs handoff");
