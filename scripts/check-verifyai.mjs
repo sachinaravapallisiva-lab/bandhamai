@@ -223,18 +223,22 @@ assert(deviceLib.includes('VERIFYAI_DEVICE_USER_VERIFICATION = "required"'), "de
 assert(deviceLib.includes("authenticatorUserVerified"), "device lib reads the UV flag");
 
 assert(VERIFYAI_COPY.badgeLabel === "Verified", "visible badge word is Verified");
-assert(VERIFYAI_COPY.badgePhrase === "Verified with VerifyAI.", "tap / title / name lock");
+assert(VERIFYAI_COPY.badgePhrase === "Profile has been verified biometrically.", "tap / title / name lock");
+assert(!/[-–—]/.test(VERIFYAI_COPY.badgePhrase), "tap line has no hyphen or dash");
+assert(!/Verified with VerifyAI/.test(VERIFYAI_COPY.badgePhrase), "tap line is not Verified with VerifyAI");
 
 const badge = read("app/components/VerifyBadge.tsx");
 assert(badge.includes("if (!verified) return null"), "badge still only renders when verified");
 assert(badge.includes("<button"), "badge is tappable, not icon-only");
 assert(badge.includes("VERIFYAI_COPY.badgeLabel") || badge.includes(">Verified<"), "visible Verified label");
 assert(
-  badge.includes("VERIFYAI_COPY.badgePhrase") || badge.includes("Verified with VerifyAI."),
-  "title and accessible name use Verified with VerifyAI."
+  badge.includes("VERIFYAI_COPY.badgePhrase") || badge.includes("Profile has been verified biometrically."),
+  "title and accessible name use the biometric tap line"
 );
-assert(badge.includes("title={phrase}") || badge.includes('title="Verified with VerifyAI."'), "title lock");
-assert(badge.includes("aria-label={phrase}") || badge.includes('aria-label="Verified with VerifyAI."'), "aria-label lock");
+assert(badge.includes("title={phrase}") || badge.includes('title="Profile has been verified biometrically."'), "title lock");
+assert(badge.includes("aria-label={phrase}") || badge.includes('aria-label="Profile has been verified biometrically."'), "aria-label lock");
+assert(badge.includes('width="13"') || badge.includes("fontSize: 10"), "badge stays small");
+assert(!badge.includes('width="18"'), "badge is not the larger 18px chip");
 assert(badge.includes("VIOLET"), "badge uses theme VIOLET");
 assert(badge.includes("VIOLET_DEEP"), "badge uses theme VIOLET_DEEP");
 assert(!/\bGOLD\b/.test(badge), "badge is not gold");

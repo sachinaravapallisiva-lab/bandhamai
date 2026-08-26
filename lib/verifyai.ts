@@ -31,7 +31,7 @@ export const VERIFYAI_COPY = {
   deviceUnsupported: "This device cannot run the VerifyAI check.",
   underage: "VerifyAI is for people 18 or older.",
   badgeLabel: "Verified",
-  badgePhrase: "Verified with VerifyAI.",
+  badgePhrase: "Profile has been verified biometrically.",
 } as const;
 
 export const VERIFYAI_STATUSES = ["unverified", "pending", "verified", "failed", "revoked"] as const;

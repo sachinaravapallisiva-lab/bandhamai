@@ -57,7 +57,7 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 5,
+          gap: 3,
           margin: 0,
           padding: 0,
           border: "none",
@@ -67,7 +67,7 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
           verticalAlign: "middle",
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+        <svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true">
           <path
             d="M10 1.6 16.4 4.2v5.1c0 4.1-2.8 7.6-6.4 8.7-3.6-1.1-6.4-4.6-6.4-8.7V4.2L10 1.6Z"
             fill={VIOLET}
@@ -83,9 +83,10 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
         </svg>
         <span
           style={{
-            fontSize: 11,
-            letterSpacing: ".02em",
+            fontSize: 10,
+            letterSpacing: ".01em",
             fontWeight: 600,
+            lineHeight: 1,
             color: VIOLET_DEEP,
           }}
         >
@@ -103,14 +104,14 @@ export default function VerifyBadge({ verified }: { verified?: boolean }) {
             top: "calc(100% + 6px)",
             zIndex: 4,
             whiteSpace: "nowrap",
-            padding: "6px 10px",
-            borderRadius: 10,
+            padding: "4px 8px",
+            borderRadius: 6,
             border: "1px solid " + LINE,
             background: CREAM,
             color: VIOLET_DEEP,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 500,
-            boxShadow: "0 8px 20px rgba(45,27,54,.10)",
+            boxShadow: "none",
           }}
         >
           {phrase}
