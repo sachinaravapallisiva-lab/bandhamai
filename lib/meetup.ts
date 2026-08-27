@@ -222,6 +222,7 @@ export function emptyMeetupProfile(partial: Partial<BrowseProfile> & { id: strin
     online: false,
     instagram: "",
     biodataShare: false,
+    membership: "regular",
     ...partial,
   };
 }

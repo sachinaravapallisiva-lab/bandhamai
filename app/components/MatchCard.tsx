@@ -14,6 +14,7 @@ import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
+import MembershipChip from "./MembershipChip";
 import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
 import { ProfilePhotoSoon } from "./ProfilePhoto";
@@ -135,6 +136,7 @@ export default function MatchCard({
           >
             {profile.name || "Profile"}
           </h2>
+          <MembershipChip membership={profile.membership} />
           <VerifyBadge verified={profile.verified} />
           <PresenceMark online={profile.online} compact />
         </div>
