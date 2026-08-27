@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import {
   identifyPersonProperties,
   isPostHogEnabled,
@@ -56,8 +57,9 @@ assert(envExample.includes("NEXT_PUBLIC_POSTHOG_KEY="), "key placeholder");
 assert(envExample.includes("NEXT_PUBLIC_POSTHOG_HOST="), "host placeholder");
 assert(!/phc_[A-Za-z0-9]+/.test(envExample), "do not commit a live PostHog key");
 assert(envExample.includes("Vercel Production"), "Sai pastes Production env leftover");
-assert(existsSync(new URL("../.env", import.meta.url)) === false, "do not commit a live .env");
-assert(existsSync(new URL("../.env.local", import.meta.url)) === false, "do not commit .env.local");
+const trackedEnv = execSync("git ls-files -- .env .env.local .env.production", { encoding: "utf8" }).trim();
+assert(!trackedEnv, "do not commit a live .env");
+assert(read(".gitignore").includes(".env*"), "env files stay gitignored");
 
 const instrumentation = read("instrumentation-client.ts");
 assert(instrumentation.includes("posthog.init"), "client SDK init");
