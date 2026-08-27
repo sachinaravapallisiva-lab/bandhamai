@@ -9,16 +9,18 @@ export const PLANS_OPENED = "plans_opened";
 export const SUBSCRIBE_CHECKOUT_STARTED = "subscribe_checkout_started";
 export const SUBSCRIBE_CHECKOUT_COMPLETED = "subscribe_checkout_completed";
 
-export function posthogKey(env: { NEXT_PUBLIC_POSTHOG_KEY?: string } = process.env) {
-  return (env.NEXT_PUBLIC_POSTHOG_KEY || "").trim();
+type EnvBag = Record<string, string | undefined>;
+
+export function posthogKey(env: EnvBag = process.env) {
+  return (env[POSTHOG_KEY_ENV] || "").trim();
 }
 
-export function isPostHogEnabled(env: { NEXT_PUBLIC_POSTHOG_KEY?: string } = process.env) {
+export function isPostHogEnabled(env: EnvBag = process.env) {
   return posthogKey(env).length > 0;
 }
 
-export function posthogHost(env: { NEXT_PUBLIC_POSTHOG_HOST?: string } = process.env) {
-  return (env.NEXT_PUBLIC_POSTHOG_HOST || "").trim() || POSTHOG_DEFAULT_HOST;
+export function posthogHost(env: EnvBag = process.env) {
+  return (env[POSTHOG_HOST_ENV] || "").trim() || POSTHOG_DEFAULT_HOST;
 }
 
 /** Person properties allowed on identify. Email only. */
