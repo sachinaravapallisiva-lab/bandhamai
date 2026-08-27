@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PIN_CHECKOUT_PATH } from "../../lib/browse-pin";
 import { loginHref } from "../../lib/next-path";
 import {
@@ -28,6 +28,8 @@ import {
 } from "../../lib/plans";
 import { BILLING_COPY } from "../../lib/billing";
 import { startCheckout, startVerifyaiCheckout } from "../../lib/client-billing";
+import { PLANS_OPENED } from "../../lib/posthog";
+import { capturePostHogEvent } from "../../lib/posthog-browser";
 import { supabase } from "../../lib/supabase";
 import { VERIFYAI_COPY } from "../../lib/verifyai";
 import { CREAM, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
@@ -55,6 +57,10 @@ const GHOST_BUTTON = {
 export default function PlansPanel() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+
+  useEffect(function () {
+    capturePostHogEvent(PLANS_OPENED);
+  }, []);
 
   async function requireSession() {
     const session = await supabase.auth.getSession();
