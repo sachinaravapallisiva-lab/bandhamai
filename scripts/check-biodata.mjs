@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { inflateSync } from "node:zlib";
 import {
   BIODATA_API_PATH,
   BIODATA_BASE_COLUMNS,
@@ -8,9 +9,14 @@ import {
   BIODATA_OPTIONAL_COLUMNS,
   BIODATA_PREPARING_LABEL,
   BIODATA_PRODUCT,
+  BIODATA_SECTION_ABOUT,
+  BIODATA_SECTION_DETAILS,
+  BIODATA_SECTION_LOOKING,
   BIODATA_SHARE_TITLE,
   BIODATA_SIGNED_IN_ERROR,
   BIODATA_TAGLINE,
+  BIODATA_VERIFIED_LABEL,
+  BIODATA_VERIFYAI_MARK,
   ageYearsFromDob,
   biodataContentDisposition,
   biodataFilename,
@@ -38,7 +44,17 @@ import {
   readBiodataTargetId,
 } from "../lib/biodata-share.ts";
 import { LIVE_PROFILE_STATUS } from "../lib/profile-search.ts";
+import { GOLD, VIOLET } from "../lib/theme.ts";
 import { isVerifyaiVerified } from "../lib/verifyai.ts";
+
+function hexPdfRgb(hex) {
+  const raw = hex.replace("#", "");
+  return [
+    parseInt(raw.slice(0, 2), 16) / 255,
+    parseInt(raw.slice(2, 4), 16) / 255,
+    parseInt(raw.slice(4, 6), 16) / 255,
+  ].join(" ");
+}
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -63,6 +79,11 @@ const copy = [
   BIODATA_PRODUCT,
   BIODATA_TAGLINE,
   BIODATA_SHARE_TITLE,
+  BIODATA_SECTION_DETAILS,
+  BIODATA_SECTION_ABOUT,
+  BIODATA_SECTION_LOOKING,
+  BIODATA_VERIFIED_LABEL,
+  BIODATA_VERIFYAI_MARK,
   BIODATA_SHARE_LABEL,
   BIODATA_SHARE_HINT,
   BIODATA_SHARE_SAVE_LABEL,
@@ -79,6 +100,11 @@ assertEq(BIODATA_PRODUCT, "Bandham AI", "product lock");
 assertEq(BIODATA_TAGLINE, "Find your vibe match?", "tagline lock");
 assertEq(BIODATA_DOWNLOAD_LABEL, "Download biodata", "button label");
 assertEq(BIODATA_API_PATH, "/api/profiles/biodata", "api path");
+assertEq(BIODATA_SECTION_DETAILS, "DETAILS", "details section");
+assertEq(BIODATA_SECTION_ABOUT, "ABOUT", "about section");
+assertEq(BIODATA_SECTION_LOOKING, "LOOKING FOR", "looking for section");
+assertEq(BIODATA_VERIFIED_LABEL, "Verified", "pdf verified word");
+assertEq(BIODATA_VERIFYAI_MARK, "VerifyAI", "pdf VerifyAI mark");
 
 assertEq(displayGender("F"), "Female", "F maps to Female");
 assertEq(displayGender("M"), "Male", "M maps to Male");
@@ -176,8 +202,77 @@ const header = Buffer.from(pdfBytes.subarray(0, 4)).toString("latin1");
 assertEq(header, "%PDF", "pdf-lib writes a PDF");
 assert(pdfBytes.length > 400, "pdf is not empty");
 
+function inflatePdfStreams(bytes) {
+  const raw = Buffer.from(bytes);
+  const chunks = [];
+  let cursor = 0;
+  while (true) {
+    const start = raw.indexOf(Buffer.from("stream"), cursor);
+    if (start < 0) break;
+    const dataStart = start + 6 + (raw[start + 6] === 13 ? 2 : 1);
+    const end = raw.indexOf(Buffer.from("endstream"), dataStart);
+    if (end < 0) break;
+    const slice = raw.subarray(dataStart, end);
+    try {
+      chunks.push(inflateSync(slice).toString("latin1"));
+    } catch {
+      chunks.push(slice.toString("latin1"));
+    }
+    cursor = end + 9;
+  }
+  return chunks.join("\n");
+}
+
+function decodePdfText(bytes) {
+  const stream = inflatePdfStreams(bytes);
+  const parts = [];
+  const hex = /<([0-9A-Fa-f]+)>/g;
+  let match;
+  while ((match = hex.exec(stream))) {
+    parts.push(Buffer.from(match[1], "hex").toString("latin1"));
+  }
+  const paren = /\(([^\\)]*)\)/g;
+  while ((match = paren.exec(stream))) {
+    parts.push(match[1]);
+  }
+  return { stream, text: parts.join("\n") };
+}
+
+const decoded = decodePdfText(pdfBytes);
+assert(decoded.text.includes(BIODATA_PRODUCT), "pdf prints Bandham AI");
+assert(decoded.text.includes(BIODATA_TAGLINE), "pdf prints the tagline");
+assert(decoded.text.includes(BIODATA_SECTION_DETAILS), "pdf prints DETAILS");
+assert(decoded.text.includes(BIODATA_SECTION_ABOUT), "pdf prints ABOUT");
+assert(decoded.text.includes(BIODATA_SECTION_LOOKING), "pdf prints LOOKING FOR");
+assert(decoded.text.includes(BIODATA_VERIFIED_LABEL), "pdf prints Verified");
+assert(decoded.text.includes(BIODATA_VERIFYAI_MARK), "pdf prints VerifyAI");
+assert(decoded.text.includes("Priya Reddy"), "pdf prints the name");
+assert(!/Bandhan\b/.test(decoded.text), "pdf product name is Bandham");
+assert(decoded.stream.includes(hexPdfRgb(VIOLET)), "pdf paints theme VIOLET");
+assert(!decoded.stream.includes(hexPdfRgb(GOLD)), "pdf does not paint GOLD");
+
 const sparsePdf = await buildBiodataPdf(empty);
 assertEq(Buffer.from(sparsePdf.subarray(0, 4)).toString("latin1"), "%PDF", "sparse profile still makes a PDF");
+assert(sparsePdf.length > 400, "empty photo profile still makes a PDF");
+const sparseDecoded = decodePdfText(sparsePdf);
+assert(sparseDecoded.text.includes(BIODATA_PRODUCT), "sparse pdf stays branded");
+assert(!sparseDecoded.text.includes(BIODATA_SECTION_DETAILS), "empty fields omit DETAILS");
+assert(!sparseDecoded.text.includes(BIODATA_VERIFIED_LABEL), "unverified pdf has no Verified mark");
+
+const biodataSrc = read("lib/biodata.ts");
+assert(biodataSrc.includes("COLOR_VIOLET"), "pdf wires theme VIOLET");
+assert(biodataSrc.includes("VIOLET_DEEP"), "pdf wires VIOLET_DEEP");
+assert(biodataSrc.includes("function drawVerifyShield"), "VerifyAI shield is drawn");
+assert(
+  /function drawVerifyShield[\s\S]*color:\s*COLOR_VIOLET/.test(biodataSrc),
+  "VerifyAI shield fill is violet"
+);
+assert(!/\bGOLD\b/.test(biodataSrc), "pdf chrome is not gold");
+assert(!/#C4A36A|#FFD700|#F5C518/i.test(biodataSrc), "no gold hex on the pdf");
+assert(!/#16[Aa]34[Aa]|#22[Cc]55[Ee]|#15803[Dd]|#10[Bb]981/i.test(biodataSrc), "VerifyAI is not green");
+assert(!/#1[Dd]9[Bb][Ff]0|#1[Dd][Aa]1[Ff]2|#1877[Ff]2|#0[Aa]66[Cc]2/i.test(biodataSrc), "VerifyAI is not a blue tick");
+assert(biodataSrc.includes("BIODATA_VERIFIED_LABEL") || biodataSrc.includes("badgeLabel"), "pdf uses Verified lock");
+assert(biodataSrc.includes("colWidth"), "facts use a two column grid");
 
 assertEq(parseBiodataShare(undefined), false, "missing share is off");
 assertEq(parseBiodataShare(null), false, "null share is off");

@@ -1,8 +1,8 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { displayInstagramHandle } from "./instagram";
 import { revealInstagramHandle } from "./instagram-shares";
-import { CREAM, GOLD, INK, LINE, MUTED, VIOLET_DEEP } from "./theme";
-import { isVerifyaiVerified } from "./verifyai";
+import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "./theme";
+import { isVerifyaiVerified, VERIFYAI_COPY } from "./verifyai";
 
 /** User-facing copy. Periods, commas, and existing ellipsis only. No hyphens. */
 export const BIODATA_DOWNLOAD_LABEL = "Download biodata";
@@ -15,6 +15,11 @@ export const BIODATA_TAGLINE = "Find your vibe match?";
 export const BIODATA_SHARE_TITLE = "Bandham AI biodata";
 
 export const BIODATA_API_PATH = "/api/profiles/biodata";
+export const BIODATA_SECTION_DETAILS = "DETAILS";
+export const BIODATA_SECTION_ABOUT = "ABOUT";
+export const BIODATA_SECTION_LOOKING = "LOOKING FOR";
+export const BIODATA_VERIFIED_LABEL = VERIFYAI_COPY.badgeLabel;
+export const BIODATA_VERIFYAI_MARK = "VerifyAI";
 
 /** Columns printed when present. Do not invent religion, caste, family, or age. */
 export const BIODATA_BASE_COLUMNS = [
@@ -68,11 +73,13 @@ function hexRgb(hex: string) {
 }
 
 const COLOR_CREAM = hexRgb(CREAM);
-const COLOR_GOLD = hexRgb(GOLD);
 const COLOR_INK = hexRgb(INK);
 const COLOR_LINE = hexRgb(LINE);
 const COLOR_MUTED = hexRgb(MUTED);
+const COLOR_VIOLET = hexRgb(VIOLET);
 const COLOR_VIOLET_DEEP = hexRgb(VIOLET_DEEP);
+const COLOR_WASH = hexRgb(WASH);
+const COLOR_WHITE = rgb(1, 1, 1);
 
 /** Standard PDF fonts are WinAnsi. Drop characters they cannot draw. */
 export function winAnsiSafe(value: string) {
@@ -213,19 +220,28 @@ async function embedPhoto(pdf: PDFDocument, jpegBytes?: Uint8Array) {
   }
 }
 
-function drawVerifyShield(page: PDFPage, x: number, y: number) {
+/** Violet shield + white check. Same mark as the web VerifyBadge, not gold or a tick. */
+function drawVerifyShield(page: PDFPage, x: number, y: number, scale = 1.2) {
   page.drawSvgPath(
     "M8 1.2 13.2 3.3v4.1c0 3.3-2.24 6.1-5.2 7-2.96-.9-5.2-3.7-5.2-7V3.3L8 1.2Z",
-    { x, y: y - 2, scale: 1.15, color: COLOR_GOLD }
+    { x, y: y - 2, scale, color: COLOR_VIOLET }
   );
   page.drawSvgPath("M5.3 8.1 7.2 10l3.6-3.8", {
     x,
     y: y - 2,
-    scale: 1.15,
-    borderColor: rgb(1, 1, 1),
+    scale,
+    borderColor: COLOR_WHITE,
     borderWidth: 1.2,
     borderLineCap: 1,
   });
+}
+
+function profileInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] || "" : "";
+  return (first + last).toUpperCase();
 }
 
 export async function buildBiodataPdf(
@@ -234,18 +250,22 @@ export async function buildBiodataPdf(
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const serif = await pdf.embedFont(StandardFonts.TimesRoman);
+  const serifBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
   const sans = await pdf.embedFont(StandardFonts.Helvetica);
   const sansBold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const photo = await embedPhoto(pdf, photoJpeg);
 
   const pageWidth = 595.28;
   const pageHeight = 841.89;
-  const margin = 48;
+  const margin = 40;
   const contentWidth = pageWidth - margin * 2;
-  const footerY = 36;
+  const footerY = 38;
+  const rail = 2.75;
+  const cardPad = 14;
+  const photoSize = 108;
 
   let page = pdf.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - margin;
+  let y = pageHeight - 32;
 
   function paintBackground(target: PDFPage) {
     target.drawRectangle({
@@ -257,10 +277,25 @@ export async function buildBiodataPdf(
     });
     target.drawRectangle({
       x: 0,
-      y: pageHeight - 4,
+      y: pageHeight - 3.25,
       width: pageWidth,
-      height: 4,
-      color: COLOR_GOLD,
+      height: 3.25,
+      color: COLOR_VIOLET,
+    });
+    target.drawRectangle({
+      x: 0,
+      y: 0,
+      width: pageWidth,
+      height: 3.25,
+      color: COLOR_VIOLET,
+    });
+    target.drawRectangle({
+      x: 16,
+      y: 16,
+      width: pageWidth - 32,
+      height: pageHeight - 32,
+      borderColor: COLOR_LINE,
+      borderWidth: 0.75,
     });
     target.drawText(BIODATA_PRODUCT, {
       x: margin,
@@ -280,81 +315,85 @@ export async function buildBiodataPdf(
   }
 
   function ensureSpace(needed: number) {
-    if (y - needed >= footerY + 18) return;
+    if (y - needed >= footerY + 22) return;
     page = pdf.addPage([pageWidth, pageHeight]);
     paintBackground(page);
-    y = pageHeight - margin;
+    y = pageHeight - 32;
+  }
+
+  function drawCardShell(top: number, height: number) {
+    page.drawRectangle({
+      x: margin,
+      y: top - height,
+      width: contentWidth,
+      height,
+      color: COLOR_WASH,
+    });
+    page.drawRectangle({
+      x: margin,
+      y: top - height,
+      width: contentWidth,
+      height,
+      borderColor: COLOR_LINE,
+      borderWidth: 0.7,
+    });
+    page.drawRectangle({
+      x: margin,
+      y: top - height,
+      width: rail,
+      height,
+      color: COLOR_VIOLET,
+    });
+  }
+
+  function drawSectionTitle(title: string, top: number) {
+    page.drawText(title, {
+      x: margin + cardPad,
+      y: top - 16,
+      size: 8,
+      font: sansBold,
+      color: COLOR_MUTED,
+    });
+    page.drawRectangle({
+      x: margin + cardPad,
+      y: top - 22,
+      width: contentWidth - cardPad * 2,
+      height: 0.6,
+      color: COLOR_LINE,
+    });
   }
 
   paintBackground(page);
 
   page.drawText(BIODATA_PRODUCT, {
     x: margin,
-    y: y - 6,
-    size: 20,
-    font: serif,
+    y: y - 4,
+    size: 13,
+    font: serifBold,
     color: COLOR_INK,
   });
+  const tagWidth = sans.widthOfTextAtSize(BIODATA_TAGLINE, 8);
   page.drawText(BIODATA_TAGLINE, {
-    x: margin,
-    y: y - 22,
-    size: 10,
+    x: pageWidth - margin - tagWidth,
+    y: y - 2,
+    size: 8,
     font: sans,
     color: COLOR_MUTED,
   });
-  y -= 36;
+  y -= 16;
   page.drawRectangle({
     x: margin,
     y,
     width: contentWidth,
-    height: 0.8,
-    color: COLOR_GOLD,
+    height: 1.15,
+    color: COLOR_VIOLET,
   });
-  y -= 22;
+  y -= 16;
 
-  const photoSize = 88;
-  const textLeft = photo ? margin + photoSize + 16 : margin;
-  const textWidth = photo ? contentWidth - photoSize - 16 : contentWidth;
-  const nameSize = 22;
-  const name = model.name;
-  const nameLines = wrapText(serif, name, nameSize, textWidth - (model.verified ? 22 : 0));
-  const headerBlock = Math.max(photo ? photoSize : 0, nameLines.length * 26 + 28);
-
-  ensureSpace(headerBlock + 8);
-  const headerTop = y;
-
-  if (photo) {
-    page.drawRectangle({
-      x: margin - 1,
-      y: headerTop - photoSize - 1,
-      width: photoSize + 2,
-      height: photoSize + 2,
-      color: COLOR_LINE,
-    });
-    page.drawImage(photo, {
-      x: margin,
-      y: headerTop - photoSize,
-      width: photoSize,
-      height: photoSize,
-    });
-  }
-
-  let nameY = headerTop - 16;
-  nameLines.forEach(function (line, index) {
-    page.drawText(line, {
-      x: textLeft,
-      y: nameY,
-      size: nameSize,
-      font: serif,
-      color: COLOR_VIOLET_DEEP,
-    });
-    if (index === 0 && model.verified) {
-      const badgeX = textLeft + serif.widthOfTextAtSize(line, nameSize) + 8;
-      drawVerifyShield(page, badgeX, nameY - 2);
-    }
-    nameY -= 26;
-  });
-
+  const nameSize = 24;
+  const textLeft = margin + cardPad + photoSize + 16;
+  const textWidth = contentWidth - cardPad * 2 - photoSize - 16;
+  const nameLines = wrapText(serifBold, model.name, nameSize, textWidth);
   const city = model.rows.find(function (row) {
     return row.label === "CITY";
   })?.value;
@@ -362,92 +401,204 @@ export async function buildBiodataPdf(
     return row.label === "PROFESSION";
   })?.value;
   const meta = [city, work].filter(Boolean).join("  ·  ");
-  if (meta) {
-    wrapText(sans, meta, 11, textWidth).forEach(function (line) {
-      page.drawText(line, {
-        x: textLeft,
-        y: nameY,
-        size: 11,
-        font: sans,
-        color: COLOR_MUTED,
-      });
-      nameY -= 15;
-    });
-  }
-  if (model.verified) {
-    page.drawText("VerifyAI", {
-      x: textLeft,
-      y: nameY,
-      size: 9,
-      font: sansBold,
-      color: COLOR_GOLD,
-    });
-  }
+  const metaLines = meta ? wrapText(sans, meta, 10.5, textWidth) : [];
+  const verifiedBlock = model.verified ? 28 : 0;
+  const textBlock = nameLines.length * 26 + metaLines.length * 14 + verifiedBlock;
+  const headerInner = Math.max(photoSize, textBlock);
+  const headerH = headerInner + cardPad * 2;
+  const textShift = (headerInner - textBlock) / 2;
 
-  y = headerTop - headerBlock - 16;
+  ensureSpace(headerH + 8);
+  const headerTop = y;
+  drawCardShell(headerTop, headerH);
+
+  const photoX = margin + cardPad;
+  const photoY = headerTop - cardPad - photoSize;
   page.drawRectangle({
-    x: margin,
-    y,
-    width: contentWidth,
-    height: 0.6,
+    x: photoX - 1,
+    y: photoY - 1,
+    width: photoSize + 2,
+    height: photoSize + 2,
     color: COLOR_LINE,
   });
-  y -= 20;
-
-  const labelWidth = 118;
-  const valueWidth = contentWidth - labelWidth;
-
-  model.rows.forEach(function (row) {
-    const valueLines = wrapText(sans, row.value, 11, valueWidth);
-    const blockHeight = Math.max(16, valueLines.length * 14) + 8;
-    ensureSpace(blockHeight);
-    page.drawText(row.label, {
-      x: margin,
-      y: y - 2,
-      size: 8,
-      font: sansBold,
-      color: COLOR_MUTED,
+  if (photo) {
+    page.drawImage(photo, {
+      x: photoX,
+      y: photoY,
+      width: photoSize,
+      height: photoSize,
     });
-    valueLines.forEach(function (line, index) {
-      page.drawText(line, {
-        x: margin + labelWidth,
-        y: y - 2 - index * 14,
-        size: 11,
-        font: sans,
-        color: COLOR_INK,
+  } else {
+    page.drawRectangle({
+      x: photoX,
+      y: photoY,
+      width: photoSize,
+      height: photoSize,
+      color: COLOR_CREAM,
+    });
+    const initials = profileInitials(model.name);
+    if (initials) {
+      const initialSize = 30;
+      page.drawText(initials, {
+        x: photoX + (photoSize - serifBold.widthOfTextAtSize(initials, initialSize)) / 2,
+        y: photoY + photoSize / 2 - 10,
+        size: initialSize,
+        font: serifBold,
+        color: COLOR_VIOLET,
       });
-    });
-    y -= blockHeight;
-  });
-
-  function drawSection(title: string, body: string) {
-    if (!body) return;
-    const lines = wrapText(serif, body, 12, contentWidth);
-    ensureSpace(28 + lines.length * 16);
-    page.drawText(title, {
-      x: margin,
-      y,
-      size: 8,
-      font: sansBold,
-      color: COLOR_MUTED,
-    });
-    y -= 16;
-    lines.forEach(function (line) {
-      ensureSpace(16);
-      page.drawText(line, {
-        x: margin,
-        y,
-        size: 12,
-        font: serif,
-        color: COLOR_INK,
-      });
-      y -= 16;
-    });
-    y -= 10;
+    }
   }
 
-  drawSection("ABOUT", model.about);
-  drawSection("WANTS", model.wants);
+  let nameY = headerTop - cardPad - textShift - 16;
+  nameLines.forEach(function (line) {
+    page.drawText(line, {
+      x: textLeft,
+      y: nameY,
+      size: nameSize,
+      font: serifBold,
+      color: COLOR_VIOLET_DEEP,
+    });
+    nameY -= 26;
+  });
+  metaLines.forEach(function (line) {
+    page.drawText(line, {
+      x: textLeft,
+      y: nameY,
+      size: 10.5,
+      font: sans,
+      color: COLOR_MUTED,
+    });
+    nameY -= 14;
+  });
+  if (model.verified) {
+    const badgeY = nameY - 2;
+    drawVerifyShield(page, textLeft, badgeY, 1.25);
+    page.drawText(BIODATA_VERIFIED_LABEL, {
+      x: textLeft + 21,
+      y: badgeY + 6,
+      size: 10,
+      font: sansBold,
+      color: COLOR_VIOLET_DEEP,
+    });
+    page.drawText(BIODATA_VERIFYAI_MARK, {
+      x: textLeft + 21,
+      y: badgeY - 6,
+      size: 7,
+      font: sans,
+      color: COLOR_VIOLET,
+    });
+  }
+
+  y = headerTop - headerH - 12;
+
+  const gutter = 22;
+  const colWidth = (contentWidth - cardPad * 2 - gutter) / 2;
+  const labelSize = 7;
+  const valueSize = 12;
+  const valueGap = 14;
+
+  function factHeight(row: BiodataRow) {
+    return 10 + Math.max(1, wrapText(serif, row.value, valueSize, colWidth).length) * valueGap + 6;
+  }
+
+  if (model.rows.length) {
+    const leftRows: BiodataRow[] = [];
+    const rightRows: BiodataRow[] = [];
+    model.rows.forEach(function (row, index) {
+      if (index % 2 === 0) leftRows.push(row);
+      else rightRows.push(row);
+    });
+    const pairCount = Math.max(leftRows.length, rightRows.length);
+    let factsInner = 26;
+    for (let i = 0; i < pairCount; i += 1) {
+      factsInner += Math.max(
+        leftRows[i] ? factHeight(leftRows[i]) : 0,
+        rightRows[i] ? factHeight(rightRows[i]) : 0
+      );
+    }
+    const factsH = factsInner + cardPad;
+    ensureSpace(factsH + 8);
+    const factsTop = y;
+    drawCardShell(factsTop, factsH);
+    drawSectionTitle(BIODATA_SECTION_DETAILS, factsTop);
+
+    let rowY = factsTop - 30;
+    const leftX = margin + cardPad;
+    const rightX = leftX + colWidth + gutter;
+    for (let i = 0; i < pairCount; i += 1) {
+      const left = leftRows[i];
+      const right = rightRows[i];
+      const rowH = Math.max(left ? factHeight(left) : 0, right ? factHeight(right) : 0);
+      if (i > 0) {
+        page.drawRectangle({
+          x: margin + cardPad,
+          y: rowY + 8,
+          width: contentWidth - cardPad * 2,
+          height: 0.45,
+          color: COLOR_LINE,
+        });
+      }
+      function drawFact(row: BiodataRow | undefined, x: number) {
+        if (!row) return;
+        page.drawText(row.label, {
+          x,
+          y: rowY,
+          size: labelSize,
+          font: sansBold,
+          color: COLOR_MUTED,
+        });
+        wrapText(serif, row.value, valueSize, colWidth).forEach(function (line, lineIndex) {
+          page.drawText(line, {
+            x,
+            y: rowY - 14 - lineIndex * valueGap,
+            size: valueSize,
+            font: serif,
+            color: COLOR_INK,
+          });
+        });
+      }
+      drawFact(left, leftX);
+      drawFact(right, rightX);
+      rowY -= rowH;
+    }
+    y = factsTop - factsH - 12;
+  }
+
+  function drawNarrative(title: string, body: string) {
+    if (!body) return;
+    const innerWidth = contentWidth - cardPad * 2;
+    const lines = wrapText(serif, body, 12, innerWidth);
+    let index = 0;
+    while (index < lines.length) {
+      const headerNeed = 36;
+      if (y - (footerY + 22) < headerNeed + 16) {
+        ensureSpace(headerNeed + 48);
+      }
+      const room = y - (footerY + 22);
+      const maxLines = Math.max(1, Math.floor((room - 36 - cardPad) / 16));
+      const chunk = lines.slice(index, index + maxLines);
+      const cardH = 28 + chunk.length * 16 + cardPad;
+      const top = y;
+      drawCardShell(top, cardH);
+      drawSectionTitle(title, top);
+      let lineY = top - 36;
+      chunk.forEach(function (line) {
+        page.drawText(line, {
+          x: margin + cardPad,
+          y: lineY,
+          size: 12,
+          font: serif,
+          color: COLOR_INK,
+        });
+        lineY -= 16;
+      });
+      y = top - cardH - 12;
+      index += chunk.length;
+    }
+  }
+
+  drawNarrative(BIODATA_SECTION_ABOUT, model.about);
+  drawNarrative(BIODATA_SECTION_LOOKING, model.wants);
 
   return pdf.save();
 }
