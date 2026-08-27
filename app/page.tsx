@@ -30,6 +30,8 @@ import {
   startCheckout,
 } from "../lib/client-billing";
 import { BILLING_COPY, emptyEntitlement } from "../lib/billing";
+import { SUBSCRIBE_CHECKOUT_COMPLETED } from "../lib/posthog";
+import { capturePostHogEvent } from "../lib/posthog-browser";
 import {
   appendFoldPhrase,
   browseAskReadyForShortlist,
@@ -337,6 +339,7 @@ export default function Home() {
           confirmCheckoutSession(sessionId).then(function (next) {
             setEntitlement(next);
             if (next.canMessage) {
+              capturePostHogEvent(SUBSCRIBE_CHECKOUT_COMPLETED);
               setBillingNote(BILLING_COPY.active);
             }
           });

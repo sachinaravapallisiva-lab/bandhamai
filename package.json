@@ -33,6 +33,7 @@
     "check:admin": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-admin.mjs",
     "check:login-signup": "node --experimental-strip-types scripts/check-login-signup.mjs",
     "check:terms-agree": "node --experimental-strip-types scripts/check-terms-agree.mjs",
+    "check:posthog": "node --experimental-strip-types scripts/check-posthog.mjs",
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
@@ -42,6 +43,7 @@
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.1",
     "pdf-lib": "^1.17.1",
+    "posthog-js": "^1.421.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "^0.35.3",

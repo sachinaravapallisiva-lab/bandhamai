@@ -30,6 +30,7 @@ import {
   loginPageModeFromSearch,
   type LoginPageMode,
 } from "../../lib/login-auth";
+import { identifySignedInUser } from "../../lib/posthog-browser";
 import { INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/theme";
 import AppChrome, { ChromeLink } from "../components/AppChrome";
 
@@ -118,6 +119,10 @@ export default function LoginPage() {
             setStatus(result.data.error || LOGIN_SIGN_UP_UNREACHABLE);
             return;
           }
+          const user = result.data.user;
+          if (user && user.id) {
+            identifySignedInUser(user.id, user.email || email.trim());
+          }
           const session = result.data.session;
           if (session && session.access_token && session.refresh_token) {
             return supabase.auth.setSession({
@@ -154,7 +159,11 @@ export default function LoginPage() {
         setStatus(result.error.message);
         return;
       }
-      setStatus("Signed in as " + (result.data.user?.email || email));
+      const user = result.data.user;
+      if (user && user.id) {
+        identifySignedInUser(user.id, user.email);
+      }
+      setStatus("Signed in as " + (user?.email || email));
       goNext();
     }).catch(function () {
       setBusy(false);

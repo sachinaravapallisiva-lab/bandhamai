@@ -1,5 +1,7 @@
 import { emptyEntitlement, type Entitlement } from "./billing";
 import { authJsonHeaders } from "./client-auth";
+import { SUBSCRIBE_CHECKOUT_STARTED } from "./posthog";
+import { capturePostHogEvent } from "./posthog-browser";
 import { VERIFYAI_COPY, VERIFYAI_DEFAULT_RETURN_PATH } from "./verifyai";
 
 export type { Entitlement };
@@ -142,6 +144,7 @@ export async function startCheckout() {
         code: data.code || "",
       };
     }
+    capturePostHogEvent(SUBSCRIBE_CHECKOUT_STARTED);
     return { url: String(data.url), error: "", code: "" };
   } catch {
     return { url: "", error: "Could not start checkout.", code: "network" };
