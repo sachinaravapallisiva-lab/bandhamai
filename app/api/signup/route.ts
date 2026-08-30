@@ -9,6 +9,7 @@ import {
   canCreateSignUpAccount,
 } from "../../../lib/login-auth";
 import { getAnonSupabase, missingConfigResponse } from "../../../lib/server-supabase";
+import { sendWelcomeEmail } from "../../../lib/welcome-email";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,14 @@ export async function POST(request: Request) {
     const result = await supabase.auth.signUp({ email: email, password: password });
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 400 });
+    }
+
+    if (result.data.user) {
+      try {
+        await sendWelcomeEmail(email);
+      } catch {
+        console.error("welcome email skipped: send threw");
+      }
     }
 
     return NextResponse.json({
