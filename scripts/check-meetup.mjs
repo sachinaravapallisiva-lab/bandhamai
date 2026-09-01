@@ -33,6 +33,7 @@ import {
   monthLabelFromKey,
 } from "../lib/meetup.ts";
 import { SIDEBAR_DASH_MAX, SIDEBAR_RAIL_BASIS } from "../lib/theme.ts";
+import { MEETUP_TEST_SEED_ENABLED, meetupRailPosts } from "../lib/meetup-test-pond.ts";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -222,8 +223,13 @@ assert(theme.includes("[data-home-shell]{display:grid!important"), "desktop Home
 assert(theme.includes("[data-home-shell]{display:flex!important;flex-direction:column"), "phone website stacks one column");
 assert(theme.includes("[data-home-shell]>[data-site-footer]{grid-column:2;grid-row:2}"), "desktop footer stays under the dash");
 const meetupRail = read("app/components/MeetupRail.tsx");
-assert(meetupRail.includes("MEETUP_TEST_POSTS"), "rail stacks more code only test meetup posts");
-assert(meetupRail.includes("MEETUP_RAIL_DEMO_LABEL"), "rail labels the stack as this month demo");
+assert(MEETUP_TEST_SEED_ENABLED === false, "live Home must not ship meetup SAMPLE rail");
+assert(meetupRailPosts([]).length === 0, "meetup helper stays empty when seed is off");
+assert(meetupRail.includes("meetupRailPosts"), "rail uses the fail-closed meetup helper");
+assert(!/MEETUP_TEST_POSTS\.map/.test(meetupRail), "rail must not always map SAMPLE posts");
+assert(!meetupRail.includes("Parents and values"), "SAMPLE meetup titles are not hardcoded on the rail");
+assert(!/\bSAMPLE\b/.test(meetupRail), "SAMPLE kicker is not hardcoded on the rail");
+assert(meetupRail.includes("MEETUP_RAIL_DEMO_LABEL"), "demo label stays gated behind seed posts");
 assert(meetupRail.includes('position: "sticky"'), "desktop meetup rail sticks as a 240 bar");
 assert(!meetupRail.includes('flex: "0 0 "'), "phone column must not inherit an inline 240 flex basis");
 assert(theme.includes("flex:0 0 auto!important"), "phone meetup is not a 240 tall bar");

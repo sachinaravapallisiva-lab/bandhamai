@@ -34,6 +34,7 @@ import {
   MEETUP_TEST_KICKER,
   MEETUP_TEST_POSTS,
   MEETUP_TEST_SEED_ENABLED,
+  meetupRailPosts,
 } from "../lib/meetup-test-pond.ts";
 import {
   BROWSE_TEST_PINNED_IDS,
@@ -132,11 +133,43 @@ assert(shouldAutoAdvance({ reduceMotion: false, count: 3 }) === true, "two or mo
 assert(shouldAutoAdvance({ reduceMotion: true, count: 3 }) === false, "reduced motion does not auto-roll");
 assert(shouldAutoAdvance({ reduceMotion: false, count: 1 }) === false, "a single profile does not auto-roll");
 
-assert(BROWSE_TEST_SEED_ENABLED === true, "preview seed is on for this PR");
+assert(BROWSE_TEST_SEED_ENABLED === false, "live Home must not ship browse test seed");
 assert(BROWSE_TEST_SEED_COUNT === 20, "seed count lock");
 assert(BROWSE_TEST_SEEDS.length === 20, "twenty test seeds");
 assert(BROWSE_TEST_PROFILES.length === 20, "twenty test profiles");
-assert(browseShortlistPond([]).length === 20, "empty live pond still rolls the test shortlist");
+assert(browseShortlistPond([]).length === 0, "empty live pond stays empty when seed is off");
+assert(browsePinnedPreview().length === 0, "pinned helper stays empty when seed is off");
+const liveOnly = browseShortlistPond([{ id: "live-1", name: "Live Row" }]);
+assert(liveOnly.length === 1 && liveOnly[0].name === "Live Row", "shortlist helper passes live rows through");
+assert(
+  !browseShortlistPond([]).some(function (profile) {
+    return profile.name === "Arjun Mehta" || profile.name === "Nisha Reddy";
+  }),
+  "shortlist helper must not inject Arjun or Nisha"
+);
+assert(
+  !browsePinnedPreview().some(function (profile) {
+    return profile.name === "Arjun Mehta" || profile.name === "Nisha Reddy";
+  }),
+  "pin helper must not inject Arjun or Nisha"
+);
+assert(!page.includes("Arjun Mehta"), "Home must not hardcode Arjun Mehta");
+assert(!page.includes("Nisha Reddy"), "Home must not hardcode Nisha Reddy");
+BROWSE_TEST_SEEDS.forEach(function (row) {
+  assert(!page.includes(row.name), "Home must not hardcode seed name " + row.name);
+  assert(
+    !browseShortlistPond([]).some(function (profile) {
+      return profile.name === row.name;
+    }),
+    "shortlist helper must not inject " + row.name
+  );
+  assert(
+    !browsePinnedPreview().some(function (profile) {
+      return profile.name === row.name;
+    }),
+    "pin helper must not inject " + row.name
+  );
+});
 assert(
   BROWSE_TEST_PROFILES.every(function (profile) {
     return profile.verified === false && profile.promptLabel === "About";
@@ -156,7 +189,10 @@ assert(BROWSE_PRIORITY_MARK === "Priority", "mark is Priority");
 assert(BROWSE_PINNED_LABEL === "PINNED", "row label is PINNED");
 assert(BROWSE_TEST_PINNED_IDS.length >= 3, "several pinned test cards");
 assert(BROWSE_TEST_PINNED_IDS.length <= BROWSE_PIN_CAP, "pinned ids honor the cap");
-assert(browsePinnedPreview().length === BROWSE_TEST_PINNED_IDS.length, "preview pin row uses the capped ids");
+const seedPinned = BROWSE_TEST_PROFILES.filter(function (profile) {
+  return BROWSE_TEST_PINNED_IDS.includes(profile.id);
+});
+assert(seedPinned.length === BROWSE_TEST_PINNED_IDS.length, "seed pin ids stay capped in the seed file");
 assert(pinnedRow.includes("BROWSE_PRIORITY_MARK"), "pin cards show Priority");
 assert(!pinnedRow.includes("PROFILE_PHOTO_SOON") && !pinnedRow.includes(PROFILE_PHOTO_SOON), "pin cards must not say Photo coming soon");
 assert(pinnedRow.includes("data-pin-photo"), "pin cards render a real photo");
@@ -166,19 +202,18 @@ assert(BROWSE_PIN_PHOTO_HEIGHT >= 140, "pin photo well is tall enough to show th
 assert(BROWSE_PIN_CARD_WIDTH >= 148 && BROWSE_PIN_CARD_WIDTH < 240, "pin cards stay compact, not 240 roll cards");
 assert(pinnedRow.includes("overflow: \"visible\"") || pinnedRow.includes("overflowY: \"visible\""), "pin bar does not clip card contents");
 assert(!/maxHeight:\s*\d+/.test(pinnedRow), "do not lock a short max height that clips the city line");
-assert(browsePinnedPreview().length === BROWSE_TEST_PINNED_IDS.length, "preview pin row uses the capped ids");
 assert(
-  browsePinnedPreview().every(function (profile) {
+  seedPinned.every(function (profile) {
     return profile.photoUrl.indexOf(BROWSE_PIN_PHOTO_DIR + "/") === 0 && profile.city.trim().length > 0;
   }),
-  "every pinned preview card has a portrait and a city"
+  "every pinned seed card has a portrait and a city"
 );
-browsePinnedPreview().forEach(function (profile) {
+seedPinned.forEach(function (profile) {
   const rel = "public" + profile.photoUrl;
   assert(existsSync(new URL("../" + rel, import.meta.url)), "pin portrait file exists: " + rel);
   assert(statSync(new URL("../" + rel, import.meta.url)).size > 4000, "pin portrait is a real image: " + rel);
 });
-const pinPhotos = browsePinnedPreview().map(function (profile) {
+const pinPhotos = seedPinned.map(function (profile) {
   return profile.photoUrl;
 });
 assert(new Set(pinPhotos).size === pinPhotos.length, "pinned portraits are distinct");
@@ -296,8 +331,26 @@ assert(theme.includes("position:sticky"), "meetup rail sticks in the right strip
 assert(theme.includes("position:static!important"), "phone meetup is not a sticky side bar");
 assert(MEETUP_RAIL_DEMO_LABEL === "This month demo", "rail demo label lock");
 assert(MEETUP_TEST_KICKER === "SAMPLE", "sample kicker lock");
-assert(MEETUP_TEST_SEED_ENABLED === true, "meetup test posts are on for this PR");
-assert(MEETUP_TEST_POSTS.length >= 3, "right stack has more than this month");
+assert(MEETUP_TEST_SEED_ENABLED === false, "live Home must not ship meetup SAMPLE rail");
+assert(meetupRailPosts([]).length === 0, "meetup helper stays empty when seed is off");
+assert(
+  !meetupRailPosts([]).some(function (post) {
+    return post.kicker === "SAMPLE" || post.title === "Parents and values";
+  }),
+  "meetup helper must not inject SAMPLE cards"
+);
+const meetupRail = read("app/components/MeetupRail.tsx");
+assert(meetupRail.includes("meetupRailPosts"), "rail uses the fail-closed meetup helper");
+assert(!/MEETUP_TEST_POSTS\.map/.test(meetupRail), "rail must not always map SAMPLE posts");
+assert(!meetupRail.includes("Parents and values"), "SAMPLE meetup titles are not hardcoded on the rail");
+assert(!/\bSAMPLE\b/.test(meetupRail), "SAMPLE kicker is not hardcoded on the rail");
+assert(!page.includes("Parents and values"), "Home must not hardcode SAMPLE meetup titles");
+assert(!page.includes("This month demo"), "Home must not hardcode SAMPLE meetup rail copy");
+MEETUP_TEST_POSTS.forEach(function (post) {
+  assert(!meetupRail.includes(post.title), "rail must not hardcode SAMPLE title " + post.title);
+  assert(!page.includes(post.title), "Home must not hardcode SAMPLE title " + post.title);
+});
+assert(MEETUP_TEST_POSTS.length >= 3, "seed file still has more than this month");
 assert(
   MEETUP_TEST_POSTS.every(function (post) {
     return post.kicker === MEETUP_TEST_KICKER;
@@ -423,6 +476,9 @@ console.log("browse carousel ok", {
   advanceMs: BROWSE_CAROUSEL_ADVANCE_MS,
   slideMs: BROWSE_CAROUSEL_SLIDE_MS,
   motion: BROWSE_CAROUSEL_MOTION,
-  seeds: BROWSE_TEST_PROFILES.length,
-  pinned: BROWSE_TEST_PINNED_IDS.length,
+  browseSeed: BROWSE_TEST_SEED_ENABLED,
+  meetupSeed: MEETUP_TEST_SEED_ENABLED,
+  livePond: browseShortlistPond([]).length,
+  livePins: browsePinnedPreview().length,
+  liveMeetup: meetupRailPosts([]).length,
 });

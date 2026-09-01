@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MEETUP_RAIL_DEMO_LABEL, MEETUP_TEST_POSTS } from "../../lib/meetup-test-pond";
+import { MEETUP_RAIL_DEMO_LABEL, meetupRailPosts } from "../../lib/meetup-test-pond";
 import { CREAM, LINE, MUTED, VIOLET_DEEP } from "../../lib/theme";
 
 export default function MeetupRail({ children }: { children?: ReactNode }) {
+  const posts = meetupRailPosts([]);
   return (
     <aside
       data-meetup-rail="true"
@@ -23,15 +24,17 @@ export default function MeetupRail({ children }: { children?: ReactNode }) {
       }}
     >
       <div data-meetup-stack="true" style={{ display: "flex", flexDirection: "column" }}>
-        <p
-          data-meetup-demo="true"
-          className="bm-sans"
-          style={{ margin: "0 0 12px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}
-        >
-          {MEETUP_RAIL_DEMO_LABEL}
-        </p>
+        {posts.length > 0 ? (
+          <p
+            data-meetup-demo="true"
+            className="bm-sans"
+            style={{ margin: "0 0 12px", fontSize: 11, letterSpacing: ".16em", color: MUTED }}
+          >
+            {MEETUP_RAIL_DEMO_LABEL}
+          </p>
+        ) : null}
         {children}
-        {MEETUP_TEST_POSTS.map(function (post) {
+        {posts.map(function (post) {
           return (
             <article
               key={post.id}

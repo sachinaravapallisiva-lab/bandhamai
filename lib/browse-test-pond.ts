@@ -7,8 +7,8 @@
 import type { BrowseProfile } from "./profile-search";
 import { BROWSE_PIN_CAP, BROWSE_PIN_PHOTO_DIR, takePinnedIds } from "./browse-pin";
 
-/** Flip off (or delete this module) when the preview seed must not ship. */
-export const BROWSE_TEST_SEED_ENABLED = true;
+/** Live Home stays fail closed. Keep this false so seed people never render. */
+export const BROWSE_TEST_SEED_ENABLED = false;
 export const BROWSE_TEST_SEED_COUNT = 20;
 
 type TestSeed = {
