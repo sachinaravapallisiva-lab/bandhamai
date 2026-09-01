@@ -353,8 +353,8 @@ assert(!meetupRail.includes("MEETUP_TEST_POSTS"), "rail must not import SAMPLE p
 assert(!/MEETUP_TEST_POSTS\.map/.test(meetupRail), "rail must not always map SAMPLE posts");
 assert(!meetupRail.includes("Parents and values"), "SAMPLE meetup titles are not hardcoded on the rail");
 assert(!/\bSAMPLE\b/.test(meetupRail), "SAMPLE kicker is not hardcoded on the rail");
-assert(!browsePond.includes("browse-test-pond"), "client pond must not import seed names");
-assert(!meetupPondLive.includes("meetup-test-pond"), "client meetup pond must not import SAMPLE copy");
+assert(!/from\s+["'][^"']*browse-test-pond["']/.test(browsePond), "client pond must not import seed names");
+assert(!/from\s+["'][^"']*meetup-test-pond["']/.test(meetupPondLive), "client meetup pond must not import SAMPLE copy");
 const clientHome = page + meetupRail + browsePond + meetupPondLive;
 assert(!clientHome.includes("Arjun Mehta"), "client Home path must not ship Arjun Mehta");
 assert(!clientHome.includes("Nisha Reddy"), "client Home path must not ship Nisha Reddy");

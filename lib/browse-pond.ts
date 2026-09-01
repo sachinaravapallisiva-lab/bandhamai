@@ -1,6 +1,6 @@
 /**
  * Live Home shortlist and pin helpers. Fail closed.
- * This module must never import seed names or browse-test-pond.
+ * This module must never import seed names or the Node-only seed file.
  */
 import type { BrowseProfile } from "./profile-search";
 

@@ -1,6 +1,6 @@
 /**
  * Live meetup rail helper. Fail closed.
- * This module must never import SAMPLE copy or meetup-test-pond.
+ * This module must never import SAMPLE copy or the Node-only seed file.
  */
 
 export type MeetupRailPost = {
