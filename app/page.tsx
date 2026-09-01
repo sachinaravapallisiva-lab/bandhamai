@@ -57,7 +57,7 @@ import {
 } from "../lib/browse-prefs";
 import type { BrowseProfile, SearchCriteria } from "../lib/profile-search";
 import { emptyCriteria } from "../lib/profile-search";
-import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-test-pond";
+import { browsePinnedPreview, browseShortlistPond } from "../lib/browse-pond";
 import {
   BROWSE_EMPTY_INVENTORY_BODY,
   BROWSE_EMPTY_INVENTORY_TITLE,
