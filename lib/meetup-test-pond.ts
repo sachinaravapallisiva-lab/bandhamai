@@ -1,21 +1,16 @@
 /**
- * TEST ONLY preview meetup posts for the right cream stack.
- * Strip this module before merging to main. Do not treat these as live events.
- * No ticket price. No STRIPE_EVENT_PRICE_ID. Virtual NRI matrimony tone.
+ * TEST ONLY preview meetup posts for Node check scripts.
+ * Do not import this module from client components. SAMPLE copy must not ship in JS.
+ * Live Home uses lib/meetup-pond.ts, which never reads these rows.
  */
 
-/** Live Home stays fail closed. Keep this false so SAMPLE posts never render. */
-export const MEETUP_TEST_SEED_ENABLED = false;
+import type { MeetupRailPost } from "./meetup-pond";
+
+export { MEETUP_TEST_SEED_ENABLED, meetupRailPosts } from "./meetup-pond";
+export type MeetupTestPost = MeetupRailPost;
+
 export const MEETUP_RAIL_DEMO_LABEL = "This month demo";
 export const MEETUP_TEST_KICKER = "SAMPLE";
-
-export type MeetupTestPost = {
-  id: string;
-  kicker: string;
-  monthLabel: string;
-  title: string;
-  body: string;
-};
 
 export const MEETUP_TEST_POSTS: MeetupTestPost[] = [
   {
@@ -54,8 +49,3 @@ export const MEETUP_TEST_POSTS: MeetupTestPost[] = [
     body: "A virtual session on when to involve parents and how to keep the first family call respectful.",
   },
 ];
-
-export function meetupRailPosts(live: MeetupTestPost[] = []) {
-  if (MEETUP_TEST_SEED_ENABLED) return MEETUP_TEST_POSTS.slice();
-  return Array.isArray(live) ? live : [];
-}

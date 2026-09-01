@@ -1,14 +1,12 @@
 /**
- * TEST ONLY preview seed for the Home shortlist slideshow.
- * Strip this module before merging to main. Do not treat these as live inventory.
- * Fail closed on the real table when this seed is removed.
- * Pinned preview portraits live under public/preview/pins. Not live photos.
+ * TEST ONLY preview seed for Node check scripts.
+ * Do not import this module from client components. Seed names must not ship in JS.
+ * Live Home uses lib/browse-pond.ts, which never reads these rows.
  */
 import type { BrowseProfile } from "./profile-search";
 import { BROWSE_PIN_CAP, BROWSE_PIN_PHOTO_DIR, takePinnedIds } from "./browse-pin";
 
-/** Live Home stays fail closed. Keep this false so seed people never render. */
-export const BROWSE_TEST_SEED_ENABLED = false;
+export { BROWSE_TEST_SEED_ENABLED, browsePinnedPreview, browseShortlistPond } from "./browse-pond";
 export const BROWSE_TEST_SEED_COUNT = 20;
 
 type TestSeed = {
@@ -84,16 +82,3 @@ export const BROWSE_TEST_PINNED_IDS = takePinnedIds(
   }),
   BROWSE_PIN_CAP
 );
-
-export function browseShortlistPond(live: BrowseProfile[]) {
-  if (BROWSE_TEST_SEED_ENABLED) return BROWSE_TEST_PROFILES.slice();
-  return Array.isArray(live) ? live : [];
-}
-
-export function browsePinnedPreview() {
-  if (!BROWSE_TEST_SEED_ENABLED) return [];
-  const pinned = new Set(BROWSE_TEST_PINNED_IDS);
-  return BROWSE_TEST_PROFILES.filter(function (profile) {
-    return pinned.has(profile.id);
-  }).slice(0, BROWSE_PIN_CAP);
-}

@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   BROWSE_CAROUSEL_ADVANCE_MS,
   BROWSE_CAROUSEL_ARIA,
@@ -103,6 +104,8 @@ const pinCode = stripComments(pinnedRow + pinLib);
 assert(page.includes("BrowseCarousel"), "Browse middle slot must render BrowseCarousel");
 assert(page.includes("PinnedRow"), "Pinned row sits on Browse");
 assert(page.includes("browseShortlistPond"), "shortlist pond is the preview helper");
+assert(page.includes('from "../lib/browse-pond"'), "Home imports the client-safe pond, not seed names");
+assert(!page.includes("browse-test-pond"), "Home must not import the seed name file");
 assert(page.includes("profiles={pond}"), "carousel rolls the shortlist pond");
 assert(page.indexOf("<PinnedRow") < page.indexOf("<BrowseCarousel"), "Pinned row is above the rolling card");
 assert(page.includes("/api/profiles/search"), "live search API stays");
@@ -340,10 +343,30 @@ assert(
   "meetup helper must not inject SAMPLE cards"
 );
 const meetupRail = read("app/components/MeetupRail.tsx");
+const browsePond = read("lib/browse-pond.ts");
+const meetupPondLive = read("lib/meetup-pond.ts");
 assert(meetupRail.includes("meetupRailPosts"), "rail uses the fail-closed meetup helper");
+assert(meetupRail.includes("meetup-pond"), "rail imports the client-safe meetup helper");
+assert(!meetupRail.includes("meetup-test-pond"), "rail must not import the SAMPLE seed file");
+assert(!meetupRail.includes("MEETUP_RAIL_DEMO_LABEL"), "rail must not import demo label");
+assert(!meetupRail.includes("MEETUP_TEST_POSTS"), "rail must not import SAMPLE posts");
 assert(!/MEETUP_TEST_POSTS\.map/.test(meetupRail), "rail must not always map SAMPLE posts");
 assert(!meetupRail.includes("Parents and values"), "SAMPLE meetup titles are not hardcoded on the rail");
 assert(!/\bSAMPLE\b/.test(meetupRail), "SAMPLE kicker is not hardcoded on the rail");
+assert(!/from\s+["'][^"']*browse-test-pond["']/.test(browsePond), "client pond must not import seed names");
+assert(!/from\s+["'][^"']*meetup-test-pond["']/.test(meetupPondLive), "client meetup pond must not import SAMPLE copy");
+const clientHome = page + meetupRail + browsePond + meetupPondLive;
+assert(!clientHome.includes("Arjun Mehta"), "client Home path must not ship Arjun Mehta");
+assert(!clientHome.includes("Nisha Reddy"), "client Home path must not ship Nisha Reddy");
+assert(!clientHome.includes("test-pond-01"), "client Home path must not ship test-pond ids");
+assert(!clientHome.includes("pin-arjun.webp"), "client Home path must not ship pin-arjun.webp");
+assert(!clientHome.includes("This month demo"), "client Home path must not ship SAMPLE demo label");
+assert(!browsePond.includes("BROWSE_TEST_SEEDS"), "client pond must not name the seed list");
+assert(!browsePond.includes("BROWSE_TEST_PROFILES"), "client pond must not name seed profiles");
+BROWSE_TEST_SEEDS.forEach(function (row) {
+  assert(!clientHome.includes(row.name), "client Home path must not ship seed name " + row.name);
+  assert(!clientHome.includes(row.id), "client Home path must not ship seed id " + row.id);
+});
 assert(!page.includes("Parents and values"), "Home must not hardcode SAMPLE meetup titles");
 assert(!page.includes("This month demo"), "Home must not hardcode SAMPLE meetup rail copy");
 MEETUP_TEST_POSTS.forEach(function (post) {
@@ -472,6 +495,28 @@ assert(menu.includes("Inbox"), "Inbox stays");
 assert(menu.includes("Block"), "Block stays");
 assert(menu.includes("Call us"), "Call us stays");
 
+function walkJs(dir, acc) {
+  if (!existsSync(dir)) return acc;
+  readdirSync(dir, { withFileTypes: true }).forEach(function (entry) {
+    const next = dir + "/" + entry.name;
+    if (entry.isDirectory()) walkJs(next, acc);
+    else if (entry.name.endsWith(".js")) acc.push(next);
+  });
+  return acc;
+}
+
+const staticDir = fileURLToPath(new URL("../.next/static", import.meta.url));
+const clientChunks = walkJs(staticDir, []);
+clientChunks.forEach(function (chunk) {
+  const src = readFileSync(chunk, "utf8");
+  assert(!src.includes("Arjun Mehta"), "client chunk must not ship Arjun Mehta: " + chunk);
+  assert(!src.includes("Nisha Reddy"), "client chunk must not ship Nisha Reddy: " + chunk);
+  assert(!src.includes("test-pond-01"), "client chunk must not ship test-pond-01: " + chunk);
+  assert(!src.includes("pin-arjun.webp"), "client chunk must not ship pin-arjun.webp: " + chunk);
+  assert(!src.includes("This month demo"), "client chunk must not ship This month demo: " + chunk);
+  assert(!src.includes("Parents and values"), "client chunk must not ship Parents and values: " + chunk);
+});
+
 console.log("browse carousel ok", {
   advanceMs: BROWSE_CAROUSEL_ADVANCE_MS,
   slideMs: BROWSE_CAROUSEL_SLIDE_MS,
@@ -481,4 +526,5 @@ console.log("browse carousel ok", {
   livePond: browseShortlistPond([]).length,
   livePins: browsePinnedPreview().length,
   liveMeetup: meetupRailPosts([]).length,
+  clientChunks: clientChunks.length,
 });
