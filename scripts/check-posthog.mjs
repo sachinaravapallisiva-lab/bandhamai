@@ -30,6 +30,16 @@ assert(PLANS_OPENED === "plans_opened", "plans opened event");
 assert(SUBSCRIBE_CHECKOUT_STARTED === "subscribe_checkout_started", "checkout started event");
 assert(SUBSCRIBE_CHECKOUT_COMPLETED === "subscribe_checkout_completed", "checkout completed event");
 
+const posthogSrc = read("lib/posthog.ts");
+assert(
+  posthogSrc.includes("process.env.NEXT_PUBLIC_POSTHOG_KEY"),
+  "runtime key must be a static process.env.NEXT_PUBLIC_POSTHOG_KEY access"
+);
+assert(
+  posthogSrc.includes("process.env.NEXT_PUBLIC_POSTHOG_HOST"),
+  "runtime host must be a static process.env.NEXT_PUBLIC_POSTHOG_HOST access"
+);
+
 assert(isPostHogEnabled({}) === false, "empty env fails closed");
 assert(isPostHogEnabled({ NEXT_PUBLIC_POSTHOG_KEY: "" }) === false, "blank key fails closed");
 assert(isPostHogEnabled({ NEXT_PUBLIC_POSTHOG_KEY: "   " }) === false, "whitespace key fails closed");

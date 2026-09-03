@@ -11,16 +11,22 @@ export const SUBSCRIBE_CHECKOUT_COMPLETED = "subscribe_checkout_completed";
 
 type EnvBag = Record<string, string | undefined>;
 
-export function posthogKey(env: EnvBag = process.env) {
-  return (env[POSTHOG_KEY_ENV] || "").trim();
+export function posthogKey(env?: EnvBag) {
+  if (env) {
+    return (env[POSTHOG_KEY_ENV] || "").trim();
+  }
+  return (process.env.NEXT_PUBLIC_POSTHOG_KEY || "").trim();
 }
 
-export function isPostHogEnabled(env: EnvBag = process.env) {
+export function isPostHogEnabled(env?: EnvBag) {
   return posthogKey(env).length > 0;
 }
 
-export function posthogHost(env: EnvBag = process.env) {
-  return (env[POSTHOG_HOST_ENV] || "").trim() || POSTHOG_DEFAULT_HOST;
+export function posthogHost(env?: EnvBag) {
+  if (env) {
+    return (env[POSTHOG_HOST_ENV] || "").trim() || POSTHOG_DEFAULT_HOST;
+  }
+  return (process.env.NEXT_PUBLIC_POSTHOG_HOST || "").trim() || POSTHOG_DEFAULT_HOST;
 }
 
 /** Person properties allowed on identify. Email only. */
