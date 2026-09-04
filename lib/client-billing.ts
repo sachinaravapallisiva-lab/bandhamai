@@ -23,6 +23,7 @@ export async function fetchEntitlement(): Promise<Entitlement> {
       canMessage: !!data.canMessage,
       status: data.status || null,
       stripeCustomerId: data.stripeCustomerId || null,
+      dodoCustomerId: data.dodoCustomerId || null,
       currentPeriodEnd: data.currentPeriodEnd || null,
       code: data.code,
       error: data.error,
@@ -173,15 +174,34 @@ export async function openBillingPortal() {
   }
 }
 
-export async function confirmCheckoutSession(sessionId: string) {
+export async function confirmCheckoutSession(
+  sessionId:
+    | string
+    | {
+        session_id?: string;
+        payment_id?: string;
+        subscription_id?: string;
+      }
+) {
   const headers = await authJsonHeaders();
-  if (!headers || !sessionId) return emptyEntitlement({ configured: true });
+  const payload =
+    typeof sessionId === "string"
+      ? { session_id: sessionId }
+      : {
+          session_id: sessionId.session_id || "",
+          payment_id: sessionId.payment_id || "",
+          subscription_id: sessionId.subscription_id || "",
+        };
+  if (!headers) return emptyEntitlement({ configured: true });
+  if (!payload.session_id && !payload.payment_id && !payload.subscription_id) {
+    return emptyEntitlement({ configured: true });
+  }
 
   try {
     const res = await fetch("/api/stripe/confirm", {
       method: "POST",
       headers: headers,
-      body: JSON.stringify({ session_id: sessionId }),
+      body: JSON.stringify(payload),
     });
     const data = await readJson(res);
     return emptyEntitlement({
@@ -189,6 +209,7 @@ export async function confirmCheckoutSession(sessionId: string) {
       canMessage: !!data.canMessage,
       status: data.status || null,
       stripeCustomerId: data.stripeCustomerId || null,
+      dodoCustomerId: data.dodoCustomerId || null,
       currentPeriodEnd: data.currentPeriodEnd || null,
       code: data.code,
       error: data.error,

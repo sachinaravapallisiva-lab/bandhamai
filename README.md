@@ -91,69 +91,75 @@ Use two signed-in accounts, A and B. Both should have live profiles. A has Insta
 6. As A, tap **Hide Instagram from them**. As B, reload — the chip is gone again.
 7. No verified badge and no match % from this field. WhatsApp / presence behavior is unchanged.
 
-## Messaging subscription (Stripe)
+## Messaging subscription (Dodo Payments)
 
 Default paywall copy is product first: **Bandham AI subscription is $9.99 a month.** It does not list what the month includes. Browse, search, Speed Match, and profile create stay free. The lawyer line is not a match guarantee. There is no fake checkout, no countdown, and no “most people upgrade” line.
 
-If Stripe env vars are missing, the Chat paywall shows **“Billing is not configured”** and does not crash.
+If Dodo env vars are missing, the Chat paywall shows **“Billing is not configured”** and does not crash. Existing `active` / `trialing` rows keep messaging. Stripe keys are **not** required for Subscribe.
 
 ### What the app does
 
-1. `POST /api/stripe/checkout` — signed-in Checkout Session (`mode: subscription`) for `STRIPE_PRICE_ID`.
-2. `POST /api/stripe/webhook` — verifies the Stripe signature and upserts `public.subscriptions`.
-3. `POST /api/stripe/confirm` — after return from Checkout, re-reads the Session from Stripe (not a fake receipt).
-4. `POST /api/stripe/portal` — Stripe Customer Portal for manage / cancel.
+1. `POST /api/stripe/checkout` — signed-in Dodo Checkout Session for `DODO_SUBSCRIBE_PRODUCT_ID`. Returns `{ url }` (`checkout_url`).
+2. `POST /api/dodo/webhook` — verifies the Standard Webhooks signature and upserts `public.subscriptions`.
+3. `POST /api/stripe/confirm` — after return from Checkout, re-reads the payment/subscription from Dodo (not a fake receipt) and polls the row.
+4. `POST /api/stripe/portal` — Dodo customer portal for manage / cancel.
 5. `GET /api/stripe/entitlement` — whether this account can send.
 6. `POST /api/messages` — the only send path; returns **402** without an `active` or `trialing` row.
 
 The home Chat tab and `/chat` both check entitlement before Send. Client inserts into `messages` are also blocked by a trigger in the SQL file (if that table exists).
 
-### Stripe Dashboard (Sai)
+Client paths stay `/api/stripe/checkout|confirm|portal|entitlement` so existing callers keep working. The provider is Dodo.
 
-1. Create a Product, e.g. **Bandham AI messaging**.
-2. Add a recurring **Price: $9.99 / month**. Copy the Price ID (`price_...`). That is the default ship Price.
-3. Optional later: a second Price at $5.99/month. Put it in `STRIPE_FOUNDING_PRICE_ID` only when you want a follow-up. Checkout does **not** use it today.
-4. Developers → API keys: Secret key + Publishable key (test keys first).
-5. Developers → Webhooks → Add endpoint:
-   - URL: `https://bandhamai.vercel.app/api/stripe/webhook` (plus the same path on preview URLs if you test there)
-   - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
-   - Copy the webhook signing secret (`whsec_...`).
-6. Settings → Customer portal: turn on cancel / update payment method so “Manage subscription” works.
-7. Use a Stripe test card (`4242…`) until you switch to live keys.
+### Dodo Dashboard (Sai)
+
+1. Products already created in Test:
+   - Subscribe messaging: `pdt_0NmpiDbCi5EJoEzsRAa1t` ($9.99/mo recurring)
+   - VerifyAI one-time: `pdt_0NmpiDe3U2blA83EN7qTE` ($4.99)
+2. Live needs matching Live products and `DODO_PAYMENTS_ENVIRONMENT=live_mode`.
+3. Developers → API keys: Test or Live secret. Never commit it.
+4. Webhooks → Add endpoint:
+   - URL: `https://bandhamai.vercel.app/api/dodo/webhook`
+   - Events: `payment.succeeded`, `subscription.active`, `subscription.renewed`, `subscription.on_hold`, `subscription.failed`, `subscription.cancelled`, `subscription.expired`
+   - Copy the webhook signing key into `DODO_PAYMENTS_WEBHOOK_KEY`.
+5. After merge, allow `/api/dodo/webhook` the same way `/api/stripe/webhook` is skipped from WAF rate limits. Do not change Vercel firewall from this PR.
 
 Do not put secrets in git. `.env.example` lists names only.
 
 ### Vercel env (Sai)
 
-Set these on Production, Preview, and Development:
+Set these on Production, Preview, and Development. Sai pastes keys on Vercel. Do not commit them.
 
 | Name | Where it comes from |
 | --- | --- |
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
-| `STRIPE_PRICE_ID` | $9.99/month Price ID |
+| `DODO_PAYMENTS_API_KEY` | Dodo API key (required) |
+| `DODO_PAYMENTS_WEBHOOK_KEY` | Webhook signing key (required for `/api/dodo/webhook`) |
+| `DODO_SUBSCRIBE_PRODUCT_ID` | $9.99/mo product. Test: `pdt_0NmpiDbCi5EJoEzsRAa1t` |
+| `DODO_VERIFYAI_PRODUCT_ID` | $4.99 one-time product. Test: `pdt_0NmpiDe3U2blA83EN7qTE` |
+| `DODO_PAYMENTS_ENVIRONMENT` | `test_mode` for Test; `live_mode` for Live. Defaults to `test_mode` if unset. |
 
 Optional: `NEXT_PUBLIC_SITE_URL=https://bandhamai.vercel.app` so Checkout return URLs stay stable.
+
+Stripe env vars are **not** required for Subscribe or VerifyAI. Meetup tickets still use `STRIPE_EVENT_PRICE_ID` and fail closed without it.
 
 Redeploy after saving env vars. Existing Supabase keys stay as they are.
 
 ### Supabase SQL (Sai)
 
-In the SQL editor, run [`supabase/subscriptions.sql`](supabase/subscriptions.sql). That creates `public.subscriptions` (RLS: select own row; service role writes) and, if `public.messages` exists, a trigger so an insert cannot skip the paywall.
+In the SQL editor, run [`supabase/subscriptions.sql`](supabase/subscriptions.sql) if that table is not already there. Then run [`supabase/subscriptions_dodo.sql`](supabase/subscriptions_dodo.sql) to add nullable `provider`, `dodo_customer_id`, `dodo_subscription_id`, and `dodo_product_id`. Do not drop `stripe_*` columns. Existing active/trialing Stripe rows keep messaging.
 
 The app does not invent profile columns for this. Entitlement lives on `subscriptions`.
 
 ### Test steps
 
-1. With Stripe env **missing**, open Chat → Send. You should see **Billing is not configured**, not a crash.
+1. With Dodo env **missing**, open Chat → Subscribe. You should see **Billing is not configured** (`billing_not_configured`), not a Stripe-missing error.
 2. Sign out → Chat → Send. You should be asked to sign in. Browse still works.
-3. After env + SQL + webhook are live: sign in, Chat → **Subscribe $9.99 a month** → Stripe Checkout (test card) → return `/?billing=success`.
-4. Stripe Dashboard → Webhooks should show `checkout.session.completed` (and subscription events) succeeding.
-5. In Supabase, `subscriptions` should have your `user_id`, `stripe_customer_id`, `status` `active` (or `trialing`).
+3. After env + SQL + webhook are live: sign in, Chat → **Subscribe $9.99 a month** → Dodo Checkout → return `/?billing=success`.
+4. Dodo Dashboard → Webhooks should show `payment.succeeded` / `subscription.active` succeeding.
+5. In Supabase, `subscriptions` should have your `user_id`, `dodo_customer_id`, `status` `active`.
 6. Chat Send (or `POST /api/messages` with a Bearer token) should succeed. A second account without a row should get **402**.
-7. **Manage subscription** opens the Stripe Customer Portal. Cancel there; after the webhook, Send should paywall again.
+7. **Manage subscription** opens the Dodo customer portal. Cancel there; after the webhook, Send should paywall again.
 8. Speed Match, Browse search, and `/profile/new` stay usable without a subscription.
+9. Meetup ticket and Priority pin stay fail-closed. Do not invent Price IDs.
 
 ## Meetup this month
 
@@ -242,7 +248,7 @@ VerifyAI ([verifyai.llc](https://verifyai.llc)) is the verification layer for Ba
 Flow:
 
 1. The linked profile must already have a `photo_url`. Checkout and start return **409** without one. Paying still does not set verified.
-2. Member pays **$4.99 one-time** via real Stripe Checkout (`mode: payment`, `STRIPE_VERIFYAI_PRICE_ID`). Separate from the $9.99/mo messaging Price.
+2. Member pays **$4.99 one-time** via Dodo Checkout (`DODO_VERIFYAI_PRODUCT_ID`). Separate from the $9.99/mo messaging product.
 3. Payment is stored. `verifyai_status` becomes `pending` if it was not already `verified`. **Paying does not show the badge.**
 4. The member is sent into the VerifyAI flow (`VERIFYAI_START_URL` hosted link, or `VERIFYAI_API_URL` + `VERIFYAI_API_KEY` session create).
 5. VerifyAI calls `POST /api/verifyai/webhook` on success. The badge appears only when `verifyai_status = 'verified'`, a paid $4.99 row exists, **and** the profile has a photo. Operator `POST /api/verifyai` cannot skip payment or the photo.
@@ -253,23 +259,19 @@ verifyai.llc does not publish a public API in this repo (biometric link product,
 
 Run [`supabase/verifyai.sql`](supabase/verifyai.sql). Adds profile status columns plus `verifyai_payments` and `verifyai_sessions`.
 
-### Stripe Dashboard (Sai)
+### Dodo Dashboard (Sai)
 
-On the same Stripe account as messaging:
+Use the VerifyAI one-time product (`pdt_0NmpiDe3U2blA83EN7qTE` in Test). Do not point `DODO_SUBSCRIBE_PRODUCT_ID` at the $4.99 product.
 
-1. Product e.g. **Bandham AI VerifyAI**.
-2. One-time **Price: $4.99**. Copy `price_...` into `STRIPE_VERIFYAI_PRICE_ID`.
-3. The existing webhook URL (`/api/stripe/webhook`) also records this payment (`metadata.purpose=verifyai`). No second webhook is required.
-
-Do not point `STRIPE_PRICE_ID` at the $4.99 Price. That env is the $9.99/mo messaging subscription.
+`POST /api/dodo/webhook` records this payment (`metadata.purpose=verifyai`). Paying does not set verified.
 
 ### Vercel env (Sai)
 
-In addition to the existing Stripe messaging keys:
+In addition to the Dodo messaging keys:
 
 | Name | Purpose |
 | --- | --- |
-| `STRIPE_VERIFYAI_PRICE_ID` | $4.99 one-time Price ID |
+| `DODO_VERIFYAI_PRODUCT_ID` | $4.99 one-time product ID |
 | `VERIFYAI_START_URL` | Hosted VerifyAI flow URL (used if no API) |
 | `VERIFYAI_API_URL` | Optional session-create endpoint |
 | `VERIFYAI_API_KEY` | Optional Bearer for that endpoint |
@@ -355,7 +357,7 @@ This app does **not** turn Confirm email on or off. That is the Supabase project
 
 The iOS target is a Capacitor wrapper around the **hosted** Next.js app. It loads `https://bandhamai.vercel.app` in a WKWebView so the iPhone app matches the website without a static-export rewrite.
 
-That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/guru`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`, `/api/stripe/*`, `/api/messages`), Supabase, Stripe, and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
+That choice is intentional. The site uses App Router API routes (`/api/transcribe`, `/api/guru`, `/api/chat`, `/api/profiles`, `/api/photos`, `/api/speed-match`, `/api/stripe/*`, `/api/dodo/webhook`, `/api/messages`), Supabase, Dodo Payments, Stripe (meetup only), and Grok STT. `output: 'export'` would break those and risk the Vercel production deploy. Capacitor still needs a local `webDir` (`ios-shell/`) for the native project and an offline fallback page.
 
 ### What this repo already has
 

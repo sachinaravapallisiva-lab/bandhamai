@@ -1,5 +1,6 @@
 /**
- * Stripe Customer Portal — manage or cancel the messaging subscription.
+ * Dodo customer portal — manage or cancel the messaging subscription.
+ * Legacy Stripe-only rows keep messaging; this does not open a Stripe portal.
  */
 import { NextResponse } from "next/server";
 import {
@@ -12,18 +13,14 @@ import {
 } from "../../../../lib/server-supabase";
 import { BILLING_COPY, SUBSCRIPTIONS_SQL_FILE, SUBSCRIPTIONS_TABLE } from "../../../../lib/billing";
 import { getSubscriptionRow } from "../../../../lib/entitlement";
-import {
-  appOrigin,
-  billingNotConfiguredResponse,
-  getStripe,
-  isStripeConfigured,
-} from "../../../../lib/stripe";
+import { appOrigin } from "../../../../lib/stripe";
+import { billingNotConfiguredResponse, getDodo, isDodoSubscribeConfigured } from "../../../../lib/dodo";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!isStripeConfigured()) return billingNotConfiguredResponse();
+    if (!isDodoSubscribeConfigured()) return billingNotConfiguredResponse();
 
     if (!hasBearerToken(request)) {
       return unauthorizedResponse(BILLING_COPY.signIn);
@@ -43,26 +40,29 @@ export async function POST(request: Request) {
     }
 
     const row = await getSubscriptionRow(supabase, user.id);
-    if (!row?.stripe_customer_id) {
+    if (!row?.dodo_customer_id) {
       return NextResponse.json(
-        { error: "No Stripe customer yet. Subscribe first.", code: "no_customer" },
+        {
+          error:
+            "Manage billing is available after you subscribe with the current checkout. This account does not have a billing customer yet.",
+          code: "no_customer",
+        },
         { status: 400 }
       );
     }
 
-    const stripe = getStripe();
-    if (!stripe) return billingNotConfiguredResponse();
+    const dodo = getDodo();
+    if (!dodo) return billingNotConfiguredResponse();
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: row.stripe_customer_id,
+    const session = await dodo.customers.customerPortal.create(row.dodo_customer_id, {
       return_url: appOrigin(request) + "/",
     });
 
-    if (!session.url) {
-      return NextResponse.json({ error: "Stripe did not return a portal URL." }, { status: 502 });
+    if (!session.link) {
+      return NextResponse.json({ error: "Billing did not return a portal URL." }, { status: 502 });
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.link });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not open the billing portal.";
     return NextResponse.json({ error: message }, { status: 500 });

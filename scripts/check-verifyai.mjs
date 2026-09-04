@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { STRIPE_ENV_KEYS } from "../lib/billing.ts";
+import { DODO_SUBSCRIBE_ENV_KEYS, STRIPE_ENV_KEYS } from "../lib/billing.ts";
 import {
   VERIFYAI_COPY,
   VERIFYAI_DEFAULT_RETURN_PATH,
@@ -46,8 +46,9 @@ assert(normalizeVerifyaiStatus("nope") === null, "unknown status rejected");
 assert(VERIFYAI_PRICE_CENTS === 499, "one-time price is $4.99");
 assert(VERIFYAI_PRICE_LABEL === "$4.99", "label has no fake discount");
 assert(VERIFYAI_PURPOSE === "verifyai", "checkout metadata purpose");
-assert(VERIFYAI_PRICE_ENV === "STRIPE_VERIFYAI_PRICE_ID", "separate Price env");
-assert(!STRIPE_ENV_KEYS.includes("STRIPE_VERIFYAI_PRICE_ID"), "do not require VerifyAI Price for messaging");
+assert(VERIFYAI_PRICE_ENV === "DODO_VERIFYAI_PRODUCT_ID", "separate Dodo product env");
+assert(!DODO_SUBSCRIBE_ENV_KEYS.includes("DODO_VERIFYAI_PRODUCT_ID"), "do not require VerifyAI product for messaging");
+assert(!STRIPE_ENV_KEYS.includes("STRIPE_VERIFYAI_PRICE_ID"), "do not require VerifyAI Stripe Price for messaging");
 assert(VERIFYAI_COPY.wrongPrice.includes("one-time"), "wrong-price copy names one-time");
 assert(isOneTimeVerifyaiPrice({ type: "one_time", unit_amount: 499, recurring: null }) === true, "accept $4.99 one-time");
 assert(isOneTimeVerifyaiPrice({ type: "recurring", unit_amount: 999, recurring: { interval: "month" } }) === false, "reject messaging subscription Price");
@@ -73,45 +74,46 @@ assert(safeVerifyaiReturnPath("/account/../login") === "/account", "dot-dot retu
 const origin = "https://bandhamai.vercel.app";
 const profileUrls = verifyaiCheckoutReturnUrls(origin, "/profile/new");
 assert(
-  profileUrls.success_url === origin + "/profile/new?verify=paid&session_id={CHECKOUT_SESSION_ID}",
+  profileUrls.success_url === origin + "/profile/new?verify=paid",
   "success returns to the starter page with verify=paid"
 );
 assert(profileUrls.cancel_url === origin + "/profile/new?verify=cancel", "cancel returns to the starter page");
 assert(
-  verifyaiCheckoutReturnUrls(origin, "/matches").success_url ===
-    origin + "/account?verify=paid&session_id={CHECKOUT_SESSION_ID}",
+  verifyaiCheckoutReturnUrls(origin, "/matches").success_url === origin + "/account?verify=paid",
   "unsafe next still lands on /account"
 );
 
 const checkout = read("app/api/verifyai/checkout/route.ts");
-assert(checkout.includes('mode: "payment"'), "VerifyAI checkout is one-time payment");
-assert(checkout.includes("STRIPE_VERIFYAI_PRICE_ID") || checkout.includes("stripeVerifyaiPriceId"), "uses VerifyAI Price");
+assert(checkout.includes("dodoVerifyaiProductId") || checkout.includes("DODO_VERIFYAI_PRODUCT_ID"), "uses VerifyAI Dodo product");
+assert(checkout.includes("checkoutSessions.create"), "VerifyAI creates a Dodo checkout session");
+assert(!checkout.includes("dodoSubscribeProductId()") || checkout.includes("wrongPrice"), "do not bill VerifyAI on messaging product");
 assert(!checkout.includes('mode: "subscription"'), "do not bill VerifyAI on messaging subscription");
-assert(checkout.includes("isOneTimeVerifyaiPrice"), "reject a recurring Price on VerifyAI checkout");
 assert(checkout.includes("safeVerifyaiReturnPath"), "checkout sanitizes next/return_path");
 assert(checkout.includes("verifyaiCheckoutReturnUrls"), "checkout builds success/cancel from return path");
 assert(checkout.includes("return_path") && checkout.includes("next"), "checkout reads next or return_path");
-assert(checkout.includes("success_url: returnUrls.success_url"), "success_url comes from the sanitized return path");
-assert(checkout.includes("cancel_url: returnUrls.cancel_url"), "cancel_url comes from the sanitized return path");
+assert(checkout.includes("returnUrls.success_url"), "success_url comes from the sanitized return path");
+assert(checkout.includes("returnUrls.cancel_url"), "cancel_url comes from the sanitized return path");
 assert(!checkout.includes('success_url: origin + "/account?verify=paid'), "success_url is not hard-coded to /account");
 assert(!checkout.includes('cancel_url: origin + "/account?verify=cancel"'), "cancel_url is not hard-coded to /account");
+assert(!checkout.includes("getStripe"), "VerifyAI checkout does not require Stripe");
 
 const verifyaiLib = read("lib/verifyai.ts");
 assert(verifyaiLib.includes("verify=paid"), "success still uses verify=paid");
-assert(verifyaiLib.includes("session_id={CHECKOUT_SESSION_ID}"), "success still passes session_id for confirm");
 assert(verifyaiLib.includes("verify=cancel"), "cancel still uses verify=cancel");
 
 const messaging = read("app/api/stripe/checkout/route.ts");
-assert(messaging.includes('mode: "subscription"'), "messaging stays a $9.99/mo subscription");
-assert(!messaging.includes("STRIPE_VERIFYAI_PRICE_ID"), "messaging checkout does not use the VerifyAI Price");
+assert(messaging.includes("DODO_SUBSCRIBE_PRODUCT_ID") || messaging.includes("dodoSubscribeProductId"), "messaging stays a $9.99/mo Dodo product");
+assert(!messaging.includes("DODO_VERIFYAI_PRODUCT_ID"), "messaging checkout does not use the VerifyAI product");
+assert(!messaging.includes("dodoVerifyaiProductId"), "messaging checkout does not read the VerifyAI product");
 
 const confirm = read("app/api/verifyai/confirm/route.ts");
 assert(!confirm.includes('verifyai_status: "verified"'), "confirm does not set verified");
 assert(confirm.includes("recordVerifyaiPayment"), "confirm records payment only");
 
-const stripeHook = read("app/api/stripe/webhook/route.ts");
-assert(stripeHook.includes('purpose === "verifyai"') || stripeHook.includes("VERIFYAI_PURPOSE"), "Stripe webhook records VerifyAI pay");
-assert(!stripeHook.includes('verifyai_status: "verified"'), "Stripe webhook does not set verified");
+const dodoHook = read("app/api/dodo/webhook/route.ts");
+assert(dodoHook.includes("VERIFYAI_PURPOSE") || dodoHook.includes("verifyai"), "Dodo webhook records VerifyAI pay");
+assert(!dodoHook.includes('verifyai_status: "verified"'), "Dodo webhook does not set verified");
+assert(dodoHook.includes("webhooks.unwrap"), "Dodo webhook verifies Standard Webhooks signature");
 
 const verifyHook = read("app/api/verifyai/webhook/route.ts");
 assert(verifyHook.includes("hasPaidVerifyai"), "VerifyAI webhook requires paid row for verified");

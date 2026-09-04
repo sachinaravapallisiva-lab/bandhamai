@@ -1,6 +1,6 @@
 /**
- * After Checkout returns, confirm the Session with Stripe (not a fake receipt).
- * The webhook remains the durable source of truth.
+ * After Dodo Checkout returns, confirm payment/subscription (not a fake receipt).
+ * The webhook remains the durable source of truth. This path also polls the row.
  */
 import { NextResponse } from "next/server";
 import {
@@ -10,28 +10,28 @@ import {
   missingConfigResponse,
   unauthorizedResponse,
 } from "../../../../lib/server-supabase";
-import { MESSAGING_PRICE_LABEL } from "../../../../lib/billing";
+import { MESSAGING_PRICE_LABEL, MESSAGING_PURPOSE } from "../../../../lib/billing";
 import {
   entitlementFromRow,
   getSubscriptionRow,
-  rowFromStripeSubscription,
+  paymentLooksLikeSubscribe,
+  purposeFromPayment,
+  rowFromDodoSubscription,
   subscriptionsTableReady,
   tableMissingPayload,
   upsertSubscription,
 } from "../../../../lib/entitlement";
-import {
-  asStripeId,
-  billingNotConfiguredResponse,
-  getStripe,
-  isStripeConfigured,
-} from "../../../../lib/stripe";
+import { dodoSubscribeProductId, getDodo, isPaidIntentStatus } from "../../../../lib/dodo";
+import { VERIFYAI_PURPOSE } from "../../../../lib/verifyai";
 
 export const runtime = "nodejs";
 
+function asId(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export async function POST(request: Request) {
   try {
-    if (!isStripeConfigured()) return billingNotConfiguredResponse();
-
     if (!hasBearerToken(request)) {
       return unauthorizedResponse("Sign in to confirm checkout.");
     }
@@ -40,13 +40,12 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Send a checkout session_id." }, { status: 400 });
+      body = {};
     }
 
-    const sessionId = typeof body.session_id === "string" ? body.session_id.trim() : "";
-    if (!sessionId.startsWith("cs_")) {
-      return NextResponse.json({ error: "Send a checkout session_id." }, { status: 400 });
-    }
+    const sessionId = asId(body.session_id);
+    const paymentIdInput = asId(body.payment_id);
+    const subscriptionIdInput = asId(body.subscription_id);
 
     const supabase = getServiceSupabase();
     if (!supabase) return missingConfigResponse();
@@ -58,32 +57,56 @@ export async function POST(request: Request) {
       return NextResponse.json(tableMissingPayload(), { status: 503 });
     }
 
-    const stripe = getStripe();
-    if (!stripe) return billingNotConfiguredResponse();
+    const dodo = getDodo();
+    if (dodo && (sessionId || paymentIdInput || subscriptionIdInput)) {
+      try {
+        let paymentId = paymentIdInput;
+        if (!paymentId && sessionId) {
+          const session = await dodo.checkoutSessions.retrieve(sessionId);
+          if (session.payment_id && isPaidIntentStatus(session.payment_status)) {
+            paymentId = session.payment_id;
+          }
+        }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const sessionUser =
-      (session.metadata && session.metadata.user_id) || session.client_reference_id || "";
-    if (sessionUser && sessionUser !== user.id) {
-      return NextResponse.json({ error: "This checkout session belongs to another account." }, { status: 403 });
-    }
+        let subscriptionId = subscriptionIdInput;
+        if (paymentId) {
+          const payment = await dodo.payments.retrieve(paymentId);
+          const purpose = purposeFromPayment(payment);
+          if (purpose === VERIFYAI_PURPOSE) {
+            const row = await getSubscriptionRow(supabase, user.id);
+            return NextResponse.json({
+              ...entitlementFromRow(row, true),
+              priceLabel: MESSAGING_PRICE_LABEL,
+            });
+          }
+          if (
+            paymentLooksLikeSubscribe(payment, dodoSubscribeProductId(), MESSAGING_PURPOSE) &&
+            (isPaidIntentStatus(payment.status) || payment.subscription_id)
+          ) {
+            subscriptionId = subscriptionId || payment.subscription_id || "";
+          }
+        }
 
-    const subscriptionId = asStripeId(session.subscription);
-    const customerId = asStripeId(session.customer);
-    if (subscriptionId && (session.payment_status === "paid" || session.status === "complete")) {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const { error } = await upsertSubscription(
-        supabase,
-        rowFromStripeSubscription(user.id, subscription, customerId)
-      );
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        if (subscriptionId) {
+          const subscription = await dodo.subscriptions.retrieve(subscriptionId);
+          const existing = await getSubscriptionRow(supabase, user.id);
+          const { error } = await upsertSubscription(
+            supabase,
+            rowFromDodoSubscription(user.id, subscription, existing)
+          );
+          if (error) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+          }
+        }
+      } catch {
+        // Webhook may already have written the row. Fall through to poll.
       }
     }
 
     const row = await getSubscriptionRow(supabase, user.id);
+    const configured = true;
     return NextResponse.json({
-      ...entitlementFromRow(row, true),
+      ...entitlementFromRow(row, configured),
       priceLabel: MESSAGING_PRICE_LABEL,
     });
   } catch (err) {

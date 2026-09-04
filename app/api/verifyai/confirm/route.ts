@@ -1,5 +1,5 @@
 /**
- * After $4.99 Checkout, confirm the Session with Stripe.
+ * After $4.99 Checkout, confirm the Session with Dodo.
  * Records payment and sets verifyai_status=pending. Never verified from pay alone.
  */
 import { NextResponse } from "next/server";
@@ -10,6 +10,7 @@ import {
   missingConfigResponse,
   unauthorizedResponse,
 } from "../../../../lib/server-supabase";
+import { MESSAGING_PURPOSE } from "../../../../lib/billing";
 import { VERIFYAI_COPY, VERIFYAI_PURPOSE, isVerifyaiVerified } from "../../../../lib/verifyai";
 import {
   buildVerifyaiStartUrl,
@@ -17,14 +18,27 @@ import {
   recordVerifyaiPayment,
   rememberVerifyaiExternalId,
 } from "../../../../lib/verifyai-checkout";
-import { appOrigin, asStripeId, getStripe, stripeSecretKey } from "../../../../lib/stripe";
+import { appOrigin } from "../../../../lib/stripe";
+import {
+  dodoSubscribeProductId,
+  dodoVerifyaiProductId,
+  getDodo,
+  isDodoVerifyaiConfigured,
+  isPaidIntentStatus,
+  productIdsFromPayment,
+} from "../../../../lib/dodo";
+import { purposeFromPayment } from "../../../../lib/entitlement";
 import { canStartVerifyai } from "../../../../lib/terms-agree";
 
 export const runtime = "nodejs";
 
+function asId(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export async function POST(request: Request) {
   try {
-    if (!stripeSecretKey()) {
+    if (!isDodoVerifyaiConfigured()) {
       return NextResponse.json({ error: VERIFYAI_COPY.notConfigured }, { status: 503 });
     }
     if (!hasBearerToken(request)) {
@@ -35,12 +49,13 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Send a checkout session_id." }, { status: 400 });
+      return NextResponse.json({ error: "Send a checkout session_id or payment_id." }, { status: 400 });
     }
 
-    const sessionId = typeof body.session_id === "string" ? body.session_id.trim() : "";
-    if (!sessionId.startsWith("cs_")) {
-      return NextResponse.json({ error: "Send a checkout session_id." }, { status: 400 });
+    const sessionId = asId(body.session_id);
+    let paymentId = asId(body.payment_id);
+    if (!sessionId && !paymentId) {
+      return NextResponse.json({ error: "Send a checkout session_id or payment_id." }, { status: 400 });
     }
 
     const supabase = getServiceSupabase();
@@ -49,30 +64,40 @@ export async function POST(request: Request) {
     const { user, error: authError } = await getRequestUser(request, supabase);
     if (!user) return unauthorizedResponse(authError || "Sign in to continue.");
 
-    const stripe = getStripe();
-    if (!stripe) {
+    const dodo = getDodo();
+    if (!dodo) {
       return NextResponse.json({ error: VERIFYAI_COPY.notConfigured }, { status: 503 });
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const purpose = session.metadata?.purpose || "";
-    const sessionUser = session.metadata?.user_id || session.client_reference_id || "";
-    if (sessionUser && sessionUser !== user.id) {
-      return NextResponse.json({ error: "This checkout session belongs to another account." }, { status: 403 });
+    if (!paymentId && sessionId) {
+      const session = await dodo.checkoutSessions.retrieve(sessionId);
+      if (!isPaidIntentStatus(session.payment_status) || !session.payment_id) {
+        return NextResponse.json({ error: "Billing has not marked this payment paid yet." }, { status: 402 });
+      }
+      paymentId = session.payment_id;
     }
-    if (session.mode !== "payment" || purpose !== VERIFYAI_PURPOSE) {
+
+    const payment = await dodo.payments.retrieve(paymentId);
+    const purpose = purposeFromPayment(payment);
+    const productIds = productIdsFromPayment(payment);
+    const verifyaiProductId = dodoVerifyaiProductId();
+    const subscribeProductId = dodoSubscribeProductId();
+    const isVerifyai =
+      purpose === VERIFYAI_PURPOSE ||
+      (!purpose && !!verifyaiProductId && productIds.includes(verifyaiProductId));
+    if (!isVerifyai || purpose === MESSAGING_PURPOSE || (subscribeProductId && productIds.includes(subscribeProductId))) {
       return NextResponse.json({ error: "This checkout session is not the $4.99 VerifyAI payment." }, { status: 400 });
     }
-    if (session.payment_status !== "paid" && session.status !== "complete") {
-      return NextResponse.json({ error: "Stripe has not marked this payment paid yet." }, { status: 402 });
+    if (!isPaidIntentStatus(payment.status)) {
+      return NextResponse.json({ error: "Billing has not marked this payment paid yet." }, { status: 402 });
     }
 
     const recorded = await recordVerifyaiPayment(supabase, {
       userId: user.id,
-      profileId: session.metadata?.profile_id || null,
-      checkoutSessionId: session.id,
-      paymentIntentId: asStripeId(session.payment_intent),
-      amountCents: typeof session.amount_total === "number" ? session.amount_total : undefined,
+      profileId: typeof payment.metadata?.profile_id === "string" ? payment.metadata.profile_id : null,
+      checkoutSessionId: payment.checkout_session_id || sessionId || payment.payment_id,
+      paymentIntentId: payment.payment_id,
+      amountCents: typeof payment.total_amount === "number" ? payment.total_amount : undefined,
     });
     if (recorded.error) {
       return NextResponse.json({ error: recorded.error, sql: "sql" in recorded ? recorded.sql : undefined }, { status: 400 });
@@ -127,7 +152,7 @@ export async function POST(request: Request) {
       userId: user.id,
       email: user.email,
       profileId: recorded.profileId,
-      checkoutSessionId: session.id,
+      checkoutSessionId: payment.checkout_session_id || sessionId || payment.payment_id,
     });
     if (start.externalId) {
       await rememberVerifyaiExternalId(supabase, {

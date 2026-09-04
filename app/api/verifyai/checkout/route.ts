@@ -1,5 +1,5 @@
 /**
- * Stripe Checkout for the $4.99 VerifyAI SKU (one-time, mode=payment).
+ * Dodo Checkout for the $4.99 VerifyAI SKU (one-time).
  * Separate from /api/stripe/checkout ($9.99/mo messaging).
  * Paying does not set verifyai_status=verified.
  */
@@ -19,12 +19,17 @@ import {
   VERIFYAI_PRICE_LABEL,
   VERIFYAI_PURPOSE,
   VERIFYAI_SQL_FILE,
-  isOneTimeVerifyaiPrice,
   safeVerifyaiReturnPath,
   verifyaiCheckoutReturnUrls,
 } from "../../../../lib/verifyai";
 import { loadVerifyaiState, verifyaiPhotoRequiredBody, verifyaiUnderageBody } from "../../../../lib/verifyai-checkout";
-import { appOrigin, getStripe, stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
+import { appOrigin } from "../../../../lib/stripe";
+import {
+  dodoSubscribeProductId,
+  dodoVerifyaiProductId,
+  getDodo,
+  isDodoVerifyaiConfigured,
+} from "../../../../lib/dodo";
 
 export const runtime = "nodejs";
 
@@ -48,7 +53,7 @@ async function readCheckoutReturnPath(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (!stripeSecretKey() || !stripeVerifyaiPriceId()) return checkoutNotConfigured();
+    if (!isDodoVerifyaiConfigured()) return checkoutNotConfigured();
 
     if (!hasBearerToken(request)) {
       return unauthorizedResponse("Sign in to pay for VerifyAI.");
@@ -78,12 +83,10 @@ export async function POST(request: Request) {
       return NextResponse.json(verifyaiUnderageBody(), { status: 403 });
     }
 
-    const stripe = getStripe();
-    const priceId = stripeVerifyaiPriceId();
-    if (!stripe || !priceId) return checkoutNotConfigured();
-
-    const price = await stripe.prices.retrieve(priceId);
-    if (!isOneTimeVerifyaiPrice(price)) {
+    const dodo = getDodo();
+    const productId = dodoVerifyaiProductId();
+    if (!dodo || !productId) return checkoutNotConfigured();
+    if (productId === dodoSubscribeProductId()) {
       return NextResponse.json(
         { error: VERIFYAI_COPY.wrongPrice, code: "verifyai_price_not_one_time" },
         { status: 503 }
@@ -93,27 +96,25 @@ export async function POST(request: Request) {
     const origin = appOrigin(request);
     const returnPath = await readCheckoutReturnPath(request);
     const returnUrls = verifyaiCheckoutReturnUrls(origin, returnPath);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      client_reference_id: user.id,
-      customer_email: user.email || undefined,
-      allow_promotion_codes: false,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: returnUrls.success_url,
+    const session = await dodo.checkoutSessions.create({
+      product_cart: [{ product_id: productId, quantity: 1 }],
+      customer: user.email ? { email: user.email } : undefined,
+      return_url: returnUrls.success_url,
       cancel_url: returnUrls.cancel_url,
       metadata: {
         user_id: user.id,
         purpose: VERIFYAI_PURPOSE,
         profile_id: state.profileId || "",
       },
+      feature_flags: { allow_discount_code: false },
     });
 
-    if (!session.url) {
-      return NextResponse.json({ error: "Stripe did not return a checkout URL." }, { status: 502 });
+    if (!session.checkout_url) {
+      return NextResponse.json({ error: "Checkout did not return a checkout URL." }, { status: 502 });
     }
 
     return NextResponse.json({
-      url: session.url,
+      url: session.checkout_url,
       priceLabel: VERIFYAI_PRICE_LABEL,
       verified: false,
     });

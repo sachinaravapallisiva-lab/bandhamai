@@ -16,7 +16,7 @@ import {
 } from "./verifyai";
 import { tableExists, tableHasColumn } from "./server-supabase";
 import { asId, resolveUserProfileId } from "./safety-server";
-import { stripeSecretKey, stripeVerifyaiPriceId } from "./stripe";
+import { isDodoVerifyaiConfigured } from "./dodo";
 import { hasProfilePhotoUrl } from "./profile-photos";
 
 export type VerifyaiPaymentState = {
@@ -361,7 +361,7 @@ export async function loadVerifyaiState(
     under18,
     startUrl: null,
     startConfigured: verifyaiStartConfigured(),
-    checkoutConfigured: !!(stripeSecretKey() && stripeVerifyaiPriceId()),
+    checkoutConfigured: isDodoVerifyaiConfigured(),
     firstParty: !verifyaiHasThirdPartyStart(),
   };
 }

@@ -8,7 +8,7 @@ import {
 } from "../../../../lib/server-supabase";
 import { VERIFYAI_COPY, VERIFYAI_PRICE_LABEL } from "../../../../lib/verifyai";
 import { loadVerifyaiState } from "../../../../lib/verifyai-checkout";
-import { stripeSecretKey, stripeVerifyaiPriceId } from "../../../../lib/stripe";
+import { isDodoVerifyaiConfigured } from "../../../../lib/dodo";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     if (!user) return unauthorizedResponse(authError || "Sign in to continue.");
 
     const state = await loadVerifyaiState(supabase, user.id);
-    const checkoutConfigured = !!(stripeSecretKey() && stripeVerifyaiPriceId());
+    const checkoutConfigured = isDodoVerifyaiConfigured();
     return NextResponse.json({
       ...state,
       checkoutConfigured,

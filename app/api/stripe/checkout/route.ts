@@ -1,5 +1,6 @@
 /**
- * Stripe Checkout Session for the $9.99/mo messaging plan.
+ * Dodo Checkout Session for the $9.99/mo Bandham AI subscription.
+ * Client path stays /api/stripe/checkout. Stripe is not required.
  */
 import { NextResponse } from "next/server";
 import {
@@ -10,21 +11,21 @@ import {
   tableExists,
   unauthorizedResponse,
 } from "../../../../lib/server-supabase";
-import { BILLING_COPY, SUBSCRIPTIONS_SQL_FILE, SUBSCRIPTIONS_TABLE } from "../../../../lib/billing";
-import { getSubscriptionRow, upsertSubscription } from "../../../../lib/entitlement";
+import { BILLING_COPY, MESSAGING_PURPOSE, SUBSCRIPTIONS_SQL_FILE, SUBSCRIPTIONS_TABLE } from "../../../../lib/billing";
+import { getSubscriptionRow } from "../../../../lib/entitlement";
+import { appOrigin } from "../../../../lib/stripe";
 import {
-  appOrigin,
   billingNotConfiguredResponse,
-  getStripe,
-  isStripeConfigured,
-  stripePriceId,
-} from "../../../../lib/stripe";
+  dodoSubscribeProductId,
+  getDodo,
+  isDodoSubscribeConfigured,
+} from "../../../../lib/dodo";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!isStripeConfigured()) return billingNotConfiguredResponse();
+    if (!isDodoSubscribeConfigured()) return billingNotConfiguredResponse();
 
     if (!hasBearerToken(request)) {
       return unauthorizedResponse(BILLING_COPY.signIn);
@@ -43,52 +44,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = getStripe();
-    const priceId = stripePriceId();
-    if (!stripe || !priceId) return billingNotConfiguredResponse();
+    const dodo = getDodo();
+    const productId = dodoSubscribeProductId();
+    if (!dodo || !productId) return billingNotConfiguredResponse();
 
     const existing = await getSubscriptionRow(supabase, user.id);
-    let customerId = existing?.stripe_customer_id || "";
-
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email || undefined,
-        metadata: { user_id: user.id },
-      });
-      customerId = customer.id;
-      const { error } = await upsertSubscription(supabase, {
-        user_id: user.id,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: existing?.stripe_subscription_id || null,
-        stripe_price_id: existing?.stripe_price_id || null,
-        status: existing?.status || "none",
-        current_period_end: existing?.current_period_end || null,
-      });
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-    }
-
     const origin = appOrigin(request);
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      client_reference_id: user.id,
-      allow_promotion_codes: false,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: origin + "/?billing=success&session_id={CHECKOUT_SESSION_ID}",
+    const session = await dodo.checkoutSessions.create({
+      product_cart: [{ product_id: productId, quantity: 1 }],
+      customer: existing?.dodo_customer_id
+        ? { customer_id: existing.dodo_customer_id }
+        : user.email
+          ? { email: user.email }
+          : undefined,
+      return_url: origin + "/?billing=success",
       cancel_url: origin + "/?billing=cancel",
-      metadata: { user_id: user.id },
-      subscription_data: {
-        metadata: { user_id: user.id },
-      },
+      metadata: { user_id: user.id, purpose: MESSAGING_PURPOSE },
+      feature_flags: { allow_discount_code: false },
     });
 
-    if (!session.url) {
-      return NextResponse.json({ error: "Stripe did not return a checkout URL." }, { status: 502 });
+    if (!session.checkout_url) {
+      return NextResponse.json({ error: "Checkout did not return a checkout URL." }, { status: 502 });
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.checkout_url });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not start checkout.";
     return NextResponse.json({ error: message }, { status: 500 });
