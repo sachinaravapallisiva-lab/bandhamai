@@ -35,7 +35,8 @@ export const CHATS_EMPTY_BODY = "When someone writes to you, it will show here."
 export const CHATS_OPEN_INBOX = "Open Inbox";
 export const CHATS_BROWSE = "Browse";
 export const CHATS_SCOPE = "conversations";
-export const CHATS_RAIL_LIMIT = 8;
+/** Short drawer height. Extra threads scroll inside the card. */
+export const CHATS_RAIL_MAX_HEIGHT = 228;
 
 export type InboxMessage = {
   id: string;

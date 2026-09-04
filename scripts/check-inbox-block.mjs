@@ -6,6 +6,7 @@ import {
   CHATS_EMPTY_BODY,
   CHATS_EMPTY_TITLE,
   CHATS_OPEN_INBOX,
+  CHATS_RAIL_MAX_HEIGHT,
   CHATS_SCOPE,
   CHATS_SIGN_IN,
   CHATS_TITLE,
@@ -122,6 +123,8 @@ assert(CHATS_TITLE === "Chats", "rail title lock");
 assert(CHATS_SCOPE === "conversations", "rail uses the conversations scope on /api/messages");
 assert(CHATS_OPEN_INBOX === "Open Inbox", "empty rail points at Inbox");
 assert(CHATS_BROWSE === "Browse", "empty rail can return to Browse");
+assert(CHATS_RAIL_MAX_HEIGHT === 228, "rail list stays a short drawer");
+assert(CHATS_RAIL_MAX_HEIGHT < 320, "rail is not a full page paste");
 assert(inboxTimeLabel("2026-08-03T12:00:00.000Z", Date.parse("2026-08-03T12:00:20.000Z")) === "Now", "fresh stamp is Now");
 assert(inboxTimeLabel("2026-08-03T10:00:00.000Z", Date.parse("2026-08-03T12:00:00.000Z")) === "2h", "hour stamp");
 assert(inboxTimeLabel("2026-01-03T12:00:00.000Z", Date.parse("2026-08-03T12:00:00.000Z")) === "Jan 3", "older stamp stays short");
@@ -216,8 +219,13 @@ assert(chatsRail.includes("inboxChatHref"), "rail opens live /chat");
 assert(chatsRail.includes("CHATS_TITLE"), "rail is titled Chats");
 assert(chatsRail.includes("sidebarAvatarInitial"), "rail rows use an initial");
 assert(chatsRail.includes("inboxTimeLabel"), "rail rows show time");
+assert(chatsRail.includes("whiteSpace: \"nowrap\""), "snippet stays one truncated line");
+assert(chatsRail.includes("CHATS_RAIL_MAX_HEIGHT") && chatsRail.includes("overflowY"), "many threads scroll inside the card");
 assert(chatsRail.includes("INBOX_PATH"), "empty rail links Inbox");
 assert(chatsRail.includes('href="/"') || chatsRail.includes('href={"/"}'), "empty rail links Browse");
+assert(!chatsRail.includes("type=\"search\""), "no search field; it would bloat the drawer");
+assert(!/\bunread\b/i.test(chatsRail), "inbox has no unread state, so the rail skips a dot");
+assert(!/twitter|tweetdeck|\bx\.com\b|for you/i.test(chatsRail), "do not copy X branding");
 assert(!chatsRail.includes("/api/chat"), "rail does not invent a second chat API");
 assert(!chatsRail.includes("Priya"), "rail has no Priya seed");
 assert(!/subscribe|paywall|upgrade|crown/i.test(stripComments(chatsRail)), "listing is not a paywall");

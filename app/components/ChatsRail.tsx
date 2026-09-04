@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 import { fetchInboxThreads } from "../../lib/client-inbox";
 import {
   CHATS_BROWSE,
-  CHATS_EMPTY_BODY,
   CHATS_EMPTY_TITLE,
   CHATS_OPEN_INBOX,
-  CHATS_RAIL_LIMIT,
+  CHATS_RAIL_MAX_HEIGHT,
   CHATS_SIGN_IN,
   CHATS_TITLE,
   INBOX_PATH,
@@ -34,7 +33,7 @@ export default function ChatsRail() {
     });
   }, []);
 
-  const rows = (threads || []).slice(0, CHATS_RAIL_LIMIT);
+  const rows = threads || [];
 
   return (
     <section
@@ -45,62 +44,62 @@ export default function ChatsRail() {
         background: CREAM,
         border: "1px solid " + LINE,
         borderRadius: 14,
-        padding: "16px 14px 14px",
+        padding: "12px 10px 8px",
         marginBottom: 18,
       }}
     >
-      <h2
-        className="bm-serif"
-        style={{ margin: "0 0 12px", fontSize: 22, fontWeight: 400, color: VIOLET_DEEP }}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "0 4px 8px",
+        }}
       >
-        {CHATS_TITLE}
-      </h2>
+        <h2
+          className="bm-serif"
+          style={{ margin: 0, fontSize: 16, fontWeight: 400, color: VIOLET_DEEP }}
+        >
+          {CHATS_TITLE}
+        </h2>
+        <Link
+          href={INBOX_PATH}
+          className="bm-sans bm-focus"
+          style={{ fontSize: 12, fontWeight: 600, color: VIOLET, textDecoration: "none", flexShrink: 0 }}
+        >
+          {CHATS_OPEN_INBOX}
+        </Link>
+      </div>
 
       {signedIn === null || (signedIn && threads == null) ? (
-        <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED }}>
+        <p className="bm-sans" style={{ margin: "4px 4px 8px", fontSize: 12.5, color: MUTED }}>
           One moment...
         </p>
       ) : !signedIn ? (
-        <div>
-          <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-            {CHATS_SIGN_IN}
-          </p>
-          <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-            <Link href={loginHref("/")} className="bm-focus" style={{ color: VIOLET }}>
-              Sign in
-            </Link>
-            {", "}
-            <Link href={INBOX_PATH} className="bm-focus" style={{ color: VIOLET }}>
-              {CHATS_OPEN_INBOX}
-            </Link>
-            {" or "}
-            <Link href="/" className="bm-focus" style={{ color: VIOLET }}>
-              {CHATS_BROWSE}
-            </Link>
-            {"."}
-          </p>
-        </div>
+        <p className="bm-sans" style={{ margin: "2px 4px 8px", fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+          <Link href={loginHref("/")} className="bm-focus" style={{ color: VIOLET }}>
+            Sign in
+          </Link>
+          {CHATS_SIGN_IN.slice(7)}
+        </p>
       ) : rows.length === 0 ? (
-        <div>
-          <p className="bm-serif" style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 400, color: INK }}>
-            {note ? "" : CHATS_EMPTY_TITLE}
-          </p>
-          <p className="bm-sans" style={{ margin: "0 0 10px", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-            {note || CHATS_EMPTY_BODY}
-          </p>
-          <p className="bm-sans" style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-            <Link href={INBOX_PATH} className="bm-focus" style={{ color: VIOLET }}>
-              {CHATS_OPEN_INBOX}
-            </Link>
-            {" or "}
-            <Link href="/" className="bm-focus" style={{ color: VIOLET }}>
-              {CHATS_BROWSE}
-            </Link>
-            {"."}
-          </p>
-        </div>
+        <p className="bm-sans" style={{ margin: "2px 4px 8px", fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+          {note || CHATS_EMPTY_TITLE}{" "}
+          <Link href="/" className="bm-focus" style={{ color: VIOLET }}>
+            {CHATS_BROWSE}
+          </Link>
+          {"."}
+        </p>
       ) : (
-        <div style={{ display: "grid", gap: 2 }}>
+        <div
+          data-chats-list="true"
+          style={{
+            maxHeight: CHATS_RAIL_MAX_HEIGHT,
+            overflowY: "auto",
+            margin: "0 -4px",
+          }}
+        >
           {rows.map(function (thread) {
             const initial = sidebarAvatarInitial(thread.name);
             return (
@@ -108,13 +107,12 @@ export default function ChatsRail() {
                 key={thread.userId}
                 href={inboxChatHref(thread.userId)}
                 data-chats-row="true"
-                className="bm-focus"
+                className="bm-menu bm-focus"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "28px minmax(0, 1fr) auto",
-                  alignItems: "center",
+                  display: "flex",
+                  alignItems: "flex-start",
                   gap: 8,
-                  padding: "8px 6px",
+                  padding: "8px 8px",
                   borderRadius: 10,
                   textDecoration: "none",
                   color: "inherit",
@@ -124,8 +122,8 @@ export default function ChatsRail() {
                   aria-hidden="true"
                   className="bm-sans"
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     borderRadius: 999,
                     border: "1px solid " + LINE,
                     background: WASH,
@@ -133,27 +131,39 @@ export default function ChatsRail() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 600,
                     flexShrink: 0,
                   }}
                 >
                   {initial}
                 </span>
-                <span style={{ minWidth: 0 }}>
+                <span style={{ minWidth: 0, flex: 1 }}>
                   <span
-                    className="bm-serif"
                     style={{
-                      display: "block",
-                      fontSize: 15,
-                      fontWeight: 400,
-                      color: INK,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: 8,
                     }}
                   >
-                    {thread.name}
+                    <span
+                      className="bm-sans"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: INK,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        minWidth: 0,
+                      }}
+                    >
+                      {thread.name}
+                    </span>
+                    <span className="bm-sans" style={{ fontSize: 11, color: MUTED, flexShrink: 0 }}>
+                      {inboxTimeLabel(thread.lastAt)}
+                    </span>
                   </span>
                   <span
                     className="bm-sans"
@@ -161,7 +171,7 @@ export default function ChatsRail() {
                       display: "block",
                       fontSize: 12,
                       color: MUTED,
-                      lineHeight: 1.35,
+                      lineHeight: 1.3,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -170,20 +180,9 @@ export default function ChatsRail() {
                     {thread.lastBody}
                   </span>
                 </span>
-                <span
-                  className="bm-sans"
-                  style={{ fontSize: 11, color: MUTED, flexShrink: 0, alignSelf: "flex-start", paddingTop: 2 }}
-                >
-                  {inboxTimeLabel(thread.lastAt)}
-                </span>
               </Link>
             );
           })}
-          {note ? (
-            <p className="bm-sans" style={{ margin: "8px 0 0", fontSize: 12, color: MUTED }}>
-              {note}
-            </p>
-          ) : null}
         </div>
       )}
     </section>
