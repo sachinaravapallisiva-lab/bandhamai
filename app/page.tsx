@@ -15,6 +15,7 @@ import MatchCard from "./components/MatchCard";
 import AccountDrawer, { AccountMenuControl } from "./components/AccountDrawer";
 import MeetupCard from "./components/MeetupCard";
 import MeetupRail from "./components/MeetupRail";
+import ChatsRail from "./components/ChatsRail";
 import BandhamMark from "./components/BandhamMark";
 import { supabase } from "../lib/supabase";
 import { INBOX_PATH, INBOX_PREVIEW_NOTE, INBOX_PREVIEW_OPEN } from "../lib/inbox";
@@ -1176,11 +1177,13 @@ export default function Home() {
         )}
       </main>
 
-      <VoiceAssistant />
+      {tab === "chat" ? <VoiceAssistant /> : null}
       </div>
       {tab === "browse" || tab === "matches" ? (
         <MeetupRail>
           <MeetupCard compact />
+          <VoiceAssistant embedded />
+          <ChatsRail />
         </MeetupRail>
       ) : null}
       <SiteFooter extraBottom={56} />

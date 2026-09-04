@@ -1,5 +1,5 @@
 import { authJsonHeaders } from "./client-auth";
-import { INBOX_MISSING, INBOX_SIGN_IN, type InboxMessage, type InboxThread } from "./inbox";
+import { CHATS_SCOPE, INBOX_MISSING, INBOX_SIGN_IN, type InboxMessage, type InboxThread } from "./inbox";
 
 async function readJson(res: Response) {
   return res.json().catch(function () {
@@ -7,7 +7,7 @@ async function readJson(res: Response) {
   });
 }
 
-export async function fetchInboxThreads(): Promise<{
+export async function fetchInboxThreads(options?: { conversations?: boolean }): Promise<{
   threads: InboxThread[];
   error: string;
   code: string;
@@ -18,7 +18,8 @@ export async function fetchInboxThreads(): Promise<{
   }
 
   try {
-    const res = await fetch("/api/messages", { headers });
+    const path = options && options.conversations ? "/api/messages?scope=" + CHATS_SCOPE : "/api/messages";
+    const res = await fetch(path, { headers });
     const data = await readJson(res);
     if (!res.ok) {
       return {

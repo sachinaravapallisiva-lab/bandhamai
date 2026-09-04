@@ -320,6 +320,8 @@ assert(plansPanel.includes("WASH"), "Priority card is visually distinct");
 assert(page.includes("MeetupRail"), "right cream is the meetup stack");
 assert(page.indexOf("<MeetupRail") > page.indexOf('className="bm-dash"'), "meetup stack sits after the dash");
 assert(page.indexOf("<MeetupCard") > page.indexOf("<MeetupRail"), "this month card is in the right stack");
+assert(page.includes("ChatsRail"), "right stack includes Chats");
+assert(page.includes("<VoiceAssistant embedded"), "right stack embeds the Bandham assistant");
 assert(page.includes('data-home-shell="true"'), "Home shell is marked for desktop grid and phone column");
 assert(page.indexOf("<SiteFooter") > page.indexOf("<MeetupRail"), "footer stays after meetup so phone paints it last");
 const homeShell = page.match(/className="bm-shell"[^>]*>/);
