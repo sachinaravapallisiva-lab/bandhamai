@@ -36,6 +36,7 @@ import AppChrome, { ChromeLink } from "../components/AppChrome";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [password, setPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
   const [status, setStatus] = useState("");
@@ -104,6 +105,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
+          first_name: firstName.trim(),
           password: password,
           agreed: true,
         }),
@@ -346,6 +348,26 @@ export default function LoginPage() {
               className="bm-sans bm-input bm-focus"
               style={fieldStyle}
             />
+
+            {mode === "signup" ? (
+              <>
+                <label className="bm-sans" style={{ display: "block", fontSize: 9.5, letterSpacing: ".14em", color: MUTED, marginBottom: 6 }}>
+                  FIRST NAME
+                </label>
+                <input
+                  type="text"
+                  name="first_name"
+                  autoComplete="given-name"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={function (e) {
+                    setFirstName(e.target.value);
+                  }}
+                  className="bm-sans bm-input bm-focus"
+                  style={fieldStyle}
+                />
+              </>
+            ) : null}
 
             <label className="bm-sans" style={{ display: "block", fontSize: 9.5, letterSpacing: ".14em", color: MUTED, marginBottom: 6 }}>
               PASSWORD

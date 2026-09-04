@@ -9,6 +9,7 @@ import {
   canCreateSignUpAccount,
 } from "../../../lib/login-auth";
 import { getAnonSupabase, missingConfigResponse } from "../../../lib/server-supabase";
+import { sendWelcomeEmail, signupFirstName } from "../../../lib/welcome-email";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
 
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
+    const firstName = signupFirstName(body);
     if (!email || !password) {
       return NextResponse.json({ error: LOGIN_EMPTY_FIELDS }, { status: 400 });
     }
@@ -34,14 +36,29 @@ export async function POST(request: Request) {
     const supabase = getAnonSupabase();
     if (!supabase) return missingConfigResponse();
 
-    const result = await supabase.auth.signUp({ email: email, password: password });
+    const result = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: { data: { first_name: firstName } },
+    });
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 400 });
+    }
+
+    let mailed = false;
+    if (result.data.user) {
+      try {
+        const welcome = await sendWelcomeEmail(email, firstName);
+        mailed = welcome.mailed === true;
+      } catch {
+        console.error("welcome email skipped: send threw");
+      }
     }
 
     return NextResponse.json({
       user: result.data.user,
       session: result.data.session,
+      mailed: mailed,
     });
   } catch {
     return NextResponse.json({ error: LOGIN_SIGN_UP_UNREACHABLE }, { status: 500 });
