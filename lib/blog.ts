@@ -60,7 +60,7 @@ export const NRI_DIASPORA_VALUES_HEADING = "What desi with values means here";
 export const NRI_DIASPORA_VALUES = [
   "On Bandham AI, desi with values is not a lecture and not a purity test. It is how the product treats you. Warm, clear, and confident. Modern NRI and diaspora voice. Still matrimony.",
   "Respect first. Profiles and chat sit in a matrimony frame. The chrome stays calm: Soft Minimal cream and violet. You are not dropped into a swipe deck. You can look with dignity and be looked at the same way.",
-  "Clarity of intent. People here are looking for marriage, not a maybe. You can say what you want without dressing it up as casual. Serious intent is the default. Chemistry is not a side note. Find your vibe match is the question, and it is a real one.",
+  "Clarity of intent. People here are looking for marriage, not a maybe. You can say what you want without dressing it up as casual. Serious intent is the default. Chemistry is not a side note. Find your vibe match? is the question, and it is a real one.",
   "Optional trust. VerifyAI is a separate $4.99 one time check that the person is who they say they are. You add it when that signal matters. It is not required to browse, search, or create a profile.",
   "Messaging when you are ready. Browse, search, Speed Match, and creating a profile stay free. Messaging is $9.99 a month when you want to talk. No rush to pay just to look.",
   "Family and cultural rootedness stay in the picture without a sermon. You can care about home, diet, language, and timeline and still want a vibe match. That mix is the point, not a contradiction.",
