@@ -161,6 +161,13 @@ const userFacing = [
 assert(/Bandham AI/.test(userFacing), "names Bandham AI");
 assert(!/Bandhamai|bandhamAI|\bBandhan\b/.test(userFacing.replace(/bandhamai\.vercel\.app/g, "")), "product name is two words");
 assert(/Find your vibe match\?/.test(userFacing), "tagline with question mark");
+assert(!/Find your vibe match(?!\?)/.test(userFacing), "locked tagline never drops the question mark");
+assert(
+  NRI_DIASPORA_VALUES.some(function (para) {
+    return para.includes("Find your vibe match?");
+  }),
+  "values body keeps Sai tagline lock",
+);
 assert(/not a dating app/i.test(userFacing), "not a dating app");
 assert(/US/.test(userFacing) && /Australia/.test(userFacing) && /UK/.test(userFacing) && /Europe/.test(userFacing) && /Ireland/.test(userFacing), "markets");
 assert(/\$9\.99/.test(userFacing), "messaging price");
