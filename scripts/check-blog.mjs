@@ -7,12 +7,18 @@ import {
   BLOG_PATH,
   BLOG_POSTS,
   BLOG_SUPPORT_PHONE,
+  NRI_DIASPORA_DATE_MODIFIED,
   NRI_DIASPORA_DATE_PUBLISHED,
   NRI_DIASPORA_DESCRIPTION,
   NRI_DIASPORA_FAQS,
+  NRI_DIASPORA_FIT,
+  NRI_DIASPORA_NEEDS,
+  NRI_DIASPORA_OPENING,
   NRI_DIASPORA_PATH,
   NRI_DIASPORA_SLUG,
   NRI_DIASPORA_TITLE,
+  NRI_DIASPORA_UPDATED_LABEL,
+  NRI_DIASPORA_VALUES,
   blogArticleJsonLd,
   blogFaqJsonLd,
   jsonLdScript,
@@ -54,6 +60,9 @@ assert(
 assert(NRI_DIASPORA_DESCRIPTION.includes("find your vibe match"), "description keeps tagline");
 assert(NRI_DIASPORA_DESCRIPTION.includes("Bandham AI"), "description names Bandham AI");
 assert(NRI_DIASPORA_DATE_PUBLISHED === "2026-09-04", "publish date lock");
+assert(NRI_DIASPORA_DATE_MODIFIED === "2026-09-04", "lastmod date lock");
+assert(NRI_DIASPORA_UPDATED_LABEL.includes("4 September 2026"), "updated label");
+assert(NRI_DIASPORA_DESCRIPTION.includes("desi with values"), "description names tone");
 
 assert(BLOG_PATH === "/blog", "blog index path");
 assert(BLOG_INDEX_TITLE === "Blog", "index title");
@@ -100,6 +109,9 @@ assert(articleLd["@type"] === "BlogPosting", "BlogPosting type");
 assert(articleLd.headline === NRI_DIASPORA_TITLE, "JSON-LD headline");
 assert(articleLd.url === SITE_ORIGIN + NRI_DIASPORA_PATH, "JSON-LD url");
 assert(articleLd.author.name === "Bandham AI", "JSON-LD author");
+assert(articleLd.dateModified === NRI_DIASPORA_DATE_MODIFIED, "JSON-LD dateModified");
+assert(articleLd.datePublished === NRI_DIASPORA_DATE_PUBLISHED, "JSON-LD datePublished");
+assert(sitemap.includes("NRI_DIASPORA_DATE_MODIFIED") || sitemap.includes("dateModified"), "sitemap lastmod uses modified date");
 
 const faqLd = blogFaqJsonLd();
 assert(faqLd["@type"] === "FAQPage", "FAQPage type");
@@ -111,11 +123,33 @@ assert(NRI_DIASPORA_FAQS[2].answer.includes("US") && NRI_DIASPORA_FAQS[2].answer
 assert(NRI_DIASPORA_FAQS[3].answer.includes("$4.99"), "FAQ VerifyAI price");
 assert(NRI_DIASPORA_FAQS[3].answer.includes("one time"), "FAQ VerifyAI one time");
 
+const bodyCopy = [
+  ...NRI_DIASPORA_OPENING,
+  ...NRI_DIASPORA_VALUES,
+  ...NRI_DIASPORA_NEEDS,
+  ...NRI_DIASPORA_FIT,
+].join("\n");
+
+assert(NRI_DIASPORA_OPENING.length >= 3, "opening is a real lede");
+assert(/two cultures/i.test(NRI_DIASPORA_OPENING.join(" ")), "opens with two cultures");
+assert(/serious about marriage/i.test(NRI_DIASPORA_OPENING.join(" ")), "opens with serious intent");
+assert(/chemistry/i.test(NRI_DIASPORA_OPENING.join(" ")), "opens with chemistry");
+assert(/desi with values/i.test(NRI_DIASPORA_VALUES.join(" ")), "explains desi with values");
+assert(/respect/i.test(NRI_DIASPORA_VALUES.join(" ")), "values includes respect");
+assert(/intent/i.test(NRI_DIASPORA_VALUES.join(" ")), "values includes intent");
+assert(/VerifyAI/.test(NRI_DIASPORA_VALUES.join(" ")), "values includes optional VerifyAI");
+assert(/\$9\.99/.test(NRI_DIASPORA_VALUES.join(" ")), "values includes messaging when ready");
+assert(bodyCopy.length > 2200, "article body is longer and richer");
+assert(article.includes("NRI_DIASPORA_OPENING"), "article renders shared opening");
+assert(article.includes("NRI_DIASPORA_VALUES"), "article renders shared values copy");
+assert(article.includes("NRI_DIASPORA_UPDATED_LABEL"), "article shows updated date");
+
 const userFacing = [
   NRI_DIASPORA_TITLE,
   NRI_DIASPORA_DESCRIPTION,
   BLOG_INDEX_DESCRIPTION,
   BLOG_INDEX_LEDE,
+  bodyCopy,
   ...NRI_DIASPORA_FAQS.map(function (item) {
     return item.question + " " + item.answer;
   }),
@@ -138,6 +172,7 @@ assert(!/talk to (her |his |their )?parents|talking to parents/i.test(userFacing
 assert(!/#1|number one|best matrimony|millions of/i.test(userFacing), "no fake rank or scale");
 assert(!/[—–]/.test(NRI_DIASPORA_DESCRIPTION), "description avoids dashes");
 assert(!/[—–]/.test(NRI_DIASPORA_FAQS.map(function (item) { return item.answer; }).join("")), "FAQ answers avoid dashes");
+assert(!/[—–]/.test(bodyCopy), "body avoids dashes");
 assert(!/one-time/.test(userFacing), "VerifyAI copy says one time");
 
 const ld = jsonLdScript(articleLd);
