@@ -1,10 +1,14 @@
 export const LEGAL_UPDATED = "26 August 2026";
 
+/** Production host for canonical URLs, sitemap, and robots. */
+export const SITE_ORIGIN = "https://bandhamai.vercel.app";
+
 export const FOOTER_LINKS = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/safety", label: "Safety" },
   { href: "/contact", label: "Contact" },
+  { href: "/blog", label: "Blog" },
   { href: "/idea", label: "Send a feature idea" },
   { href: "/account", label: "Account" },
 ] as const;

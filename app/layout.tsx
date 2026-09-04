@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SITE_ORIGIN } from "../lib/site";
 import PresenceHeartbeat from "./components/PresenceHeartbeat";
 import { PostHogProvider } from "./providers";
 import "./globals.css";
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
     default: "Bandham AI",
     template: "%s - Bandham AI",
