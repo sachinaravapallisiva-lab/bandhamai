@@ -8,6 +8,8 @@ import {
   CHATS_OPEN_INBOX,
   CHATS_RAIL_MAX_HEIGHT,
   CHATS_SCOPE,
+  CHATS_SEARCH_LABEL,
+  CHATS_SEARCH_PLACEHOLDER,
   CHATS_SIGN_IN,
   CHATS_TITLE,
   INBOX_BLOCKED_SEND,
@@ -21,6 +23,7 @@ import {
   INBOX_SIGN_IN,
   INBOX_TITLE,
   asInboxMessage,
+  chatRowMatches,
   groupConversationThreads,
   groupReceivedThreads,
   inboxChatHref,
@@ -62,6 +65,8 @@ const userFacing = [
   CHATS_EMPTY_BODY,
   CHATS_OPEN_INBOX,
   CHATS_BROWSE,
+  CHATS_SEARCH_LABEL,
+  CHATS_SEARCH_PLACEHOLDER,
   BILLING_COPY.subscribe,
   BILLING_COPY.headline,
 ];
@@ -123,8 +128,18 @@ assert(CHATS_TITLE === "Chats", "rail title lock");
 assert(CHATS_SCOPE === "conversations", "rail uses the conversations scope on /api/messages");
 assert(CHATS_OPEN_INBOX === "Open Inbox", "empty rail points at Inbox");
 assert(CHATS_BROWSE === "Browse", "empty rail can return to Browse");
-assert(CHATS_RAIL_MAX_HEIGHT === 228, "rail list stays a short drawer");
-assert(CHATS_RAIL_MAX_HEIGHT < 320, "rail is not a full page paste");
+assert(CHATS_RAIL_MAX_HEIGHT === 288, "rail list stays a short drawer");
+assert(CHATS_RAIL_MAX_HEIGHT < 360, "rail is not a full page paste");
+assert(CHATS_SEARCH_LABEL === "Search chats", "search label lock");
+assert(CHATS_SEARCH_PLACEHOLDER === "Search chats", "search placeholder lock");
+assert(
+  chatRowMatches({ userId: "a", profileId: null, name: "Ananya", lastBody: "hello from them", lastAt: "" }, "ana"),
+  "search matches a display name"
+);
+assert(
+  !chatRowMatches({ userId: "a", profileId: null, name: "Ananya", lastBody: "hello from them", lastAt: "" }, "zzz"),
+  "search does not invent a miss"
+);
 assert(inboxTimeLabel("2026-08-03T12:00:00.000Z", Date.parse("2026-08-03T12:00:20.000Z")) === "Now", "fresh stamp is Now");
 assert(inboxTimeLabel("2026-08-03T10:00:00.000Z", Date.parse("2026-08-03T12:00:00.000Z")) === "2h", "hour stamp");
 assert(inboxTimeLabel("2026-01-03T12:00:00.000Z", Date.parse("2026-08-03T12:00:00.000Z")) === "Jan 3", "older stamp stays short");
@@ -221,9 +236,13 @@ assert(chatsRail.includes("sidebarAvatarInitial"), "rail rows use an initial");
 assert(chatsRail.includes("inboxTimeLabel"), "rail rows show time");
 assert(chatsRail.includes("whiteSpace: \"nowrap\""), "snippet stays one truncated line");
 assert(chatsRail.includes("CHATS_RAIL_MAX_HEIGHT") && chatsRail.includes("overflowY"), "many threads scroll inside the card");
-assert(chatsRail.includes("INBOX_PATH"), "empty rail links Inbox");
+assert(chatsRail.includes("INBOX_PATH"), "compose opens existing Inbox");
 assert(chatsRail.includes('href="/"') || chatsRail.includes('href={"/"}'), "empty rail links Browse");
-assert(!chatsRail.includes("type=\"search\""), "no search field; it would bloat the drawer");
+assert(chatsRail.includes("CHATS_SEARCH_LABEL"), "header has search");
+assert(chatsRail.includes("type=\"search\""), "search filters loaded threads");
+assert(chatsRail.includes("chatRowMatches"), "search stays on the inbox client list");
+assert(chatsRail.includes("ComposeIcon") || chatsRail.includes("CHATS_OPEN_INBOX"), "compose icon stays on Inbox");
+assert(!chatsRail.includes("@"), "do not invent handles");
 assert(!/\bunread\b/i.test(chatsRail), "inbox has no unread state, so the rail skips a dot");
 assert(!/twitter|tweetdeck|\bx\.com\b|for you/i.test(chatsRail), "do not copy X branding");
 assert(!chatsRail.includes("/api/chat"), "rail does not invent a second chat API");

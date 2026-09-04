@@ -34,9 +34,11 @@ export const CHATS_EMPTY_TITLE = "No chats yet.";
 export const CHATS_EMPTY_BODY = "When someone writes to you, it will show here.";
 export const CHATS_OPEN_INBOX = "Open Inbox";
 export const CHATS_BROWSE = "Browse";
+export const CHATS_SEARCH_LABEL = "Search chats";
+export const CHATS_SEARCH_PLACEHOLDER = "Search chats";
 export const CHATS_SCOPE = "conversations";
-/** Short drawer height. Extra threads scroll inside the card. */
-export const CHATS_RAIL_MAX_HEIGHT = 228;
+/** Drawer height. Extra threads scroll inside the card. */
+export const CHATS_RAIL_MAX_HEIGHT = 288;
 
 export type InboxMessage = {
   id: string;
@@ -56,6 +58,14 @@ export type InboxThread = {
 
 export function inboxChatHref(userId: string) {
   return INBOX_CHAT_PATH + "?to=" + encodeURIComponent(userId);
+}
+
+export function chatRowMatches(thread: InboxThread, query: string) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const name = thread.name.toLowerCase();
+  const body = thread.lastBody.toLowerCase();
+  return name.indexOf(needle) !== -1 || body.indexOf(needle) !== -1;
 }
 
 export function conversationPeerId(row: InboxMessage, viewerId: string) {
