@@ -1,13 +1,26 @@
 export const WELCOME_BRAND = "Bandham AI";
 export const WELCOME_TAGLINE = "Find your vibe match?";
 export const WELCOME_SUBJECT = "Welcome to Bandham AI";
-export const WELCOME_CTA_LABEL = "Create your profile";
-export const WELCOME_CTA_URL = "https://bandhamai.vercel.app/profile/new";
-export const WELCOME_MARK_URL = "https://bandhamai.vercel.app/brand/bandham-jaimala.png";
-export const WELCOME_LEAD = "Bandham AI is Indian matrimony for NRI and diaspora families.";
-export const WELCOME_BODY = "You can create a profile and browse for free.";
-export const WELCOME_FOOTER = "This is Bandham AI, Indian matrimony. Not LaughRank. Not VerifyAI.";
+export const WELCOME_GREETING_FALLBACK = "Hey,";
+export const WELCOME_GREETING_FALLBACK_ALT = "Welcome,";
+export const WELCOME_ABOARD = "Welcome aboard. We're glad you're here.";
+export const WELCOME_PITCH =
+  "Bandham AI is Indian matrimony for NRI and diaspora. Find your vibe match? Browse, search, Speed Match, and create a profile stay free. Messaging is $9.99 a month when you're ready. VerifyAI is a separate $4.99 one-time check that the person is who they say they are.";
+export const WELCOME_COMMUNITY =
+  "You're joining people looking for a serious match across the US, Australia, UK, Europe, and Ireland.";
+export const WELCOME_START_HEAD = "Here's how to get started:";
+export const WELCOME_STEP_1 = "1. Complete your profile so the right people can find you.";
+export const WELCOME_STEP_2 =
+  "2. Browse and search for your vibe match. Use Speed Match when you want a quick read.";
+export const WELCOME_APP_HELP =
+  "You'll find Plans, Browse, and Call us in the app. Support is also at +1 803 265 5233.";
+export const WELCOME_NEED_HELP =
+  "Need help? Reply to this email or open Help in Bandham AI. We're rooting for you.";
+export const WELCOME_REGARDS = "Warm regards,";
+export const WELCOME_SIGN_OFF_NAME = "Sai";
+export const WELCOME_SIGN_OFF_TITLE = "Founder, Bandham AI";
 
+export const WELCOME_MARK_URL = "https://bandhamai.vercel.app/brand/bandham-jaimala.png";
 export const WELCOME_VIOLET = "#6D28D9";
 export const WELCOME_CREAM = "#FDF8F1";
 export const WELCOME_INK = "#1E1B36";
@@ -19,6 +32,7 @@ export type WelcomeSendCheck = { ok: true } | { ok: false; reason: string };
 
 export type WelcomeEmailResult = {
   sent: boolean;
+  mailed: boolean;
   error: string | null;
 };
 
@@ -86,47 +100,95 @@ export function canSendWelcome(to: string, env: WelcomeEnv | NodeJS.ProcessEnv =
   return { ok: true };
 }
 
+/** First token from signup. Empty when missing. Never invents a name. */
+export function welcomeFirstName(raw: unknown) {
+  if (typeof raw !== "string") return "";
+  const token = raw.trim().split(/\s+/)[0] || "";
+  return token.replace(/[^A-Za-z.']/g, "").slice(0, 40);
+}
+
+export function signupFirstName(body: Record<string, unknown> | null | undefined) {
+  if (!body || typeof body !== "object") return "";
+  if (typeof body.first_name === "string") return welcomeFirstName(body.first_name);
+  if (typeof body.firstName === "string") return welcomeFirstName(body.firstName);
+  return "";
+}
+
+/** Hey Priya, when signup gave a first name. Hey, (or Welcome,) when it did not. Never defaults to Sai. */
+export function welcomeGreeting(raw?: unknown) {
+  const name = welcomeFirstName(raw);
+  if (name) return "Hey " + name + ",";
+  return WELCOME_GREETING_FALLBACK;
+}
+
 export function welcomeUserCopy() {
   return [
     WELCOME_BRAND,
     WELCOME_TAGLINE,
     WELCOME_SUBJECT,
-    WELCOME_CTA_LABEL,
-    WELCOME_LEAD,
-    WELCOME_BODY,
-    WELCOME_FOOTER,
+    WELCOME_GREETING_FALLBACK,
+    WELCOME_GREETING_FALLBACK_ALT,
+    WELCOME_ABOARD,
+    WELCOME_PITCH,
+    WELCOME_COMMUNITY,
+    WELCOME_START_HEAD,
+    WELCOME_STEP_1,
+    WELCOME_STEP_2,
+    WELCOME_APP_HELP,
+    WELCOME_NEED_HELP,
+    WELCOME_REGARDS,
+    WELCOME_SIGN_OFF_NAME,
+    WELCOME_SIGN_OFF_TITLE,
   ];
 }
 
-export function welcomeEmailText() {
+export function welcomeEmailText(firstName?: unknown) {
   return [
-    WELCOME_SUBJECT,
+    welcomeGreeting(firstName),
     "",
-    WELCOME_TAGLINE,
+    WELCOME_ABOARD,
     "",
-    WELCOME_LEAD,
-    WELCOME_BODY,
+    WELCOME_PITCH,
     "",
-    WELCOME_CTA_LABEL,
-    WELCOME_CTA_URL,
+    WELCOME_COMMUNITY,
     "",
-    WELCOME_FOOTER,
+    WELCOME_START_HEAD,
+    "",
+    WELCOME_STEP_1,
+    WELCOME_STEP_2,
+    "",
+    WELCOME_APP_HELP,
+    "",
+    WELCOME_NEED_HELP,
+    "",
+    WELCOME_REGARDS,
+    WELCOME_SIGN_OFF_NAME,
+    WELCOME_SIGN_OFF_TITLE,
   ].join("\n");
 }
 
-export function welcomeEmailHtml() {
-  const serif = "font-family:Georgia,serif;";
-  const button =
-    '<a href="' +
-    WELCOME_CTA_URL +
-    '" style="display:inline-block;background:' +
-    WELCOME_VIOLET +
-    ";color:#FFFFFF;" +
-    serif +
-    'font-size:16px;font-weight:600;line-height:1;padding:14px 22px;border-radius:999px;text-decoration:none;">' +
-    WELCOME_CTA_LABEL +
-    "</a>";
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
+function htmlLine(text: string, extraPad: string) {
+  return (
+    '<tr><td style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:' +
+    WELCOME_INK +
+    ";padding:0 12px " +
+    extraPad +
+    ';">' +
+    escapeHtml(text) +
+    "</td></tr>"
+  );
+}
+
+export function welcomeEmailHtml(firstName?: unknown) {
+  const serif = "font-family:Georgia,serif;";
   return [
     '<!DOCTYPE html><html><body style="margin:0;padding:0;background:' + WELCOME_CREAM + ';">',
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:' +
@@ -146,60 +208,56 @@ export function welcomeEmailHtml() {
       "font-size:28px;line-height:1.2;color:" +
       WELCOME_INK +
       ';padding:0 0 6px;">' +
-      WELCOME_BRAND +
+      escapeHtml(WELCOME_BRAND) +
       "</td></tr>",
     '<tr><td align="center" style="' +
       serif +
       "font-size:15px;line-height:1.4;color:" +
       WELCOME_MUTED +
       ';padding:0 0 24px;">' +
-      WELCOME_TAGLINE +
+      escapeHtml(WELCOME_TAGLINE) +
       "</td></tr>",
-    '<tr><td align="center" style="' +
-      serif +
-      "font-size:16px;line-height:1.5;color:" +
-      WELCOME_INK +
-      ';padding:0 12px 10px;">' +
-      WELCOME_LEAD +
-      "</td></tr>",
-    '<tr><td align="center" style="' +
-      serif +
-      "font-size:16px;line-height:1.5;color:" +
-      WELCOME_INK +
-      ';padding:0 12px 28px;">' +
-      WELCOME_BODY +
-      "</td></tr>",
-    '<tr><td align="center" style="padding:0 12px 28px;">' + button + "</td></tr>",
-    '<tr><td align="center" style="' +
-      serif +
-      "font-size:12px;line-height:1.5;color:" +
-      WELCOME_MUTED +
-      ';padding:8px 12px 0;">' +
-      WELCOME_FOOTER +
-      "</td></tr>",
+    htmlLine(welcomeGreeting(firstName), "18px"),
+    htmlLine(WELCOME_ABOARD, "14px"),
+    htmlLine(WELCOME_PITCH, "14px"),
+    htmlLine(WELCOME_COMMUNITY, "14px"),
+    htmlLine(WELCOME_START_HEAD, "8px"),
+    htmlLine(WELCOME_STEP_1, "4px"),
+    htmlLine(WELCOME_STEP_2, "14px"),
+    htmlLine(WELCOME_APP_HELP, "14px"),
+    htmlLine(WELCOME_NEED_HELP, "18px"),
+    htmlLine(WELCOME_REGARDS, "4px"),
+    htmlLine(WELCOME_SIGN_OFF_NAME, "2px"),
+    htmlLine(WELCOME_SIGN_OFF_TITLE, "0"),
     "</table></td></tr></table></body></html>",
   ].join("");
 }
 
-export function welcomeEmailPayload(to: string, from: string) {
+export function welcomeEmailPayload(to: string, from: string, firstName?: unknown) {
   return {
     from: from,
     to: [to.trim()],
     subject: WELCOME_SUBJECT,
-    html: welcomeEmailHtml(),
-    text: welcomeEmailText(),
+    html: welcomeEmailHtml(firstName),
+    text: welcomeEmailText(firstName),
   };
 }
 
+function skippedWelcome(reason: string): WelcomeEmailResult {
+  return { sent: false, mailed: false, error: reason };
+}
+
 /**
- * Welcome the new member via Resend. Fail soft: a missing key, a
- * blocked from address, or a send error must not fail signup.
+ * Welcome the new member via Resend. Fail closed on env: missing key,
+ * missing from, or a blocked from host never sends. Fail soft on signup:
+ * a skip or Resend error must not fail register. mailed stays false
+ * until RESEND_FROM_EMAIL is a verified Bandham domain.
  */
-export async function sendWelcomeEmail(to: string): Promise<WelcomeEmailResult> {
+export async function sendWelcomeEmail(to: string, firstName?: unknown): Promise<WelcomeEmailResult> {
   const check = canSendWelcome(to);
   if (!check.ok) {
     console.error("welcome email skipped:", check.reason);
-    return { sent: false, error: check.reason };
+    return skippedWelcome(check.reason);
   }
 
   const apiKey = welcomeApiKey();
@@ -212,19 +270,19 @@ export async function sendWelcomeEmail(to: string): Promise<WelcomeEmailResult> 
         Authorization: "Bearer " + apiKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(welcomeEmailPayload(to, from)),
+      body: JSON.stringify(welcomeEmailPayload(to, from, firstName)),
     });
 
     if (!res.ok) {
       const detail = await res.text();
       console.error("welcome email failed", res.status, detail.slice(0, 400));
-      return { sent: false, error: "Resend returned " + res.status };
+      return skippedWelcome("Resend returned " + res.status);
     }
 
-    return { sent: true, error: null };
+    return { sent: true, mailed: true, error: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("welcome email error", message);
-    return { sent: false, error: message };
+    return skippedWelcome(message);
   }
 }
