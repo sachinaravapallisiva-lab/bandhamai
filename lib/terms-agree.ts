@@ -14,7 +14,7 @@ export const TERMS_PROFILE_DATA_BODY =
 
 export const TERMS_VERIFYAI_BIO_TITLE = "VerifyAI and biometrics on Bandham";
 export const TERMS_VERIFYAI_BIO_BODY =
-  "VerifyAI is optional. It costs $4.99 one time, billed by Stripe Checkout. Paying does not verify the profile. Bandham then hands you to the VerifyAI flow at verifyai.llc. That flow asks for Face ID on your phone. If you refuse Face ID, you do not get a badge. Bandham stores a payment row, a status (unverified, pending, verified, failed, or revoked), and an id from VerifyAI when one is returned. Bandham does not store a face map. A quiet badge appears only after VerifyAI succeeds and we have a stored verified status. It is not a background check, a visa check, or a promise that someone is who they say they are.";
+  "VerifyAI is optional. It costs $4.99 one time, billed through checkout. Paying does not verify the profile. Bandham then hands you to the VerifyAI flow at verifyai.llc. That flow asks for Face ID on your phone. If you refuse Face ID, you do not get a badge. Bandham stores a payment row, a status (unverified, pending, verified, failed, or revoked), and an id from VerifyAI when one is returned. Bandham does not store a face map. A quiet badge appears only after VerifyAI succeeds and we have a stored verified status. It is not a background check, a visa check, or a promise that someone is who they say they are.";
 
 export function termsUserCopy() {
   return [

@@ -21,7 +21,6 @@ import {
 import { getSubscriptionRow } from "../../../lib/entitlement";
 import { INBOX_BLOCKED_SEND, INBOX_MISSING, INBOX_SIGN_IN } from "../../../lib/inbox";
 import { loadConversation, loadInboxThreads, messagingPairBlocked } from "../../../lib/inbox-server";
-import { billingNotConfiguredResponse, isStripeConfigured } from "../../../lib/stripe";
 
 export const runtime = "nodejs";
 
@@ -65,8 +64,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (!isStripeConfigured()) return billingNotConfiguredResponse();
-
     if (!hasBearerToken(request)) {
       return unauthorizedResponse(BILLING_COPY.signIn);
     }

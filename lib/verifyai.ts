@@ -4,7 +4,7 @@ export const VERIFYAI_SESSIONS_TABLE = "verifyai_sessions";
 export const VERIFYAI_PURPOSE = "verifyai";
 export const VERIFYAI_PRICE_CENTS = 499;
 export const VERIFYAI_PRICE_LABEL = "$4.99";
-export const VERIFYAI_PRICE_ENV = "STRIPE_VERIFYAI_PRICE_ID";
+export const VERIFYAI_PRICE_ENV = "DODO_VERIFYAI_PRODUCT_ID";
 
 export const VERIFYAI_FIRST_PARTY_START_PATH = "/account#verify";
 
@@ -14,9 +14,9 @@ export const VERIFYAI_COPY = {
   paid:
     "Payment recorded. Your profile is not verified yet. Continue into the VerifyAI check.",
   notConfigured:
-    "Verification checkout is not configured. Set STRIPE_VERIFYAI_PRICE_ID (and the existing Stripe keys) on Vercel.",
+    "Verification checkout is not configured. Set DODO_VERIFYAI_PRODUCT_ID and DODO_PAYMENTS_API_KEY on Vercel.",
   wrongPrice:
-    "STRIPE_VERIFYAI_PRICE_ID must be a one-time $4.99 Price (Checkout mode payment). Do not point it at the $9.99/mo messaging subscription.",
+    "DODO_VERIFYAI_PRODUCT_ID must be the $4.99 one-time VerifyAI product. Do not point it at the $9.99/mo messaging subscription.",
   startMissing:
     "Payment is on file, but the VerifyAI start URL is not configured. Set VERIFYAI_START_URL or VERIFYAI_API_URL. The badge stays off until VerifyAI succeeds.",
   already: "This profile is already verified.",
@@ -79,7 +79,7 @@ export function verifyaiCheckoutReturnUrls(origin: string, rawPath: string | nul
   const path = safeVerifyaiReturnPath(rawPath);
   const base = origin.replace(/\/$/, "");
   return {
-    success_url: base + path + "?verify=paid&session_id={CHECKOUT_SESSION_ID}",
+    success_url: base + path + "?verify=paid",
     cancel_url: base + path + "?verify=cancel",
   };
 }

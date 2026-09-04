@@ -1,32 +1,11 @@
 /**
- * Stripe → Bandham AI subscription sync.
- *
- * Events write public.subscriptions via the service role. No payment UI here.
+ * Stripe webhook — meetup event tickets only.
+ * Messaging and VerifyAI checkout now use POST /api/dodo/webhook.
  */
 import { NextResponse } from "next/server";
-import type Stripe from "stripe";
-import {
-  getServiceSupabase,
-  tableExists,
-} from "../../../../lib/server-supabase";
-import {
-  BILLING_COPY,
-  SUBSCRIPTIONS_SQL_FILE,
-  SUBSCRIPTIONS_TABLE,
-} from "../../../../lib/billing";
-import {
-  findUserIdByCustomer,
-  rowFromStripeSubscription,
-  upsertSubscription,
-} from "../../../../lib/entitlement";
-import {
-  asStripeId,
-  getStripe,
-  isStripeSignatureConfigured,
-  stripeWebhookSecret,
-} from "../../../../lib/stripe";
-import { VERIFYAI_PURPOSE } from "../../../../lib/verifyai";
-import { recordVerifyaiPayment } from "../../../../lib/verifyai-checkout";
+import { getServiceSupabase } from "../../../../lib/server-supabase";
+import { BILLING_COPY } from "../../../../lib/billing";
+import { asStripeId, getStripe, isStripeSignatureConfigured, stripeWebhookSecret } from "../../../../lib/stripe";
 import { EVENT_TICKET_PURPOSE } from "../../../../lib/meetup";
 import { recordEventTicket } from "../../../../lib/meetup-server";
 
@@ -78,28 +57,6 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const purpose = session.metadata?.purpose || "";
-      if (session.mode === "payment" && purpose === VERIFYAI_PURPOSE) {
-        const userId =
-          userIdFromMetadata(session.metadata) ||
-          (typeof session.client_reference_id === "string" ? session.client_reference_id : "");
-        if (!userId) {
-          return NextResponse.json({ error: "VerifyAI checkout is missing user_id." }, { status: 500 });
-        }
-        if (session.payment_status === "paid" || session.status === "complete") {
-          const recorded = await recordVerifyaiPayment(supabase, {
-            userId,
-            profileId: session.metadata?.profile_id || null,
-            checkoutSessionId: session.id,
-            paymentIntentId: asStripeId(session.payment_intent),
-            amountCents: typeof session.amount_total === "number" ? session.amount_total : undefined,
-          });
-          if (recorded.error) {
-            return NextResponse.json({ error: recorded.error }, { status: 500 });
-          }
-        }
-        return NextResponse.json({ received: true, purpose: VERIFYAI_PURPOSE, verified: false });
-      }
-
       if (session.mode === "payment" && purpose === EVENT_TICKET_PURPOSE) {
         const userId =
           userIdFromMetadata(session.metadata) ||
@@ -121,105 +78,6 @@ export async function POST(request: Request) {
           }
         }
         return NextResponse.json({ received: true, purpose: EVENT_TICKET_PURPOSE });
-      }
-
-      if (session.mode !== "subscription") {
-        return NextResponse.json({ received: true });
-      }
-
-      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
-        return NextResponse.json(
-          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
-          { status: 503 }
-        );
-      }
-
-      const customerId = asStripeId(session.customer);
-      const subscriptionId = asStripeId(session.subscription);
-      const userId =
-        userIdFromMetadata(session.metadata) ||
-        (typeof session.client_reference_id === "string" ? session.client_reference_id : "") ||
-        (await findUserIdByCustomer(supabase, customerId));
-
-      if (!userId) {
-        return NextResponse.json({ error: "Checkout session is missing user_id." }, { status: 500 });
-      }
-
-      if (subscriptionId) {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const { error } = await upsertSubscription(
-          supabase,
-          rowFromStripeSubscription(userId, subscription, customerId)
-        );
-        if (error) {
-          return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-      }
-      return NextResponse.json({ received: true });
-    }
-
-    if (
-      event.type === "customer.subscription.created" ||
-      event.type === "customer.subscription.updated" ||
-      event.type === "customer.subscription.deleted"
-    ) {
-      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
-        return NextResponse.json(
-          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
-          { status: 503 }
-        );
-      }
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = asStripeId(subscription.customer);
-      const userId =
-        userIdFromMetadata(subscription.metadata) ||
-        (await findUserIdByCustomer(supabase, customerId));
-
-      if (!userId) {
-        return NextResponse.json({ error: "Subscription is missing user_id." }, { status: 500 });
-      }
-
-      const { error } = await upsertSubscription(
-        supabase,
-        rowFromStripeSubscription(userId, subscription, customerId)
-      );
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      return NextResponse.json({ received: true });
-    }
-
-    if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
-      if (!(await tableExists(supabase, SUBSCRIPTIONS_TABLE))) {
-        return NextResponse.json(
-          { error: BILLING_COPY.tableMissing, sql: SUBSCRIPTIONS_SQL_FILE },
-          { status: 503 }
-        );
-      }
-      const invoice = event.data.object;
-      const subscriptionId =
-        asStripeId(invoice.parent?.subscription_details?.subscription) ||
-        asStripeId((invoice as { subscription?: unknown }).subscription);
-      if (!subscriptionId) {
-        return NextResponse.json({ received: true });
-      }
-
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const customerId = asStripeId(subscription.customer) || asStripeId(invoice.customer);
-      const userId =
-        userIdFromMetadata(subscription.metadata) ||
-        (await findUserIdByCustomer(supabase, customerId));
-
-      if (!userId) {
-        return NextResponse.json({ error: "Invoice subscription is missing user_id." }, { status: 500 });
-      }
-
-      const { error } = await upsertSubscription(
-        supabase,
-        rowFromStripeSubscription(userId, subscription, customerId)
-      );
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
       }
     }
 

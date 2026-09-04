@@ -71,7 +71,7 @@ export default function TermsPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            VerifyAI is an optional identity check on a Bandham profile. It costs $4.99 one time, billed by Stripe Checkout, then you complete a device check on Bandham (Face ID, fingerprint, or device passcode). Paying does not verify the profile. A quiet badge appears only when we have a stored verified status after that check succeeds. We store pass or fail only. It is not a background check, a visa check, or a promise that someone is who they say they are.
+            VerifyAI is an optional identity check on a Bandham profile. It costs $4.99 one time, billed through checkout, then you complete a device check on Bandham (Face ID, fingerprint, or device passcode). Paying does not verify the profile. A quiet badge appears only when we have a stored verified status after that check succeeds. We store pass or fail only. It is not a background check, a visa check, or a promise that someone is who they say they are.
           </p>
         </LegalSection>
 
@@ -99,7 +99,7 @@ export default function TermsPage() {
 
         <LegalSection title="Payments">
           <p style={{ margin: 0 }}>
-            Bandham AI subscription is $9.99 a month, billed by Stripe through Checkout. VerifyAI is a separate $4.99 one time Stripe Checkout. The price is shown before you pay. You can manage or cancel in the Stripe customer portal. We do not store your full card number. Refunds, if any, follow Stripe and the card network rules that apply to you. A subscription does not guarantee that anyone will reply, that you will match, or that you will meet. Paying for VerifyAI does not guarantee a badge. VerifyAI still has to succeed. Browse stays free if you do not subscribe. This page is a working draft and should be reviewed by a lawyer before you rely on it as a price contract.
+            Bandham AI subscription is $9.99 a month, billed through checkout. VerifyAI is a separate $4.99 one time checkout. The price is shown before you pay. You can manage or cancel in the customer portal. We do not store your full card number. Refunds, if any, follow the payment processor and the card network rules that apply to you. A subscription does not guarantee that anyone will reply, that you will match, or that you will meet. Paying for VerifyAI does not guarantee a badge. VerifyAI still has to succeed. Browse stays free if you do not subscribe. This page is a working draft and should be reviewed by a lawyer before you rely on it as a price contract.
           </p>
         </LegalSection>
 

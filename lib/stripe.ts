@@ -1,6 +1,5 @@
 import Stripe from "stripe";
-import { NextResponse } from "next/server";
-import { BILLING_COPY, STRIPE_ENV_KEYS } from "./billing";
+import { STRIPE_ENV_KEYS } from "./billing";
 
 let stripe: Stripe | undefined;
 
@@ -55,19 +54,6 @@ export function getStripe(): Stripe | null {
     stripe = new Stripe(key);
   }
   return stripe;
-}
-
-export function billingNotConfiguredResponse() {
-  return NextResponse.json(
-    {
-      configured: false,
-      canMessage: false,
-      code: "billing_not_configured",
-      error: BILLING_COPY.notConfigured,
-      missing: missingStripeEnv(),
-    },
-    { status: 503 }
-  );
 }
 
 export function appOrigin(request: Request) {

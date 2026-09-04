@@ -145,7 +145,7 @@ assert(!checkout.includes('mode: "subscription"'), "do not bill the ticket on me
 assert(!checkout.includes("stripePriceId()") || checkout.includes("isEventTicketPrice"), "messaging Price only for reject");
 
 const messaging = read("app/api/stripe/checkout/route.ts");
-assert(messaging.includes('mode: "subscription"'), "messaging stays subscription");
+assert(messaging.includes("dodoSubscribeProductId") || messaging.includes("DODO_SUBSCRIBE_PRODUCT_ID"), "messaging stays Dodo subscription");
 assert(!messaging.includes("STRIPE_EVENT_PRICE_ID"), "messaging checkout does not use event Price");
 assert(!messaging.includes("stripeEventPriceId"), "messaging checkout does not read event Price");
 

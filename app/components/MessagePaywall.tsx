@@ -91,9 +91,9 @@ export default function MessagePaywall({
               opacity: busy ? 0.7 : 1,
             }}
           >
-            {busy ? "Opening Stripe…" : BILLING_COPY.subscribe}
+            {busy ? "Opening checkout…" : BILLING_COPY.subscribe}
           </button>
-          {entitlement.stripeCustomerId ? (
+          {entitlement.dodoCustomerId || entitlement.stripeCustomerId ? (
             <button
               type="button"
               onClick={onManage}
@@ -123,7 +123,7 @@ export default function MessagePaywall({
       ) : null}
 
       <p className="bm-sans" style={{ margin: "12px 0 0", fontSize: 11, color: MUTED }}>
-        $9.99 a month. Cancel anytime in the Stripe customer portal
+        $9.99 a month. Cancel anytime in the customer portal
       </p>
     </section>
   );

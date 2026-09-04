@@ -325,6 +325,8 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const billing = params.get("billing");
     const sessionId = params.get("session_id") || "";
+    const paymentId = params.get("payment_id") || "";
+    const subscriptionId = params.get("subscription_id") || "";
     if (!billing) return;
 
     const id = window.setTimeout(function () {
@@ -335,8 +337,12 @@ export default function Home() {
       }
       if (billing === "success") {
         setBillingNote(BILLING_COPY.returning);
-        if (sessionId) {
-          confirmCheckoutSession(sessionId).then(function (next) {
+        if (sessionId || paymentId || subscriptionId) {
+          confirmCheckoutSession({
+            session_id: sessionId,
+            payment_id: paymentId,
+            subscription_id: subscriptionId,
+          }).then(function (next) {
             setEntitlement(next);
             if (next.canMessage) {
               capturePostHogEvent(SUBSCRIBE_CHECKOUT_COMPLETED);

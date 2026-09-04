@@ -162,7 +162,8 @@ export default function VerifyOffer({
 
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id") || "";
-    if (params.get("verify") === "paid" && sessionId.startsWith("cs_")) {
+    const paymentId = params.get("payment_id") || "";
+    if (params.get("verify") === "paid" && (sessionId || paymentId)) {
       autoCheck.current = true;
       queueMicrotask(function () {
         setBusy(true);
@@ -176,7 +177,7 @@ export default function VerifyOffer({
         return fetch("/api/verifyai/confirm", {
           method: "POST",
           headers: headers,
-          body: JSON.stringify({ session_id: sessionId }),
+          body: JSON.stringify({ session_id: sessionId, payment_id: paymentId }),
         }).then(function (r) {
           if (r.status === 401) {
             setBusy(false);
@@ -269,7 +270,7 @@ export default function VerifyOffer({
       })
       .catch(function () {
         setBusy(false);
-        setNote("Could not start Stripe Checkout.");
+        setNote("Could not start checkout.");
       });
   }
 

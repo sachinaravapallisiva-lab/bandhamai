@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             ]}
           />
           <p style={{ margin: "10px 0 0" }}>
-            If you subscribe to messaging, Stripe collects the card or other payment method. We store Stripe customer and subscription ids so we know whether you can send messages. We do not store your full card number. We do not ask for an Aadhaar number or passport scan. Do not put those in your profile or in chat.
+            If you subscribe to messaging, the payment processor collects the card or other payment method. We store customer and subscription ids so we know whether you can send messages. We do not store your full card number. We do not ask for an Aadhaar number or passport scan. Do not put those in your profile or in chat.
           </p>
         </LegalSection>
 
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           <p style={{ margin: "0 0 8px" }}>We share data with:</p>
           <LegalList
             items={[
-              "Infrastructure we already use (hosting, database, login, storage, transcription, and Stripe if you subscribe to messaging)",
+              "Infrastructure we already use (hosting, database, login, storage, transcription, and the payment processor if you subscribe or pay for VerifyAI)",
               "Reviewers who decide if a profile can go live",
               "Authorities when the law requires it, or when we believe there is a serious risk of harm",
             ]}
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="VerifyAI">
           <p style={{ margin: 0 }}>
-            VerifyAI is the optional verification layer for Bandham profiles. If you pay $4.99, Stripe records the one time payment and you complete a device check on Bandham. We may store a status on your profile (unverified, pending, verified, failed, or revoked). We store pass or fail only. A quiet badge is shown only when that status is verified after the check succeeds. Payment alone does not verify you. VerifyAI is not a second matrimony product here, not a background check, and not a promise that someone is who they say they are.
+            VerifyAI is the optional verification layer for Bandham profiles. If you pay $4.99, checkout records the one time payment and you complete a device check on Bandham. We may store a status on your profile (unverified, pending, verified, failed, or revoked). We store pass or fail only. A quiet badge is shown only when that status is verified after the check succeeds. Payment alone does not verify you. VerifyAI is not a second matrimony product here, not a background check, and not a promise that someone is who they say they are.
           </p>
         </LegalSection>
 
