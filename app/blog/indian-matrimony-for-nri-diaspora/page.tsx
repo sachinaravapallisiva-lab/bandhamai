@@ -8,9 +8,19 @@ import {
   NRI_DIASPORA_DATE_LABEL,
   NRI_DIASPORA_DESCRIPTION,
   NRI_DIASPORA_FAQS,
+  NRI_DIASPORA_FIT,
+  NRI_DIASPORA_FIT_HEADING,
   NRI_DIASPORA_KICKER,
+  NRI_DIASPORA_NEED_HEADING,
+  NRI_DIASPORA_NEEDS,
+  NRI_DIASPORA_OPENING,
   NRI_DIASPORA_PATH,
+  NRI_DIASPORA_START_HEADING,
+  NRI_DIASPORA_STEPS,
   NRI_DIASPORA_TITLE,
+  NRI_DIASPORA_UPDATED_LABEL,
+  NRI_DIASPORA_VALUES,
+  NRI_DIASPORA_VALUES_HEADING,
   blogArticleJsonLd,
   blogFaqJsonLd,
   jsonLdScript,
@@ -77,8 +87,11 @@ export default function NriDiasporaArticlePage() {
       <p className="bm-sans" style={{ fontSize: 11, letterSpacing: ".16em", color: MUTED, margin: "0 0 10px" }}>
         {NRI_DIASPORA_KICKER}
       </p>
-      <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 12.5, color: MUTED }}>
+      <p className="bm-sans" style={{ margin: "0 0 6px", fontSize: 12.5, color: MUTED }}>
         {NRI_DIASPORA_DATE_LABEL}
+      </p>
+      <p className="bm-sans" style={{ margin: "0 0 22px", fontSize: 12.5, color: MUTED }}>
+        {NRI_DIASPORA_UPDATED_LABEL}
       </p>
 
       <article
@@ -94,58 +107,61 @@ export default function NriDiasporaArticlePage() {
           {NRI_DIASPORA_TITLE}
         </h1>
         <div className="bm-sans" style={{ fontSize: 14, lineHeight: 1.6, color: INK }}>
-          <p style={{ margin: "0 0 14px" }}>
-            If you grew up between cultures, or you live outside India now, classic matrimony sites can feel built for
-            someone else. Time zones, relocation, family expectations, and whether someone is serious all hit harder when
-            home is Houston, London, Sydney, Dublin, or Berlin.
-          </p>
-          <p style={{ margin: "0 0 22px" }}>
-            Bandham AI is Indian matrimony for NRI and diaspora. Tagline: Find your vibe match? Not a dating app. Built
-            for people who want a real match, not endless swipes.
-          </p>
+          {NRI_DIASPORA_OPENING.map(function (para, index) {
+            return (
+              <p key={para} style={{ margin: index === NRI_DIASPORA_OPENING.length - 1 ? "0 0 22px" : "0 0 14px" }}>
+                {para}
+              </p>
+            );
+          })}
 
           <h2 className="bm-serif" style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 400, color: INK }}>
-            What NRI and diaspora searchers actually need
+            {NRI_DIASPORA_VALUES_HEADING}
+          </h2>
+          {NRI_DIASPORA_VALUES.map(function (para, index) {
+            return (
+              <p key={para} style={{ margin: index === NRI_DIASPORA_VALUES.length - 1 ? "0 0 22px" : "0 0 10px" }}>
+                {para}
+              </p>
+            );
+          })}
+
+          <h2 className="bm-serif" style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 400, color: INK }}>
+            {NRI_DIASPORA_NEED_HEADING}
           </h2>
           <ol style={{ margin: "0 0 22px", paddingLeft: 20 }}>
-            <li style={{ marginBottom: 8 }}>
-              Profiles that travel: partner open to your city, or clear about moving.
-            </li>
-            <li style={{ marginBottom: 8 }}>
-              Intent that is marriage minded: matrimony framing, not casual dating chrome.
-            </li>
-            <li style={{ marginBottom: 8 }}>Browse without paying first: see if the pool fits before messaging.</li>
-            <li style={{ marginBottom: 8 }}>Trust signals: optional verification when you are ready to meet.</li>
-            <li style={{ marginBottom: 8 }}>A calm place to talk: messaging when you choose, not noise.</li>
+            {NRI_DIASPORA_NEEDS.map(function (item) {
+              return (
+                <li key={item} style={{ marginBottom: 8 }}>
+                  {item}
+                </li>
+              );
+            })}
           </ol>
 
           <h2 className="bm-serif" style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 400, color: INK }}>
-            Why Bandham AI fits that search
+            {NRI_DIASPORA_FIT_HEADING}
           </h2>
-          <p style={{ margin: "0 0 10px" }}>
-            Browse and search stay free. Create a profile, search, and try Speed Match without a paywall. Messaging is
-            $9.99 a month when you are ready to talk.
-          </p>
-          <p style={{ margin: "0 0 10px" }}>Built for diaspora markets: US, Australia, UK, Europe, and Ireland.</p>
-          <p style={{ margin: "0 0 10px" }}>
-            VerifyAI when trust matters: separate $4.99 one time check that the person is who they say they are.
-          </p>
-          <p style={{ margin: "0 0 10px" }}>{BLOG_ASSISTANT_COPY}</p>
-          <p style={{ margin: "0 0 22px" }}>
-            Speed Match for a quick read: tap answers, short timer, skip any question.
-          </p>
+          {NRI_DIASPORA_FIT.map(function (para) {
+            return (
+              <p key={para} style={{ margin: "0 0 10px" }}>
+                {para}
+              </p>
+            );
+          })}
+          <p style={{ margin: "0 0 22px" }}>{BLOG_ASSISTANT_COPY}</p>
 
           <h2 className="bm-serif" style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 400, color: INK }}>
-            How to get started
+            {NRI_DIASPORA_START_HEADING}
           </h2>
           <ol style={{ margin: "0 0 16px", paddingLeft: 20 }}>
-            <li style={{ marginBottom: 8 }}>Create your profile so the right people can find you.</li>
-            <li style={{ marginBottom: 8 }}>
-              Browse and search for your vibe match. Use Speed Match when you want a fast filter.
-            </li>
-            <li style={{ marginBottom: 8 }}>
-              Subscribe when you want messaging. Add VerifyAI when you want an identity check.
-            </li>
+            {NRI_DIASPORA_STEPS.map(function (item) {
+              return (
+                <li key={item} style={{ marginBottom: 8 }}>
+                  {item}
+                </li>
+              );
+            })}
           </ol>
           <p
             style={{
