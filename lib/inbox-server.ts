@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { MESSAGES_TABLE } from "./billing";
 import {
   asInboxMessage,
+  conversationPeerId,
+  groupConversationThreads,
   groupReceivedThreads,
   inboxDisplayName,
   type InboxMessage,
@@ -10,7 +12,7 @@ import {
 import { emptyBlockedSet, loadBlockedSet, pairIsBlocked, resolveUserProfileId } from "./safety-server";
 import { tableExists } from "./server-supabase";
 
-export { groupReceivedThreads };
+export { groupConversationThreads, groupReceivedThreads };
 export type { InboxMessage, InboxThread };
 
 function uniqueIds(ids: string[]) {
@@ -80,6 +82,41 @@ export async function loadInboxThreads(
   ]);
 
   return groupReceivedThreads(messages, viewerId, blocked, names);
+}
+
+export async function loadConversationThreads(
+  supabase: SupabaseClient,
+  viewerId: string
+): Promise<InboxThread[]> {
+  if (!(await messagesTableReady(supabase))) return [];
+
+  const { data, error } = await supabase
+    .from(MESSAGES_TABLE)
+    .select("id, sender_id, recipient_id, body, created_at")
+    .or("sender_id.eq." + viewerId + ",recipient_id.eq." + viewerId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error || !Array.isArray(data)) return [];
+
+  const messages = data
+    .map(function (row) {
+      return asInboxMessage(row as unknown as Record<string, unknown>);
+    })
+    .filter(function (row): row is InboxMessage {
+      return !!row;
+    });
+
+  const peerIds = uniqueIds(
+    messages.map(function (row) {
+      return conversationPeerId(row, viewerId);
+    })
+  );
+  const [names, blocked] = await Promise.all([
+    loadNames(supabase, peerIds),
+    loadBlockedSet(supabase, viewerId),
+  ]);
+
+  return groupConversationThreads(messages, viewerId, blocked, names);
 }
 
 export async function loadConversation(

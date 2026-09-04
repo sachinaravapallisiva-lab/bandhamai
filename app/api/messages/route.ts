@@ -19,8 +19,13 @@ import {
   isEntitledStatus,
 } from "../../../lib/billing";
 import { getSubscriptionRow } from "../../../lib/entitlement";
-import { INBOX_BLOCKED_SEND, INBOX_MISSING, INBOX_SIGN_IN } from "../../../lib/inbox";
-import { loadConversation, loadInboxThreads, messagingPairBlocked } from "../../../lib/inbox-server";
+import { CHATS_SCOPE, INBOX_BLOCKED_SEND, INBOX_MISSING, INBOX_SIGN_IN } from "../../../lib/inbox";
+import {
+  loadConversation,
+  loadConversationThreads,
+  loadInboxThreads,
+  messagingPairBlocked,
+} from "../../../lib/inbox-server";
 
 export const runtime = "nodejs";
 
@@ -54,7 +59,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const threads = await loadInboxThreads(supabase, user.id);
+    const scope = asString(url.searchParams.get("scope"));
+    const threads =
+      scope === CHATS_SCOPE
+        ? await loadConversationThreads(supabase, user.id)
+        : await loadInboxThreads(supabase, user.id);
     return NextResponse.json({ threads });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not load Inbox.";

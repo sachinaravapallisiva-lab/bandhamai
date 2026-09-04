@@ -50,8 +50,8 @@ function toChatMessages(history: Line[]) {
   });
 }
 
-export default function VoiceAssistant() {
-  const [open, setOpen] = useState(false);
+export default function VoiceAssistant({ embedded = false }: { embedded?: boolean }) {
+  const [open, setOpen] = useState(embedded);
   const [lines, setLines] = useState<Line[]>([
     { who: "bm", text: GURU_INTRO },
   ]);
@@ -291,6 +291,46 @@ export default function VoiceAssistant() {
 
   /* ---------------- collapsed mic chip ---------------- */
   if (!open) {
+    if (embedded) {
+      return (
+        <section
+          className="bm-card"
+          data-assistant-rail="true"
+          style={{
+            background: SHELL,
+            border: "1px solid " + LINE,
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 18,
+          }}
+        >
+          <style>{css}</style>
+          <button
+            onClick={() => setOpen(true)}
+            aria-label={GURU_ORB_LABEL}
+            className="ba-sans ba-focus"
+            style={{
+              width: "100%",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: TEXT,
+              textAlign: "left",
+            }}
+          >
+            <span className="ba-dot" style={{ background: "#2F9E44" }} />
+            <span className="ba-serif" style={{ fontSize: 16, flex: 1 }}>{GURU_TITLE}</span>
+            <span className="ba-sans" style={{ fontSize: 9.5, letterSpacing: ".15em", color: MUTED }}>
+              READY
+            </span>
+          </button>
+        </section>
+      );
+    }
     return (
       <>
         <style>{css}</style>
@@ -332,23 +372,42 @@ export default function VoiceAssistant() {
     <>
       <style>{css}</style>
       <div
-        className="ba-panel"
-        style={{
-          position: "fixed",
-          right: "calc(22px + env(safe-area-inset-right, 0px))",
-          bottom: "calc(22px + env(safe-area-inset-bottom, 0px))",
-          zIndex: 50,
-          width: "min(340px, calc(100vw - 32px))",
-          height: "min(470px, calc(100vh - 48px))",
-          background: SHELL,
-          color: TEXT,
-          borderRadius: 16,
-          border: "1px solid " + LINE,
-          boxShadow: "0 18px 50px rgba(30,27,54,.18)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
+        className={embedded ? "ba-panel bm-card" : "ba-panel"}
+        data-assistant-rail={embedded ? "true" : undefined}
+        style={
+          embedded
+            ? {
+                position: "relative",
+                width: "100%",
+                height: "auto",
+                maxHeight: 420,
+                background: SHELL,
+                color: TEXT,
+                borderRadius: 14,
+                border: "1px solid " + LINE,
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                marginBottom: 18,
+              }
+            : {
+                position: "fixed",
+                right: "calc(22px + env(safe-area-inset-right, 0px))",
+                bottom: "calc(22px + env(safe-area-inset-bottom, 0px))",
+                zIndex: 50,
+                width: "min(340px, calc(100vw - 32px))",
+                height: "min(470px, calc(100vh - 48px))",
+                background: SHELL,
+                color: TEXT,
+                borderRadius: 16,
+                border: "1px solid " + LINE,
+                boxShadow: "0 18px 50px rgba(30,27,54,.18)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }
+        }
       >
         {/* header */}
         <div
@@ -379,7 +438,15 @@ export default function VoiceAssistant() {
         <div
           ref={feedRef}
           className="ba-feed"
-          style={{ flex: 1, overflowY: "auto", padding: "16px 15px", display: "flex", flexDirection: "column", gap: 15 }}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: embedded ? "12px 12px" : "16px 15px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 15,
+            maxHeight: embedded ? 160 : undefined,
+          }}
         >
           {lines.map(function (l, i) {
             const mine = l.who === "you";

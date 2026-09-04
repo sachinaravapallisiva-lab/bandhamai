@@ -9,7 +9,7 @@ export default function MeetupRail({ children }: { children?: ReactNode }) {
   return (
     <aside
       data-meetup-rail="true"
-      aria-label="Meetup this month"
+      aria-label="Meetup, assistant, and chats"
       style={{
         alignSelf: "flex-start",
         position: "sticky",
