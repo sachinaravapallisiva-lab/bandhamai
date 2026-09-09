@@ -64,6 +64,11 @@ assert(LOGIN_EMPTY_FIELDS === "Enter an email and password.", "empty sign in cop
 assert(LOGIN_SIGN_UP_PROMPT !== LOGIN_EMPTY_FIELDS, "signup prompt is not the dead sign in error");
 assert(LOGIN_SIGN_UP_HELP.toLowerCase().includes("create"), "signup helper is about creating an account");
 assert(LOGIN_SIGN_UP_HELP.includes("Bandham AI"), "signup helper names Bandham AI");
+assert(LOGIN_SIGN_IN_HELP.toLowerCase().includes("email"), "signin helper names email");
+assert(LOGIN_SIGN_IN_HELP.toLowerCase().includes("password"), "signin helper names password");
+assert(LOGIN_SIGN_IN_HELP.includes("Bandham AI"), "signin helper names Bandham AI");
+assert(!/create a profile/i.test(LOGIN_SIGN_IN_HELP), "signin helper is not leftover create-profile copy");
+assert(LOGIN_SIGN_IN_HELP !== LOGIN_SIGN_UP_HELP, "signin and signup helpers differ");
 assert(LOGIN_CREATED_SESSION.includes("signed in"), "session signup still continues");
 assert(LOGIN_CREATED_CONFIRM.toLowerCase().includes("email"), "confirm signup still mentions email");
 assert(LOGIN_FORGOT_LABEL === "Forgot password", "forgot stays");

@@ -160,8 +160,6 @@ export default function MatchCard({
           initialHandle={profile.instagram}
         />
 
-        <ProfileFactChips chips={chips} visa={browseVisaLabel(profile)} />
-
         {prompt ? (
           <div
             style={{
@@ -192,6 +190,8 @@ export default function MatchCard({
             </p>
           </div>
         ) : null}
+
+        <ProfileFactChips chips={chips} visa={browseVisaLabel(profile)} />
 
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           <button

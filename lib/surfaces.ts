@@ -14,6 +14,14 @@ export const SEARCH_FILTER_HELPER =
 export const SEARCH_PLACEHOLDER =
   "Search profiles: a pediatrician in Austin, raised in the UK";
 
+/** Short enough to stay whole on a ~390px search field. Desktop keeps SEARCH_PLACEHOLDER. */
+export const SEARCH_PLACEHOLDER_MOBILE = "Pediatrician in Austin…";
+
+export function searchPlaceholderForViewport(width: number) {
+  if (!Number.isFinite(width) || width <= 0) return SEARCH_PLACEHOLDER;
+  return width <= 800 ? SEARCH_PLACEHOLDER_MOBILE : SEARCH_PLACEHOLDER;
+}
+
 export const SEARCH_SPEAK_IDLE = "Tap to speak";
 export const SEARCH_SPEAK_LIVE = "Tap to stop";
 export const SEARCH_SPEAK_BUSY = "One moment";

@@ -194,8 +194,6 @@ export default function DiscoverCard({
           initialHandle={profile.instagram}
         />
 
-        <ProfileFactChips chips={chips} visa={browseVisaLabel(profile)} />
-
         {prompt ? (
           <div
             style={{
@@ -216,6 +214,8 @@ export default function DiscoverCard({
         ) : (
           <div style={{ height: 8 }} />
         )}
+
+        <ProfileFactChips chips={chips} visa={browseVisaLabel(profile)} />
 
         <div style={{ display: "flex", alignItems: "stretch", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           <button

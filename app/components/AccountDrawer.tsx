@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import {
   ACCOUNT_MENU_BIODATA_ID,
@@ -345,6 +346,8 @@ function AccountPanel({
   titleId,
   closeControl,
 }: AccountPanelProps) {
+  const pathname = usePathname() || "";
+  const onLoginPage = pathname === "/login" || pathname.startsWith("/login/");
   return (
     <>
       <div
@@ -408,7 +411,7 @@ function AccountPanel({
       </div>
 
       <nav aria-label={ACCOUNT_MENU_TITLE} style={{ padding: "12px 10px 18px" }}>
-        {!signedIn ? (
+        {!signedIn && !onLoginPage ? (
           <Link
             href={loginHref("/")}
             className="bm-sans bm-talk bm-focus"
@@ -549,7 +552,7 @@ export function AccountMenuControl() {
         }}
       >
         <MenuIcon name="menu" />
-        Menu
+        <span className="bm-account-toggle-label">Menu</span>
       </summary>
       <div
         id={ACCOUNT_PHONE_OVERLAY_ID}

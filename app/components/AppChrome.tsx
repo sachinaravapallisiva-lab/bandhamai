@@ -23,8 +23,8 @@ export default function AppChrome({
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AccountMenuControl />
-                  <Link href="/" className="bm-serif bm-focus" style={{ textDecoration: "none", color: INK, display: "flex", alignItems: "center", gap: 10 }}>
-                    <BandhamMark />
+                  <Link href="/" className="bm-serif bm-focus bm-home-brand" style={{ textDecoration: "none", color: INK }}>
+                    <BandhamMark className="bm-header-mark" />
                     <h1 className="bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
                       Bandham AI
                     </h1>

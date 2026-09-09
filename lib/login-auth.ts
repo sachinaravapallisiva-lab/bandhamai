@@ -12,7 +12,7 @@ export const LOGIN_SIGN_IN_HEADING = "Sign in";
 export const LOGIN_SIGN_UP_HEADING = "Sign up";
 export const LOGIN_RESET_HEADING = "New password";
 
-export const LOGIN_SIGN_IN_HELP = "Use the same email and password to create a profile.";
+export const LOGIN_SIGN_IN_HELP = "Enter the email and password for your Bandham AI account.";
 export const LOGIN_SIGN_UP_HELP = "Create a Bandham AI account with your email and password.";
 export const LOGIN_RESET_HELP = "This form is for the reset link from your email.";
 

@@ -76,6 +76,7 @@ import {
   SEARCH_LISTEN_STATUS,
   SEARCH_LOOKING_STATUS,
   SEARCH_PLACEHOLDER,
+  searchPlaceholderForViewport,
   SEARCH_SPEAK_BUSY,
   SEARCH_SPEAK_IDLE,
   SEARCH_SPEAK_LIVE,
@@ -123,6 +124,7 @@ export default function Home() {
   const [askAnswers, setAskAnswers] = useState<BrowseAskAnswer[]>([]);
   const [sessionAnswers, setSessionAnswers] = useState<BrowseAskAnswer[]>([]);
   const [prefs, setPrefs] = useState<BrowseSearchPrefs>(emptyBrowsePrefs);
+  const [searchPlaceholder, setSearchPlaceholder] = useState(SEARCH_PLACEHOLDER);
 
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<any>(null);
@@ -319,6 +321,17 @@ export default function Home() {
     if (searchRef.current) searchRef.current("");
     const stored = loadBrowsePrefs();
     persistPrefs(stored);
+  }, []);
+
+  useEffect(function () {
+    function syncPlaceholder() {
+      setSearchPlaceholder(searchPlaceholderForViewport(window.innerWidth));
+    }
+    syncPlaceholder();
+    window.addEventListener("resize", syncPlaceholder);
+    return function () {
+      window.removeEventListener("resize", syncPlaceholder);
+    };
   }, []);
 
   useEffect(function () {
@@ -579,10 +592,12 @@ export default function Home() {
             <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AccountMenuControl />
-                  <h1 className="bm-serif bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
-                    Bandham AI
-                  </h1>
-                  <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} className="bm-header-mark" />
+                  <div className="bm-home-brand">
+                    <h1 className="bm-serif bm-home-wordmark" style={{ margin: 0, fontSize: 27, fontWeight: 400, letterSpacing: "-.01em" }}>
+                      Bandham AI
+                    </h1>
+                    <BandhamMark size={BANDHAM_MARK_HEADER_SIZE} className="bm-header-mark" />
+                  </div>
                 </div>
                 <p className="bm-sans" style={{ margin: "3px 0 0", fontSize: 12, color: MUTED, letterSpacing: ".01em" }}>
                   Find your vibe match?
@@ -655,15 +670,17 @@ export default function Home() {
               ) : (
                 <Link
                   href={loginHref(tab === "matches" ? "/matches" : tab === "chat" ? "/chat" : "/")}
-                  className="bm-sans bm-ghost bm-focus"
+                  className="bm-sans bm-ghost bm-focus bm-header-signin"
                   style={{
                     color: VIOLET,
                     border: "1px solid " + LINE,
                     borderRadius: 999,
-                    padding: "8px 14px",
+                    padding: "8px 18px",
                     fontSize: 13,
                     fontWeight: 600,
                     textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   Sign in
@@ -789,9 +806,9 @@ export default function Home() {
                     submitPrompt();
                   }
                 }}
-                placeholder={SEARCH_PLACEHOLDER}
+                placeholder={searchPlaceholder}
                 aria-label="Search profiles"
-                className="bm-sans bm-input bm-focus"
+                className="bm-sans bm-input bm-focus bm-search-input"
                 style={{
                   width: "100%",
                   padding: "11px 13px",

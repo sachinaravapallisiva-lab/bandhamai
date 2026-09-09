@@ -273,10 +273,15 @@ assertEq(aboutCard?.promptLabel, "About", "prompt uses About when present");
 assertEq(aboutCard?.note, "I like hiking and live music.", "prompt body is existing about text");
 assertEq(browseMetaLine(aboutCard), "Hyderabad · Paediatrician", "meta line is city · profession, no invented age");
 const chips = browseFactChips(aboutCard);
-assertEq(chips.length, 3, "three fact chips from existing fields");
-assertEq(chips[0].label, "Telugu", "language chip");
-assertEq(chips[1].label, "MD", "education chip");
-assertEq(chips[2].label, "Vegetarian", "third chip falls back to diet");
+assertEq(chips.length, 4, "four fact chips from existing fields");
+assertEq(chips[0].label, "Hyderabad", "city chip");
+assertEq(chips[1].label, "Telugu", "language chip");
+assertEq(chips[2].label, "MD", "education chip");
+assertEq(chips[3].label, "Vegetarian", "fourth chip falls back to diet");
+assert(
+  !chips.some(function (chip) { return /age|years old/i.test(chip.label); }),
+  "fact chips must not invent age"
+);
 assertEq(browseVisaLabel(aboutCard), "", "no invented visa on a row without visa_status");
 const visaCard = toBrowseProfile({
   id: "visa-1",

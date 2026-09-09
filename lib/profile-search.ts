@@ -61,26 +61,30 @@ export function browseMetaLine(profile: BrowseProfile) {
 }
 
 /**
- * Up to three chips from existing fields: language, education,
- * then family-like diet text if present, else diet.
- * Visa is a dedicated cream chip via browseVisaLabel, not this list.
+ * Up to four matrimony chips from existing fields only: city, mother tongue,
+ * education or profession, then family-like diet text if present, else diet.
+ * Never invent age. Visa is a dedicated cream chip via browseVisaLabel.
  */
 export function browseFactChips(profile: BrowseProfile): BrowseFactChip[] {
   const chips: BrowseFactChip[] = [];
+  if (profile.city) chips.push({ key: "city", label: profile.city, icon: "home" });
   if (profile.langs) chips.push({ key: "lang", label: profile.langs, icon: "lang" });
   if (profile.education) chips.push({ key: "edu", label: profile.education, icon: "edu" });
+  else if (profile.work) chips.push({ key: "work", label: profile.work, icon: "edu" });
 
-  const familyHay = [profile.diet].filter(Boolean);
-  const family = familyHay.find(function (value) {
-    return /nuclear|joint/i.test(value);
-  });
-  if (family) {
-    chips.push({ key: "family", label: family, icon: "home" });
-  } else if (profile.diet) {
-    chips.push({ key: "diet", label: profile.diet, icon: "home" });
+  if (chips.length < 4) {
+    const familyHay = [profile.diet].filter(Boolean);
+    const family = familyHay.find(function (value) {
+      return /nuclear|joint/i.test(value);
+    });
+    if (family) {
+      chips.push({ key: "family", label: family, icon: "home" });
+    } else if (profile.diet) {
+      chips.push({ key: "diet", label: profile.diet, icon: "home" });
+    }
   }
 
-  return chips.slice(0, 3);
+  return chips.slice(0, 4);
 }
 
 /** Stored profiles.visa_status only. Empty when the field is blank. Never invent a value. */
