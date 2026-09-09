@@ -24,6 +24,7 @@
     "check:feature-ideas": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-feature-ideas.mjs",
     "check:voice-support": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-voice-support.mjs",
     "check:biodata": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/check-biodata.mjs",
+    "sample:biodata": "node --experimental-strip-types --import ./scripts/register-ts-paths.mjs scripts/sample-biodata.mjs",
     "check:account-drawer": "node --experimental-strip-types scripts/check-account-drawer.mjs",
     "check:inbox-block": "node --experimental-strip-types scripts/check-inbox-block.mjs",
     "check:contact-call": "node --experimental-strip-types scripts/check-contact-call.mjs",
