@@ -68,6 +68,9 @@ assert(theme.includes(".bm-account-toggle{display:inline-flex"), "phones show th
 assert(theme.includes(".bm-shell{flex-direction:column}"), "phone pages stack one column");
 assert(theme.includes("[data-meetup-rail]{display:block"), "meetup sits under Home on phone");
 assert(drawer.includes("Menu"), "phone tap control is Menu");
+assert(drawer.includes("bm-account-toggle-label"), "phone Menu label can hide on a narrow header");
+assert(drawer.includes("onLoginPage"), "sidebar Sign in hides on the login page");
+assert(drawer.includes("usePathname"), "login page detection uses the current path");
 assert(drawer.includes('data-account-cream="true"'), "tap cream closes the phone drawer");
 assert(chrome.includes("AccountMenuControl") && home.includes("AccountMenuControl"), "hosts expose the same Account control");
 assert(!theme.includes("calc(100% - 240px - 96px)"), "do not use the old gap calc");

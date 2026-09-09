@@ -31,6 +31,7 @@ const discover = readFileSync(new URL("../app/components/DiscoverCard.tsx", impo
 const chips = readFileSync(new URL("../app/components/ProfileFactChips.tsx", import.meta.url), "utf8");
 const cardChrome = readFileSync(new URL("../lib/profile-card.ts", import.meta.url), "utf8");
 const chrome = readFileSync(new URL("../app/components/AppChrome.tsx", import.meta.url), "utf8");
+const theme = readFileSync(new URL("../lib/theme.ts", import.meta.url), "utf8");
 
 const userFacing = [GURU_TITLE, GURU_ORB_LABEL, GURU_INTRO, GURU_SPEAKER].join("\n");
 assert(GURU_TITLE === "Bandham assistant", "title lock");
@@ -50,6 +51,11 @@ assert(orb.includes("GURU_ORB_LABEL"), "chip uses shared aria-label");
 assert(orb.includes("height: 36"), "Pack 1 mic chip stays small");
 assert(!/width:\s*64|height:\s*64|width:\s*72|height:\s*72/.test(orb), "large orb must not return");
 assert(orb.includes("borderRadius: 999"), "chip stays pill-shaped");
+assert(orb.includes("compactIdle"), "embedded rail has an idle compact mode");
+assert(orb.includes("data-assistant-idle"), "idle rail is marked compact");
+assert(orb.includes("Tap to speak"), "idle rail keeps speak");
+assert(orb.includes("READY"), "idle rail keeps READY");
+assert(orb.includes("GURU_STARTERS"), "idle rail keeps starter chips");
 
 assert(page.includes("EmptyState"), "Browse/Matches empty states are designed");
 assert(page.includes("BROWSE_EMPTY_RESULTS_TITLE") || page.includes(BROWSE_EMPTY_RESULTS_TITLE), "Browse no-results copy");
@@ -86,6 +92,10 @@ assert(discover.includes("VIOLET") && matchCard.includes("VIOLET"), "both cards 
 assert(discover.includes("PROFILE_PHOTO_HEIGHT") && matchCard.includes("PROFILE_PHOTO_HEIGHT"), "photo size is one family");
 assert(discover.includes("minHeight: PROFILE_ACTION_MIN") && matchCard.includes("minHeight: PROFILE_ACTION_MIN"), "primary actions are 44px");
 assert(discover.includes("ProfileFactChips") && matchCard.includes("ProfileFactChips"), "quiet chips are shared");
+assert(discover.lastIndexOf("<ProfileFactChips") < discover.lastIndexOf("            Interested"), "Browse facts sit above Interested");
+assert(discover.lastIndexOf("<ProfileFactChips") > discover.lastIndexOf("promptLabel"), "Browse facts sit after the About prompt");
+assert(matchCard.lastIndexOf("<ProfileFactChips") < matchCard.lastIndexOf("Start Speed Match"), "Matches facts sit above Speed Match");
+assert(chips.includes("data-matrimony-facts"), "shared chips mark the matrimony facts row");
 assert(discover.includes("browseVisaLabel") && matchCard.includes("browseVisaLabel"), "visa chip uses stored visa_status");
 assert(discover.includes("ProfilePhotoSoon") && matchCard.includes("ProfilePhotoSoon"), "no photo uses Photo coming soon");
 assert(!discover.includes("profileInitials"), "Browse no-photo is not a fake initial face");
@@ -117,6 +127,11 @@ assert(!datingChrome.test(stripComments(matchCard)), "MatchCard has no dating ch
 assert(!datingChrome.test(stripComments(chips)), "shared chips have no dating chrome strings");
 assert(chrome.includes("Bandham AI"), "wordmark is Bandham AI");
 assert(page.includes("Bandham AI"), "home wordmark is Bandham AI");
+assert(page.includes("bm-home-brand"), "home wordmark sits in a one-line lockup");
+assert(page.includes("bm-header-signin"), "home Sign in pill is marked so it cannot wrap");
+assert(theme.includes(".bm-home-wordmark{white-space:nowrap}") || theme.includes("white-space:nowrap"), "wordmark CSS keeps one line");
+assert(theme.includes("bm-header-signin"), "theme keeps the Sign in pill on one line");
+assert(theme.includes("bm-account-toggle-label"), "phone Menu label can hide so the wordmark stays one line");
 assert(!/\bBandhamai\b/.test(chrome), "chrome wordmark is not Bandhamai");
 assert(!/\bBandhamai\b/.test(page.replace(/bandhamai\.vercel\.app/g, "")), "home wordmark is not Bandhamai");
 

@@ -204,6 +204,9 @@ assert(home.indexOf("<MeetupRail") > home.indexOf('className="bm-dash"'), "meetu
 assert(home.indexOf("<MeetupCard") > home.indexOf("<MeetupRail"), "this month card is in the right stack");
 assert(home.includes("ChatsRail"), "right stack includes Chats");
 assert(home.includes("<VoiceAssistant embedded"), "right stack embeds the Bandham assistant");
+const orbSrc = read("app/components/VoiceAssistant.tsx");
+assert(orbSrc.includes("compactIdle"), "assistant rail collapses tall chrome when idle");
+assert(orbSrc.includes("data-assistant-idle"), "idle assistant rail is marked");
 assert(home.indexOf("<ChatsRail") > home.lastIndexOf("<VoiceAssistant"), "Chats sits under the assistant");
 assert(home.includes('data-home-shell="true"'), "Home marks the desktop right bar and phone column");
 assert(home.indexOf("<SiteFooter") > home.indexOf("<MeetupRail"), "phone web paints footer after meetup");

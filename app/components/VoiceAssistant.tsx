@@ -288,6 +288,7 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
 
   const live = state === "listening";
   const busy = state === "thinking" || ticketBusy;
+  const compactIdle = Boolean(embedded && lines.length <= 1 && state === "idle" && !ticketDraft);
 
   /* ---------------- collapsed mic chip ---------------- */
   if (!open) {
@@ -374,13 +375,14 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
       <div
         className={embedded ? "ba-panel bm-card" : "ba-panel"}
         data-assistant-rail={embedded ? "true" : undefined}
+        data-assistant-idle={compactIdle ? "true" : undefined}
         style={
           embedded
             ? {
                 position: "relative",
                 width: "100%",
                 height: "auto",
-                maxHeight: 420,
+                maxHeight: compactIdle ? "none" : 320,
                 background: SHELL,
                 color: TEXT,
                 borderRadius: 14,
@@ -415,8 +417,8 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
             display: "flex",
             alignItems: "center",
             gap: 11,
-            padding: "14px 15px",
-            borderBottom: "1px solid " + LINE,
+            padding: compactIdle ? "10px 12px" : "14px 15px",
+            borderBottom: compactIdle ? "none" : "1px solid " + LINE,
           }}
         >
           <span className={"ba-dot" + (live || busy ? " on" : "")} style={{ background: live ? VIOLET : busy ? MUTED : LINE }} />
@@ -424,17 +426,20 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
           <span className="ba-sans" style={{ fontSize: 9.5, letterSpacing: ".15em", color: MUTED }}>
             {live ? "LISTENING" : busy ? "THINKING" : "READY"}
           </span>
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-            className="ba-focus ba-x"
-            style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 19, lineHeight: 1, padding: 2 }}
-          >
-            ×
-          </button>
+          {compactIdle ? null : (
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="ba-focus ba-x"
+              style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 19, lineHeight: 1, padding: 2 }}
+            >
+              ×
+            </button>
+          )}
         </div>
 
-        {/* transcript */}
+        {/* transcript — hidden while idle so Meetup → assistant → Chats fit the fold */}
+        {compactIdle ? null : (
         <div
           ref={feedRef}
           className="ba-feed"
@@ -445,7 +450,7 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
             display: "flex",
             flexDirection: "column",
             gap: 15,
-            maxHeight: embedded ? 160 : undefined,
+            maxHeight: embedded ? 120 : undefined,
           }}
         >
           {lines.map(function (l, i) {
@@ -575,9 +580,38 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
             </div>
           )}
         </div>
+        )}
+
+        {compactIdle ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7, padding: "0 12px 10px" }}>
+            {GURU_STARTERS.map(function (starter) {
+              return (
+                <button
+                  key={starter.id}
+                  type="button"
+                  onClick={function () { addUserAndAsk(starter.text); }}
+                  className="ba-sans ba-focus"
+                  style={{
+                    background: "#F7F1E8",
+                    color: VIOLET,
+                    border: "1px solid " + LINE,
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {starter.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         {/* mic */}
-        <div style={{ borderTop: "1px solid " + LINE, padding: "13px 15px 16px" }}>
+        <div style={{ borderTop: compactIdle ? "none" : "1px solid " + LINE, padding: compactIdle ? "0 12px 12px" : "13px 15px 16px" }}>
+          {compactIdle ? null : (
           <div style={{ display: "flex", alignItems: "center", gap: 3, height: 20, marginBottom: 11, justifyContent: "center" }}>
             {amps.map(function (a, i) {
               return (
@@ -595,6 +629,7 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
               );
             })}
           </div>
+          )}
 
           <button
             onClick={toggleMic}
@@ -606,17 +641,18 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
               color: "#FFFFFF",
               border: "none",
               borderRadius: 999,
-              padding: "12px",
-              fontSize: 14,
+              padding: compactIdle ? "10px" : "12px",
+              fontSize: compactIdle ? 13 : 14,
               fontWeight: 600,
               cursor: busy ? "default" : "pointer",
               opacity: busy ? 0.5 : 1,
-              marginBottom: 10,
+              marginBottom: compactIdle ? 0 : 10,
             }}
           >
             {live ? "Tap to stop" : busy ? "One moment" : "Tap to speak"}
           </button>
 
+          {compactIdle ? null : (
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <input
               value={draft}
@@ -659,6 +695,7 @@ export default function VoiceAssistant({ embedded = false }: { embedded?: boolea
               &#8593;
             </button>
           </div>
+          )}
         </div>
       </div>
     </>

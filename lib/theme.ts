@@ -85,8 +85,12 @@ export const BM_CSS =
   ".bm-account-toggle{display:inline-flex!important;gap:8px}" +
   ".bm-dash{flex:0 1 100%;width:100%;max-width:100%}" +
   ".bm-dash-inner{max-width:100%;padding-left:14px;padding-right:14px}" +
-  ".bm-home-wordmark{font-size:22px!important}" +
-  ".bm-header-mark{width:44px!important;height:44px!important}" +
+  ".bm-home-brand{min-width:0}" +
+  ".bm-home-wordmark{font-size:22px!important;white-space:nowrap}" +
+  ".bm-header-mark{width:36px!important;height:36px!important}" +
+  ".bm-header-signin{flex-shrink:0;white-space:nowrap;padding:8px 16px!important}" +
+  ".bm-account-toggle{padding:0 10px!important}" +
+  ".bm-account-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}" +
   ".bm-pin-line{min-height:0!important;gap:8px}" +
   ".bm-pin-card{flex:0 0 122px!important;width:122px!important;max-width:122px!important}" +
   ".bm-pin-photo,.bm-pin-photo img{height:110px!important;min-height:110px!important}" +
@@ -99,6 +103,10 @@ export const BM_CSS =
   "}" +
   ".bm-account-overlay{transition:opacity .2s ease}" +
   ".bm-scrim{transition:opacity .2s ease}" +
+  ".bm-home-brand{display:flex;align-items:center;gap:10px;min-width:0}" +
+  ".bm-home-wordmark{white-space:nowrap}" +
+  ".bm-header-signin{white-space:nowrap;flex-shrink:0}" +
+  ".bm-search-input{text-overflow:ellipsis}" +
   ".bm-input::placeholder{color:#B3A9B8}" +
   ".bm-input:focus{border-color:#6D28D9;background:#FDF8F1}" +
   ".bm-focus:focus-visible{outline:2px solid #6D28D9;outline-offset:2px}" +

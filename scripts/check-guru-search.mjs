@@ -9,6 +9,8 @@ import {
   GURU_TITLE,
   SEARCH_HINT,
   SEARCH_PLACEHOLDER,
+  SEARCH_PLACEHOLDER_MOBILE,
+  searchPlaceholderForViewport,
   browseMatchCountCopy,
 } from "../lib/surfaces.ts";
 
@@ -26,6 +28,12 @@ assert(SEARCH_PLACEHOLDER.toLowerCase().includes("search profiles"), "search pla
 assert(SEARCH_PLACEHOLDER === "Search profiles: a pediatrician in Austin, raised in the UK", "placeholder is NRI first");
 assert(!SEARCH_PLACEHOLDER.toLowerCase().includes("hyderabad"), "placeholder must not name Hyderabad");
 assert(!/[-–—]/.test(SEARCH_PLACEHOLDER), "placeholder has no hyphen or dash");
+assert(SEARCH_PLACEHOLDER_MOBILE === "Pediatrician in Austin…", "mobile placeholder stays short");
+assert(SEARCH_PLACEHOLDER_MOBILE.length < SEARCH_PLACEHOLDER.length, "mobile placeholder is shorter");
+assert(!SEARCH_PLACEHOLDER_MOBILE.toLowerCase().includes("hyderabad"), "mobile placeholder must not name Hyderabad");
+assert(!/[-–—]/.test(SEARCH_PLACEHOLDER_MOBILE), "mobile placeholder has no hyphen or dash");
+assert(searchPlaceholderForViewport(390) === SEARCH_PLACEHOLDER_MOBILE, "390px uses the short placeholder");
+assert(searchPlaceholderForViewport(1280) === SEARCH_PLACEHOLDER, "desktop keeps the full placeholder");
 assert(browseMatchCountCopy(3) === "3 people match this search", "count line uses the real N");
 assert(browseMatchCountCopy(0) === "No one fits these chips yet", "zero count is the honest empty");
 assert(!/million|daily quota|daily limit/i.test(browseMatchCountCopy(3)), "count must not invent scale");
@@ -88,6 +96,8 @@ assert(KEYTERMS.length < 100, "keyterms stay under the xAI cap of 100");
 assert(KEYTERMS.slice(0, 8).includes("H1B"), "visa terms lead the list so they are not sliced off");
 assert(KEYTERMS.slice(0, 8).includes("NRI"), "NRI leads with visa/status");
 assert(page.includes("SEARCH_PLACEHOLDER"), "Browse uses shared search placeholder");
+assert(page.includes("SEARCH_PLACEHOLDER_MOBILE") || page.includes("searchPlaceholderForViewport"), "Browse can use the short mobile placeholder");
+assert(page.includes("searchPlaceholderForViewport"), "Browse picks placeholder by viewport");
 assert(page.includes("BrowseCarousel"), "Browse middle slot is the live profile carousel");
 const discoverCard = readFileSync(new URL("../app/components/DiscoverCard.tsx", import.meta.url), "utf8");
 assert(discoverCard.includes("Interested"), "Browse primary action is Interested");

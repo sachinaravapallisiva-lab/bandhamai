@@ -40,11 +40,12 @@ export default function ProfileFactChips({
 
   return (
     <div
+      data-matrimony-facts="true"
       style={{
         display: "flex",
         flexWrap: "wrap",
         gap: 6,
-        marginTop: 14,
+        marginTop: 12,
       }}
     >
       {visaLabel ? (
