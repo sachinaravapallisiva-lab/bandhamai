@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { browseSelectColumns, toBrowseProfile } from "./profile-search";
+import { attachMembership, loadPremiumUserIds } from "./membership-server";
 import { attachLastSeen, loadPresenceByUserIds } from "./presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "./safety-server";
 import { tableExists, tableHasColumn } from "./server-supabase";
@@ -238,7 +239,10 @@ export async function loadMeetupShortlist(
     .select(select)
     .in("user_id", userIds);
 
-  const presence = await loadPresenceByUserIds(supabase, userIds);
+  const [presence, premiumUserIds] = await Promise.all([
+    loadPresenceByUserIds(supabase, userIds),
+    loadPremiumUserIds(supabase, userIds),
+  ]);
   const byUser = new Map<string, Record<string, unknown>>();
   if (Array.isArray(profiles)) {
     const rows = profiles as unknown as Record<string, unknown>[];
@@ -251,7 +255,7 @@ export async function loadMeetupShortlist(
     visible.forEach(function (row) {
       const userId = asId(row.user_id);
       if (!userId || byUser.has(userId)) return;
-      byUser.set(userId, attachLastSeen(row, presence));
+      byUser.set(userId, attachMembership(attachLastSeen(row, presence), premiumUserIds));
     });
   }
 

@@ -30,6 +30,7 @@ import {
   visaKeywordVariants,
   type SearchCriteria,
 } from "../../../../lib/profile-search";
+import { attachMembership, loadPremiumUserIds } from "../../../../lib/membership-server";
 import { attachLastSeen, loadPresenceByUserIds } from "../../../../lib/presence-server";
 import { applyBlockedFilter, loadBlockedSet } from "../../../../lib/safety-server";
 import { BIODATA_SHARE_COLUMN } from "../../../../lib/biodata-share";
@@ -289,14 +290,15 @@ export async function GET(request: Request) {
     }
 
     if (flags.user_id) {
-      const presenceByUser = await loadPresenceByUserIds(
-        supabase,
-        rows.map(function (row) {
-          return typeof row.user_id === "string" ? row.user_id : "";
-        })
-      );
+      const ownerIds = rows.map(function (row) {
+        return typeof row.user_id === "string" ? row.user_id : "";
+      });
+      const [presenceByUser, premiumUserIds] = await Promise.all([
+        loadPresenceByUserIds(supabase, ownerIds),
+        loadPremiumUserIds(supabase, ownerIds),
+      ]);
       rows = rows.map(function (row) {
-        return attachLastSeen(row, presenceByUser);
+        return attachMembership(attachLastSeen(row, presenceByUser), premiumUserIds);
       });
     }
 

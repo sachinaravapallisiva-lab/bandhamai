@@ -19,6 +19,7 @@ import { CREAM, INK, LINE, MUTED, VIOLET, VIOLET_DEEP, WASH } from "../../lib/th
 import { PRESENCE_ONLINE_COLOR } from "../../lib/presence";
 import DownloadBiodata from "./DownloadBiodata";
 import InstagramShareControls from "./InstagramShareControls";
+import MembershipChip from "./MembershipChip";
 import PresenceMark from "./PresenceMark";
 import ProfileFactChips from "./ProfileFactChips";
 import { ProfilePhotoSoon } from "./ProfilePhoto";
@@ -172,6 +173,7 @@ export default function DiscoverCard({
           <h2 className="bm-serif bm-shortlist-name" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: VIOLET_DEEP, letterSpacing: "-.015em" }}>
             {profile.name || "Profile"}
           </h2>
+          <MembershipChip membership={profile.membership} />
           <VerifyBadge verified={profile.verified} />
           <PresenceMark online={profile.online} compact />
         </div>
